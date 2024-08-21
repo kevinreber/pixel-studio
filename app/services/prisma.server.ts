@@ -43,7 +43,7 @@ const prisma = singleton("prisma", () => {
       { level: "warn", emit: "stdout" },
     ],
   });
-  // @ts-expect-error - e is any
+
   client.$on("query", async (e) => {
     if (e.duration < logThreshold) return;
     const color =
