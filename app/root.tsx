@@ -11,10 +11,8 @@ import { prisma } from "./services/prisma.server";
 // import { LoaderFunctionArgs } from "@remix-run/node";
 
 export const loader = async () => {
-  const users = await prisma.user.findMany();
-  return users;
-  // return { test: process.env.DATABASE_URL };
-  return [];
+  const users = (await prisma.user.findMany()) || [];
+  return { users: users.length };
 };
 
 export function Layout({ children }: { children: React.ReactNode }) {
