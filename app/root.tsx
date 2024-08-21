@@ -7,13 +7,13 @@ import {
   useLoaderData,
 } from "@remix-run/react";
 import "./tailwind.css";
-// import { prisma } from "./services/prisma.server";
+import { prisma } from "./services/prisma.server";
 // import { LoaderFunctionArgs } from "@remix-run/node";
 
 export const loader = async () => {
-  // const users = await prisma.user.findMany();
-  // return users;
-  return [];
+  const users = await prisma.user.findMany();
+  return users;
+  // return [];
 };
 
 export function Layout({ children }: { children: React.ReactNode }) {
