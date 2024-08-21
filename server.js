@@ -1,3 +1,4 @@
+import './instrumentation.server.mjs';
 import { createRequestHandler } from "@remix-run/express";
 import express from "express";
 import { prisma } from "./services/prisma.server";

@@ -11,6 +11,21 @@ import { createReadableStreamFromReadable } from "@remix-run/node";
 import { RemixServer } from "@remix-run/react";
 import { isbot } from "isbot";
 import { renderToPipeableStream } from "react-dom/server";
+import * as Sentry from "@sentry/remix";
+
+export const handleError = Sentry.wrapHandleErrorWithSentry(
+  (error, { request }) => {
+    // Custom handleError implementation
+    console.log("Error from handleError", error);
+    console.log("Request from handleError", request);
+    return new Response("Error from handleError", {
+      status: 500,
+      headers: {
+        "Content-Type": "text/html",
+      },
+    });
+  }
+);
 
 const ABORT_DELAY = 5_000;
 
