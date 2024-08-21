@@ -1,0 +1,184 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  // sessionToken String   @unique
+  expirationDate DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String
+
+  // non-unique foreign key
+  @@index([userId])
+
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String?
+  username     String       @unique
+  email        String       @unique
+  password     Password?
+  image        String?
+  credits      Int           @default(5)
+  accounts     Account[]
+  sessions     Session[]
+  images       Image[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime?     @updatedAt
+  comments     Comment[]
+  imageLikes   ImageLike[]
+  commentLikes CommentLike[]
+  collections  Collection[]
+  roles        Role[]
+}
+
+model Password {
+  hash   String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String @unique
+}
+
+model Prompt {
+  id              String   @id @default(cuid())
+  originalPrompt  String 
+  newPrompt       String 
+  createdAt       DateTime @default(now())
+  userId          String 
+}
+
+// @reference: See Permisions - Managing Roles sand Permissions
+model Permission {
+  id          String @id @default(cuid())
+  action      String // e.g. create, read, update, delete
+  entity      String // e.g. image, user, etc.
+  access      String // e.g. own or any
+  description String @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  roles Role[]
+
+  @@unique([action, entity, access])
+}
+
+model Role {
+  id          String @id @default(cuid())
+  name        String @unique
+  description String @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users       User[]
+  permissions Permission[]
+}
+
+model Image {
+  id          String               @id @default(cuid())
+  title       String?              @default("Untitled")
+  prompt      String?
+  model       String?              @default("dall-e")
+  stylePreset String?              @default("none")
+  user        User?                @relation(fields: [userId], references: [id])
+  userId      String?
+  createdAt   DateTime             @default(now())
+  comments    Comment[]
+  likes       ImageLike[]
+  collections CollectionHasImage[]
+  private     Boolean?             @default(false)
+
+  @@index([userId])
+}
+
+model ImageLike {
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  image   Image   @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  userId  String
+  imageId String
+
+  @@id([userId, imageId])
+}
+
+model Comment {
+  id        String        @id @default(cuid())
+  message   String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  image     Image          @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  imageId   String
+  parent    Comment?      @relation("ParentChild", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Comment[]     @relation("ParentChild")
+  parentId  String?
+  likes     CommentLike[]
+}
+
+model CommentLike {
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  commentId String
+
+  @@id([userId, commentId])
+}
+
+model Collection {
+  id          String               @id @default(cuid())
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  title       String
+  description String?
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  images      CollectionHasImage[]
+
+  @@index([userId])
+}
+
+model CollectionHasImage {
+  id           String      @id @default(cuid())
+  collectionId String
+  imageId      String
+  collection   Collection? @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  image        Image?       @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  @@index([collectionId, imageId])
+  @@index([collectionId])
+  @@index([imageId])
+}
