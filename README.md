@@ -4,9 +4,15 @@
 
 ## Development
 
+Install dependencies
+
+```sh
+npm i
+```
+
 Run the dev server:
 
-```shellscript
+```sh
 npm run dev
 ```
 
