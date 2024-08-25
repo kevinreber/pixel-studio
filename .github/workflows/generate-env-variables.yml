@@ -1,3 +1,4 @@
+name: Generate Environment Variables
 jobs:
   test:
     timeout-minutes: 60
