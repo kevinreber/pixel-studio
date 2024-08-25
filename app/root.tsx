@@ -6,10 +6,12 @@ import {
   Scripts,
   ScrollRestoration,
   useLoaderData,
+  useLocation,
   useRouteError,
 } from "@remix-run/react";
 import "./tailwind.css";
 import { prisma } from "./services/prisma.server";
+import NavigationSidebar from "./components/NavigationSidebar";
 // import { LoaderFunctionArgs } from "@remix-run/node";
 
 import "./globals.css";
@@ -22,6 +24,8 @@ export const loader = async () => {
 export function Layout({ children }: { children: React.ReactNode }) {
   const data = useLoaderData();
   console.log(data);
+  const location = useLocation();
+  const isHome = location.pathname === "/";
 
   return (
     <html lang="en">
@@ -32,7 +36,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body className="dark">
-        {children}
+        {!isHome && <NavigationSidebar />} {children}
         <ScrollRestoration />
         <Scripts />
       </body>

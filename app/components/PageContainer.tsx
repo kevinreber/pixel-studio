@@ -1,3 +1,4 @@
+import { useLocation } from "@remix-run/react";
 import React from "react";
 
 type PageContainerTypes = {
@@ -15,9 +16,13 @@ const PageContainer = ({
   styles = {},
   className = "",
 }: PageContainerTypes) => {
+  const location = useLocation();
+  const isHome = location.pathname === "/";
+  const navigationSidebarPadding = isHome ? "" : "md:pl-64";
+
   return (
     <div
-      className={`flex flex-col mx-auto w-11/12 mt-20 md:mt-6 ${className}`}
+      className={`flex flex-col mx-auto w-11/12 mt-20 md:mt-6 ${className} ${navigationSidebarPadding}`}
       style={styles}
     >
       {children}
