@@ -12,11 +12,14 @@ jobs:
         run: npm ci
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
-      - name: Set up database environment
+      - name: Set up environment variables
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: |
-          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
+        run: echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
+    - name: Create .env file
+      run: echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
+      - name: Generate Prisma Client
+        run: npx prisma generate
       - name: Start Server
         run: npm run dev & npx wait-on http://localhost:5173
       - name: Run Playwright tests
