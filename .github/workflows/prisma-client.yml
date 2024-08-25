@@ -1,0 +1,2 @@
+- name: Generate Prisma Client
+  run: npx prisma generate
