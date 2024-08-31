@@ -32,7 +32,8 @@
       "server/*": ["app/server/*"],
       "services/*": ["app/services/*"],
       "utils/*": ["app/utils/*"],
-      "routes/*": ["app/routes/*"]
+      "routes/*": ["app/routes/*"],
+      "schema/*": ["app/schema/*"]
     },
 
     // Vite takes care of building everything, not tsc.
