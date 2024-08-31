@@ -1,5 +1,5 @@
 import React from "react";
-import PixelStudioIcon from "./PixelStudioIcon";
+import PixelStudioIcon from "components/PixelStudioIcon";
 import { Link } from "@remix-run/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {

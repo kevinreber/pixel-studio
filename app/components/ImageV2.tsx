@@ -1,5 +1,5 @@
 // import { useLocation, useNavigate } from "@remix-run/react";
-import { ImageTagType } from "../server/getImages";
+import { ImageTagType } from "server/getImages";
 
 const ImageV2 = ({ imageData }: { imageData: ImageTagType }) => {
   // const navigate = useNavigate();
