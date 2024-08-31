@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { prisma } from "../services/prisma.server";
-import { getS3BucketThumbnailURL, getS3BucketURL } from "../utils/s3Utils";
+import { prisma } from "services/prisma.server";
+import { getS3BucketThumbnailURL, getS3BucketURL } from "utils/s3Utils";
 
 const DEFAULT_CURRENT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 50;

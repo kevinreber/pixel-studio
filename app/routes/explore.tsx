@@ -1,7 +1,7 @@
 import { type LoaderFunctionArgs, json, MetaFunction } from "@remix-run/node";
 import { Outlet, useLoaderData } from "@remix-run/react";
-import ExplorePage from "../pages/ExplorePage";
-import { getImages } from "../server/getImages";
+import ExplorePage from "pages/ExplorePage";
+import { getImages } from "server/getImages";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Explore AI Generated Images" }];

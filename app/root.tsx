@@ -10,8 +10,8 @@ import {
   useRouteError,
 } from "@remix-run/react";
 import "./tailwind.css";
-import { prisma } from "./services/prisma.server";
-import NavigationSidebar from "./components/NavigationSidebar";
+import { prisma } from "services/prisma.server";
+import NavigationSidebar from "components/NavigationSidebar";
 // import { LoaderFunctionArgs } from "@remix-run/node";
 
 import "./globals.css";

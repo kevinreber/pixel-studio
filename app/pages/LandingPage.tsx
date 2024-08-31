@@ -1,5 +1,5 @@
-import PageContainer from "../components/PageContainer";
-import PixelStudioIcon from "../components/PixelStudioIcon";
+import PageContainer from "components/PageContainer";
+import PixelStudioIcon from "components/PixelStudioIcon";
 import { Link } from "@remix-run/react";
 
 /**

@@ -1,5 +1,5 @@
-import { useLocation } from "@remix-run/react";
 import React from "react";
+import { useLocation } from "@remix-run/react";
 
 type PageContainerTypes = {
   children: React.ReactNode;
