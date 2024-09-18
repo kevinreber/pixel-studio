@@ -1,21 +1,44 @@
+import { Authenticator } from "remix-auth";
 // import { GoogleStrategy, SocialsProvider } from "remix-auth-socials";
-// import { sessionStorage } from "~/services/session.server";
+import { GoogleStrategy } from "remix-auth-google";
+import { sessionStorage } from "~/services/session.server";
 import { prisma } from "./prisma.server";
 import { redirect } from "@remix-run/node";
-// import //   getSessionUserId,
-// //   combineResponseInits,
-// //   getSessionExpirationDate,
-// "utils";
-import { type Password, type User } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { logout } from "~/server/logout";
 
-export const SESSION_KEY = "sessionId";
-// export const authenticator = new Authenticator<ProviderUser>(
-//   connectionSessionStorage
-// );
 
+export const SESSION_KEY = "_session";
+export const USER_ID_KEY = "userId";
 const SESSION_EXPIRATION_TIME = 1000 * 60 * 60 * 24 * 30;
+
+// Create an instance of the authenticator
+// It will take session storage as an input parameter and creates the user session on successful authentication
+export const authenticator = new Authenticator(sessionStorage, {
+  sessionKey: SESSION_KEY,
+});
+// You may specify a <User> type which the strategies will return (this will be stored in the session)
+// export let authenticator = new Authenticator<User>(sessionStorage, { sessionKey: '_session' });
+
+// const getCallback = (provider: SocialsProvider) => {
+  const getCallback = (provider: string) => {
+  return `${process.env.ORIGIN}/auth/${provider}/callback`;
+};
+
+authenticator.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      // callbackURL: getCallback(SocialsProvider.GOOGLE),
+      callbackURL: getCallback('google'),
+    },
+    async ({ profile }) => {
+      // here you would find or create a user in your database
+      // profile object contains all the user data like image, displayName, id
+      return profile;
+    },
+  ),
+);
 
 export const getSessionExpirationDate = () =>
   new Date(Date.now() + SESSION_EXPIRATION_TIME);
@@ -36,35 +59,12 @@ export async function getUserId(request: Request) {
     where: { id: sessionId, expirationDate: { gt: new Date() } },
   });
   if (!session?.user) {
-    throw await logout({ request });
+    // throw await logout({ request });
+    throw redirect("/login");
   }
   return session.user.id;
 }
 
-export async function verifyUserPassword(
-  where: Pick<User, "username"> | Pick<User, "id">,
-  password: Password["hash"]
-) {
-  const userWithPassword = await prisma.user.findUnique({
-    where,
-    select: { id: true, password: { select: { hash: true } } },
-  });
-
-  if (!userWithPassword || !userWithPassword.password) {
-    return null;
-  }
-
-  const isValid = await bcrypt.compare(
-    password,
-    userWithPassword.password.hash
-  );
-
-  if (!isValid) {
-    return null;
-  }
-
-  return { id: userWithPassword.id };
-}
 
 export async function requireAnonymous(request: Request) {
   const userId = await getUserId(request);
