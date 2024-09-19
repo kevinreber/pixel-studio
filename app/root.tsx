@@ -13,7 +13,6 @@ import {
 } from "@remix-run/react";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { Toaster, toast as showToast } from "sonner";
-import { prisma } from "services/prisma.server";
 import NavigationSidebar from "components/NavigationSidebar";
 import { csrf } from "./utils/csrf.server";
 import { getEnv } from "./utils/env.server";
@@ -22,26 +21,40 @@ import { AuthenticityTokenProvider } from "remix-utils/csrf/react";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
 import { honeypot } from "utils/honeypot.server";
 import { getToast, type Toast } from "utils/toast.server";
+import {
+  sessionStorage,
+  getSessionCookie,
+  authenticator,
+  getGoogleSessionAuth,
+  USER_ID_KEY,
+} from "./services";
 
 import "./tailwind.css";
 import "./globals.css";
 
 export async function loader({ request }: LoaderFunctionArgs) {
+  const user = await authenticator.isAuthenticated(request);
+
+  const sessionAuth = await getGoogleSessionAuth(request);
+  if (sessionAuth) {
+    const cookieSession = await getSessionCookie(request);
+    cookieSession.set(USER_ID_KEY, sessionAuth.id);
+    await sessionStorage.commitSession(cookieSession);
+  }
+
   const [csrfToken, csrfCookieHeader] = await csrf.commitToken(request);
   const honeyProps = honeypot.getInputProps();
-  const users = (await prisma.user.findMany()) || [];
 
   const { toast, headers: toastHeaders } = await getToast(request);
 
   return json(
     {
-      // username: os.userInfo().username,
-      // theme: getTheme(request),
-      users: users.length,
+      user,
       toast,
       ENV: getEnv(),
       csrfToken,
       honeyProps,
+      domainUrl: process.env.ORIGIN || "",
     },
     {
       headers: combineHeaders(
@@ -54,10 +67,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 function Document({
   children,
-  env,
-}: {
+}: // env,
+{
   children: React.ReactNode;
-  env?: Record<string, string>;
+  // env?: Record<string, string>;
 }) {
   return (
     <html lang="en" className="dark h-full overflow-x-hidden">
@@ -67,14 +80,13 @@ function Document({
         <Meta />
         <Links />
       </head>
-      {/* <body className="dark"> */}
       <body>
         {children}
-        <script
+        {/* <script
           dangerouslySetInnerHTML={{
             __html: `window.ENV = ${JSON.stringify(env)}`,
           }}
-        />
+        /> */}
         <Toaster closeButton position="top-center" />
         <ScrollRestoration />
         <Scripts />
@@ -84,27 +96,31 @@ function Document({
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const data = useLoaderData<typeof loader>();
-  console.log(data);
+  const loaderData = useLoaderData<typeof loader>();
+  console.log(loaderData);
   const location = useLocation();
   const isHome = location.pathname === "/";
 
   return (
     <>
-      <Document env={data.ENV}>
+      {/* <Document env={loaderData.ENV}> */}
+      <Document>
         {!isHome && <NavigationSidebar />} {children}
-        {data && data.toast ? <ShowToast toast={data.toast} /> : null}
+        {loaderData && loaderData.toast ? (
+          <ShowToast toast={loaderData.toast} />
+        ) : null}
       </Document>
     </>
   );
 }
 
 export default function App() {
-  const data = useLoaderData<typeof loader>();
+  const loaderData = useLoaderData<typeof loader>();
+
   return (
-    <HoneypotProvider {...data.honeyProps}>
-      <AuthenticityTokenProvider token={data.csrfToken}>
-        <Outlet />;
+    <HoneypotProvider {...loaderData.honeyProps}>
+      <AuthenticityTokenProvider token={loaderData.csrfToken}>
+        <Outlet context={{ user: loaderData.user }} />;
       </AuthenticityTokenProvider>
     </HoneypotProvider>
   );
