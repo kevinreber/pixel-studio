@@ -8,8 +8,8 @@ export const meta: MetaFunction = () => {
 
 export const loader = ({ request }: LoaderFunctionArgs) => {
   // return authenticator.authenticate(SocialsProvider.GOOGLE, request, {
-    return authenticator.authenticate('google', request, {
-    successRedirect: "/create",
+  return authenticator.authenticate("google", request, {
+    successRedirect: "/explore",
     failureRedirect: "/",
   });
 };

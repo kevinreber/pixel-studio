@@ -8,8 +8,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   // on failure --> back to homepage/login
   // return authenticator.authenticate(SocialsProvider.GOOGLE, request, {
 
-    return authenticator.authenticate('google', request, {
-    successRedirect: "/create",
+  return authenticator.authenticate("google", request, {
+    successRedirect: "/explore",
     failureRedirect: "/",
   });
 };
