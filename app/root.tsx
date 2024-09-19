@@ -138,7 +138,7 @@ export default function App() {
   return (
     <HoneypotProvider {...loaderData.honeyProps}>
       <AuthenticityTokenProvider token={loaderData.csrfToken}>
-        <Outlet context={{ user: loaderData.user }} />;
+        <Outlet context={{ user: loaderData.user }} />
       </AuthenticityTokenProvider>
     </HoneypotProvider>
   );
