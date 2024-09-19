@@ -12,6 +12,7 @@ import {
   useRouteError,
 } from "@remix-run/react";
 import { LoaderFunctionArgs } from "@remix-run/node";
+import { Analytics } from "@vercel/analytics/react";
 import { Toaster, toast as showToast } from "sonner";
 import NavigationSidebar from "components/NavigationSidebar";
 import { csrf } from "./utils/csrf.server";
@@ -79,6 +80,22 @@ function Document({
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <Meta />
         <Links />
+        {/* Google Analytics Script */}
+        <script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-2TQ0PM7CJ4"
+        ></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            
+            gtag('config', 'G-2TQ0PM7CJ4');
+            `,
+          }}
+        />
       </head>
       <body>
         {children}
@@ -90,6 +107,7 @@ function Document({
         <Toaster closeButton position="top-center" />
         <ScrollRestoration />
         <Scripts />
+        <Analytics />
       </body>
     </html>
   );
@@ -120,7 +138,7 @@ export default function App() {
   return (
     <HoneypotProvider {...loaderData.honeyProps}>
       <AuthenticityTokenProvider token={loaderData.csrfToken}>
-        <Outlet context={{ user: loaderData.user }} />;
+        <Outlet context={{ user: loaderData.user }} />
       </AuthenticityTokenProvider>
     </HoneypotProvider>
   );
