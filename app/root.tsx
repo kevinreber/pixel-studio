@@ -12,6 +12,7 @@ import {
   useRouteError,
 } from "@remix-run/react";
 import { LoaderFunctionArgs } from "@remix-run/node";
+import { Analytics } from "@vercel/analytics/react";
 import { Toaster, toast as showToast } from "sonner";
 import NavigationSidebar from "components/NavigationSidebar";
 import { csrf } from "./utils/csrf.server";
@@ -90,6 +91,7 @@ function Document({
         <Toaster closeButton position="top-center" />
         <ScrollRestoration />
         <Scripts />
+        <Analytics />
       </body>
     </html>
   );
