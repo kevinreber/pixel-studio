@@ -1,24 +1,8 @@
 import React from "react";
 import PixelStudioIcon from "components/PixelStudioIcon";
 import { Link } from "@remix-run/react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Search,
-  Layers,
-  PenTool,
-  User,
-  Settings,
-  LogOut,
-  CreditCard,
-} from "lucide-react";
+import { Search, Layers, PenTool, User } from "lucide-react";
+import { UserAvatarButton } from "./UserAvatarButton";
 // import { useLoggedInUser } from "~/hooks";
 
 const NavButton = ({
@@ -47,10 +31,7 @@ const NavigationSidebar = () => {
   // const userData = React.useContext(UserContext);
   // const userData = useLoggedInUser();
   // const isLoggedIn = Boolean(userData?.id);
-  const userData = {
-    name: "John Doe",
-    username: "johndoe",
-  };
+
   const NAV_LINKS = [
     {
       title: "Explore",
@@ -110,54 +91,9 @@ const NavigationSidebar = () => {
         </nav>
 
         <div className="mt-auto pt-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-md text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
-                <Avatar>
-                  <AvatarImage
-                    src="/placeholder.svg?height=32&width=32"
-                    alt="User"
-                  />
-                  <AvatarFallback>JS</AvatarFallback>
-                </Avatar>
-                <div className="text-left flex-1">
-                  <div className="font-medium">Jon Smith</div>
-                  <div className="text-xs text-gray-400">jonsmith</div>
-                </div>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Jon Smith</p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    jonsmith
-                  </p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <CreditCard className="mr-2 h-4 w-4" />
-                <span>{credits} Credits</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard className="mr-2 h-4 w-4" />
-                <span>Buy Credits</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <UserAvatarButton />
         </div>
       </aside>
-      {/* </div> */}
       <div
         className="flex flex-col min-w-0 flex-1 overflow-hidden"
         style={{
@@ -180,23 +116,9 @@ const NavigationSidebar = () => {
               </Link>
             </div>
 
-            {/* <div className="w-3"> */}
-            {/* <div className="w-8">
-                <PixelStudioIcon />
-              </div> */}
-            {/* </div> */}
-            {/* {isLoggedIn && ( */}
             <div className="flex items-center">
-              {/* <UserAvatar /> */}
-              <Avatar>
-                <AvatarImage
-                  src="/placeholder.svg?height=32&width=32"
-                  alt="User"
-                />
-                <AvatarFallback>JS</AvatarFallback>
-              </Avatar>
+              <UserAvatarButton />
             </div>
-            {/* )} */}
           </div>
 
           {/* {isLoggedIn && ( */}
@@ -217,7 +139,7 @@ const NavigationSidebar = () => {
               </Link>
             ))}
           </div>
-          {/* )} */}
+          <UserAvatarButton />
         </div>
       </div>
     </>
