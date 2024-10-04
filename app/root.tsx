@@ -114,7 +114,7 @@ function Document({
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const loaderData = useLoaderData<typeof loader>();
+  const loaderData = useRouteLoaderData<typeof loader>("root");
   console.log(loaderData);
   const location = useLocation();
   const isHome = location.pathname === "/";
