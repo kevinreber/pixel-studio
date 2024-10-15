@@ -27,7 +27,6 @@ const NavButton = ({
 );
 
 const NavigationSidebar = () => {
-  const [credits, setCredits] = React.useState(31);
   // const userData = React.useContext(UserContext);
   // const userData = useLoggedInUser();
   // const isLoggedIn = Boolean(userData?.id);

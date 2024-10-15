@@ -1,4 +1,4 @@
-import { CreditCard, Settings, User } from "lucide-react";
+import { CreditCard, Settings, CircleDollarSign } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -10,11 +10,8 @@ import {
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { LogOutButton } from "./LogOutButton";
-
-const userData = {
-  name: "John Doe",
-  username: "johndoe",
-};
+import { useRouteLoaderData } from "@remix-run/react";
+import type { loader as rootLoader } from "~/root"; // Make sure to export the loader type from root.tsx
 
 const NavButton = ({
   title,
@@ -55,20 +52,32 @@ const NAV_LINKS = [
 ];
 
 const UserAvatarButton = () => {
+  const rootData = useRouteLoaderData<typeof rootLoader>("root");
+  const userData = rootData?.userData;
+
+  const displayName = userData?.name || "Guest";
+  const username = userData?.username || "guest";
+  const avatarSrc = userData?.image || "";
+  const credits = userData?.credits || 0;
+  const creditsTextPlural = credits === 1 ? "credit" : "credits";
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-md text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
           <Avatar>
             <AvatarImage
-              // src="/placeholder.svg?height=32&width=32"
+              src={avatarSrc}
               alt="User"
+              className="max-w-[40px] rounded-full"
             />
-            <AvatarFallback>JS</AvatarFallback>
+            <AvatarFallback className="max-w-[40px] rounded-full">
+              {displayName.charAt(0)}
+            </AvatarFallback>
           </Avatar>
           <div className="md:flex flex-col hidden text-left flex-1">
-            <div className="font-medium">{userData.name}</div>
-            <div className="text-xs text-gray-400">{userData.username}</div>
+            <div className="font-medium">{displayName}</div>
+            <div className="text-xs text-gray-400">{username}</div>
           </div>
         </button>
       </DropdownMenuTrigger>
@@ -76,7 +85,15 @@ const UserAvatarButton = () => {
         className="w-56"
         style={{ zIndex: 9999, backgroundColor: "rgba(0, 0, 0, 1)" }}
       >
-        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+        <DropdownMenuLabel>
+          <div className="flex justify-between">
+            My Account
+            <div className="text-xs text-gray-400 flex items-center">
+              <CircleDollarSign className="w-4 h-4 mr-1" />
+              {credits} {creditsTextPlural}
+            </div>
+          </div>
+        </DropdownMenuLabel>
         <DropdownMenuSeparator className="border-[1px]" />
         <DropdownMenuGroup>
           {NAV_LINKS.map((link) => (
