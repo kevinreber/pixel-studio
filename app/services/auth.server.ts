@@ -2,7 +2,6 @@ import { Authenticator } from "remix-auth";
 // import { GoogleStrategy, SocialsProvider } from "remix-auth-socials";
 import { GoogleStrategy } from "remix-auth-google";
 import { getSessionCookie, sessionStorage } from "~/services/session.server";
-import { prisma } from "./prisma.server";
 import { redirect } from "@remix-run/node";
 import bcrypt from "bcryptjs";
 
@@ -49,20 +48,20 @@ export async function getPasswordHash(password: string) {
 }
 
 // ! TODO: This is using sessionIDs
-export async function getUserId(request: Request) {
-  const cookieSession = await getSessionCookie(request);
-  const sessionId = cookieSession.get(USER_ID_KEY);
-  if (!sessionId) return null;
-  const session = await prisma.session.findUnique({
-    select: { user: { select: { id: true } } },
-    where: { id: sessionId, expirationDate: { gt: new Date() } },
-  });
-  if (!session?.user) {
-    // throw await logout({ request });
-    throw redirect("/login");
-  }
-  return session.user.id;
-}
+// export async function getUserId(request: Request) {
+//   const cookieSession = await getSessionCookie(request);
+//   const sessionId = cookieSession.get(USER_ID_KEY);
+//   if (!sessionId) return null;
+//   const session = await prisma.session.findUnique({
+//     select: { user: { select: { id: true } } },
+//     where: { id: sessionId, expirationDate: { gt: new Date() } },
+//   });
+//   if (!session?.user) {
+//     // throw await logout({ request });
+//     throw redirect("/login");
+//   }
+//   return session.user.id;
+// }
 
 export async function requireAnonymous(request: Request) {
   // const userId = await getUserId(request);
@@ -97,22 +96,29 @@ export const requireUserLogin = async (
   request: Request,
   { redirectTo }: { redirectTo?: string | null } = {}
 ) => {
-  const authUser = await authenticator.isAuthenticated(request);
+  try {
+    const authUser = await authenticator.isAuthenticated(request);
 
-  if (!authUser) {
-    const requestUrl = new URL(request.url);
-    redirectTo =
-      redirectTo === null
-        ? null
-        : redirectTo ?? `${requestUrl.pathname}${requestUrl.search}`;
-    const loginParams = redirectTo ? new URLSearchParams({ redirectTo }) : null;
-    const loginRedirect = ["/login", loginParams?.toString()]
-      .filter(Boolean)
-      .join("?");
-    throw redirect(loginRedirect);
+    if (!authUser) {
+      const requestUrl = new URL(request.url);
+      redirectTo =
+        redirectTo === null
+          ? null
+          : redirectTo ?? `${requestUrl.pathname}${requestUrl.search}`;
+      const loginParams = redirectTo
+        ? new URLSearchParams({ redirectTo })
+        : null;
+      const loginRedirect = ["/login", loginParams?.toString()]
+        .filter(Boolean)
+        .join("?");
+      throw redirect(loginRedirect);
+    }
+
+    return authUser;
+  } catch (error) {
+    console.error("Authentication error:", error);
+    throw redirect("/login");
   }
-
-  return authUser;
 };
 
 /**
@@ -147,4 +153,10 @@ export async function getGoogleSessionAuth(request: Request) {
   const sessionAuth = cookieSession.get(AUTH_KEY);
   if (!sessionAuth) return null;
   return sessionAuth;
+}
+
+export async function getUserGoogleSessionId(request: Request) {
+  const googleSessionAuth = await getGoogleSessionAuth(request);
+  if (!googleSessionAuth) return null;
+  return googleSessionAuth.id;
 }

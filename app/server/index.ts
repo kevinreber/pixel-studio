@@ -1,4 +1,4 @@
-export * from "./createUser";
+export * from "./createNewUser";
 export * from "./getImages";
 export * from "./getLoggedInUserData";
 export * from "./getUserData";
