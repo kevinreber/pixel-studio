@@ -1,24 +1,27 @@
-import { Form } from "@remix-run/react";
-// import { AuthenticityTokenInput } from "remix-utils/csrf/react";
+import { useSubmit } from "@remix-run/react";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
-import { useIsPending } from "~/hooks";
 
-const LogOutButton = ({ variant = "outline" }: { variant?: "outline" | "default" }) => {
-  const isPending = useIsPending();
+const LogOutButton = ({
+  variant = "outline",
+}: {
+  variant?: "outline" | "default";
+}) => {
+  const submit = useSubmit();
+
+  const handleLogout = () => {
+    submit(null, { method: "POST", action: "/auth/logout" });
+  };
 
   return (
-    <Form action="/auth/logout" method="POST">
-      <Button
-        type="submit"
-        className="w-full  rounded-md p-2  hover:bg-gray-800"
-        disabled={isPending}
-        variant={variant}
-      >
-        {/* <AuthenticityTokenInput /> */}
-        <LogOut className="w-4 h-4 mr-2" /> Logout
-      </Button>
-    </Form>
+    <Button
+      onClick={handleLogout}
+      className="w-full rounded-md p-2 hover:bg-gray-800"
+      variant={variant}
+    >
+      <LogOut className="w-4 h-4 mr-2" />
+      Logout
+    </Button>
   );
 };
 
