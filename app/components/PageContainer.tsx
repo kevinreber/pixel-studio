@@ -30,4 +30,4 @@ const PageContainer = ({
   );
 };
 
-export default PageContainer;
+export { PageContainer };

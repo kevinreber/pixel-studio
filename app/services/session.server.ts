@@ -11,8 +11,10 @@ export const sessionStorage = createCookieSessionStorage({
   },
 });
 
+export const { getSession, commitSession, destroySession } = sessionStorage;
+
 export const getSessionCookie = async (request: Request) => {
-  return sessionStorage.getSession(request.headers.get("cookie"));
+  return getSession(request.headers.get("Cookie"));
 };
 
 // TODO: Need to look into this and confirm if session is being created as expected
@@ -20,5 +22,3 @@ export const getSessionUserId = async (request: Request) => {
   const cookieSession = await getSessionCookie(request);
   return cookieSession.get("userId");
 };
-
-export const { getSession, commitSession, destroySession } = sessionStorage;
