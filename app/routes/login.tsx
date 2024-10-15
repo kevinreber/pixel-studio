@@ -1,4 +1,4 @@
-import PageContainer from "components/PageContainer";
+import { PageContainer } from "~/components";
 import PixelStudioIcon from "components/PixelStudioIcon";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import GoogleLoginButton from "../components/GoogleLoginButton";
