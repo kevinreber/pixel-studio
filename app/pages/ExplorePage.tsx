@@ -4,7 +4,7 @@ import { ErrorList } from "components/ErrorList";
 import ImageV2 from "components/ImageV2";
 import { type ExplorePageLoader } from "../routes/explore";
 import { Search as MagnifyingGlassIcon } from "lucide-react";
-import PageContainer from "components/PageContainer";
+import { PageContainer } from "~/components";
 
 /**
  *

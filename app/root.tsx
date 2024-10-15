@@ -1,5 +1,4 @@
 import React from "react";
-import { captureRemixErrorBoundaryError } from "@sentry/remix";
 import {
   json,
   Links,
@@ -9,7 +8,7 @@ import {
   ScrollRestoration,
   useLoaderData,
   useLocation,
-  useRouteError,
+  useRouteLoaderData,
 } from "@remix-run/react";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { Analytics } from "@vercel/analytics/react";
@@ -22,35 +21,46 @@ import { AuthenticityTokenProvider } from "remix-utils/csrf/react";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
 import { honeypot } from "utils/honeypot.server";
 import { getToast, type Toast } from "utils/toast.server";
+import { getLoggedInUserGoogleSSOData } from "./server";
+import { GeneralErrorBoundary } from "./components/GeneralErrorBoundary";
 import {
-  sessionStorage,
-  getSessionCookie,
-  authenticator,
+  // sessionStorage,
+  // getSessionCookie,
+  // authenticator,
   getGoogleSessionAuth,
-  USER_ID_KEY,
+  // USER_ID_KEY,
 } from "./services";
-
 import "./tailwind.css";
 import "./globals.css";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const user = await authenticator.isAuthenticated(request);
-
-  const sessionAuth = await getGoogleSessionAuth(request);
-  if (sessionAuth) {
-    const cookieSession = await getSessionCookie(request);
-    cookieSession.set(USER_ID_KEY, sessionAuth.id);
-    await sessionStorage.commitSession(cookieSession);
-  }
-
   const [csrfToken, csrfCookieHeader] = await csrf.commitToken(request);
   const honeyProps = honeypot.getInputProps();
 
   const { toast, headers: toastHeaders } = await getToast(request);
 
+  // let user;
+  // try {
+  //   const session = await getSession(request.headers.get("Cookie"));
+  //   console.log("session cookies: ", session.data);
+
+  //   // user = await authenticator.isAuthenticated(request);
+  // } catch (error) {
+  //   console.error("Authentication error:", error);
+  //   throw error;
+  // }
+
+  let userData;
+  const sessionAuth = await getGoogleSessionAuth(request);
+  if (sessionAuth) {
+    userData = await getLoggedInUserGoogleSSOData(sessionAuth);
+  }
+
+  console.log("userData in root loader:", userData);
+
   return json(
     {
-      user,
+      userData,
       toast,
       ENV: getEnv(),
       csrfToken,
@@ -61,6 +71,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       headers: combineHeaders(
         csrfCookieHeader ? { "set-cookie": csrfCookieHeader } : null,
         toastHeaders
+        // sessionCookieHeader
       ),
     }
   );
@@ -114,8 +125,8 @@ function Document({
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const loaderData = useLoaderData<typeof loader>();
-  console.log(loaderData);
+  const loaderData = useRouteLoaderData<typeof loader>("root");
+  // console.log(loaderData);
   const location = useLocation();
   const isHome = location.pathname === "/";
 
@@ -138,7 +149,7 @@ export default function App() {
   return (
     <HoneypotProvider {...loaderData.honeyProps}>
       <AuthenticityTokenProvider token={loaderData.csrfToken}>
-        <Outlet context={{ user: loaderData.user }} />
+        <Outlet context={{ userData: loaderData.userData }} />
       </AuthenticityTokenProvider>
     </HoneypotProvider>
   );
@@ -154,8 +165,6 @@ function ShowToast({ toast }: { toast: Toast }) {
   return null;
 }
 
-export const ErrorBoundary = () => {
-  const error = useRouteError();
-  captureRemixErrorBoundaryError(error);
-  return <div>Something went wrong</div>;
-};
+export function ErrorBoundary() {
+  return <GeneralErrorBoundary />;
+}
