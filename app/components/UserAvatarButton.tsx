@@ -10,8 +10,7 @@ import {
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { LogOutButton } from "./LogOutButton";
-import { useRouteLoaderData } from "@remix-run/react";
-import type { loader as rootLoader } from "~/root"; // Make sure to export the loader type from root.tsx
+import { useLoggedInUser } from "~/hooks/useLoggedInUser";
 
 const NavButton = ({
   title,
@@ -52,8 +51,7 @@ const NAV_LINKS = [
 ];
 
 const UserAvatarButton = () => {
-  const rootData = useRouteLoaderData<typeof rootLoader>("root");
-  const userData = rootData?.userData;
+  const userData = useLoggedInUser();
 
   const displayName = userData?.name || "Guest";
   const username = userData?.username || "guest";

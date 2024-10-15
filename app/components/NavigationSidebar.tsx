@@ -3,7 +3,7 @@ import PixelStudioIcon from "components/PixelStudioIcon";
 import { Link } from "@remix-run/react";
 import { Search, Layers, PenTool, User } from "lucide-react";
 import { UserAvatarButton } from "./UserAvatarButton";
-// import { useLoggedInUser } from "~/hooks";
+import { useLoggedInUser } from "~/hooks";
 
 const NavButton = ({
   title,
@@ -28,8 +28,8 @@ const NavButton = ({
 
 const NavigationSidebar = () => {
   // const userData = React.useContext(UserContext);
-  // const userData = useLoggedInUser();
-  // const isLoggedIn = Boolean(userData?.id);
+  const userData = useLoggedInUser();
+  const isLoggedIn = Boolean(userData?.id);
 
   const NAV_LINKS = [
     {
@@ -61,8 +61,7 @@ const NavigationSidebar = () => {
     // },
   ];
 
-  // const navLinksToRender = isLoggedIn ? NAV_LINKS : [];
-  const navLinksToRender = NAV_LINKS;
+  const navLinksToRender = isLoggedIn ? NAV_LINKS : [];
 
   return (
     <>
@@ -88,10 +87,11 @@ const NavigationSidebar = () => {
             />
           ))}
         </nav>
-
-        <div className="mt-auto pt-4">
-          <UserAvatarButton />
-        </div>
+        {isLoggedIn && (
+          <div className="mt-auto pt-4">
+            <UserAvatarButton />
+          </div>
+        )}
       </aside>
       <div
         className="flex flex-col min-w-0 flex-1 overflow-hidden"
@@ -114,13 +114,13 @@ const NavigationSidebar = () => {
                 <h2 className="text-2xl m-0">Pixel Studio</h2>
               </Link>
             </div>
-
-            <div className="flex items-center">
-              <UserAvatarButton />
-            </div>
+            {isLoggedIn && (
+              <div className="flex items-center">
+                <UserAvatarButton />
+              </div>
+            )}
           </div>
 
-          {/* {isLoggedIn && ( */}
           <div
             className="fixed bottom-0 left-0 right-0 z-10 flex items-center justify-around bg-black py-4"
             style={{
@@ -138,7 +138,7 @@ const NavigationSidebar = () => {
               </Link>
             ))}
           </div>
-          <UserAvatarButton />
+          {isLoggedIn && <UserAvatarButton />}
         </div>
       </div>
     </>
