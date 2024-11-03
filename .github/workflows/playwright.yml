@@ -28,6 +28,8 @@ jobs:
         run: npm run dev & npx wait-on http://localhost:5173
       - name: Run Playwright tests
         run: npx playwright test
+        env:
+          CI: true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
