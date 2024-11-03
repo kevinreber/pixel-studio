@@ -233,7 +233,7 @@ const CreatePageForm = () => {
 
   const renderDesktopLayout = () => (
     <div className="flex justify-between w-full max-w-5xl m-auto">
-      <div className="w-1/4 border flex flex-col h-full">
+      <div className="w-1/3 border flex flex-col h-full">
         <Card className="flex flex-col flex-grow p-4">
           <CardContent className="space-y-4 flex-grow flex flex-col justify-between mb-4">
             <div className="space-y-4">
