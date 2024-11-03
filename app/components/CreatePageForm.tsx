@@ -100,67 +100,70 @@ const CreatePageForm = () => {
   const renderMobileLayout = () => (
     <div className="mb-8">
       <main className="flex-1 overflow-auto">
-        <Card className="max-w-md mx-auto border p-4">
-          <CardContent className="space-y-4 mb-4">
-            <div>
-              <Label htmlFor="model">MODEL</Label>
-              <input type="hidden" name="model" value={selectedModel.name} />
-              <Button
-                variant="outline"
-                className="w-full justify-between mt-1 border"
-                onClick={handleModelClick}
-              >
-                <div className="flex justify-between pl-2 pr-2 w-full items-center">
-                  <div className="flex items-center">
-                    <Image
-                      src={selectedModel.image}
-                      alt={selectedModel.name}
-                      size={40}
-                    />
-                    <span className="ml-2">{selectedModel.name}</span>
+        <Form method="POST">
+          <Card className="max-w-md mx-auto border p-4">
+            <CardContent className="space-y-4 mb-4">
+              <div>
+                <Label htmlFor="model">MODEL</Label>
+                <input type="hidden" name="model" value={selectedModel.value} />
+                <Button
+                  variant="outline"
+                  className="w-full justify-between mt-1 border"
+                  onClick={handleModelClick}
+                >
+                  <div className="flex justify-between pl-2 pr-2 w-full items-center">
+                    <div className="flex items-center">
+                      <Image
+                        src={selectedModel.image}
+                        alt={selectedModel.name}
+                        size={40}
+                      />
+                      <span className="ml-2">{selectedModel.name}</span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
                   </div>
-                  <ChevronDown className="h-4 w-4 opacity-50" />
-                </div>
-              </Button>
-            </div>
-            <div>
-              <Label htmlFor="style">STYLE</Label>
-              <input type="hidden" name="style" value={selectedStyle.name} />
-              <Button
-                variant="outline"
-                className="w-full justify-between mt-1 border"
-                onClick={handleStyleClick}
-              >
-                <div className="flex justify-between pl-2 pr-2 w-full items-center">
-                  <div className="flex items-center">
-                    <Image
-                      src={selectedStyle.image}
-                      alt={selectedStyle.name}
-                      size={40}
-                    />
-                    <span className="ml-2">{selectedStyle.name}</span>
+                </Button>
+              </div>
+              <div>
+                <Label htmlFor="style">STYLE</Label>
+                <input type="hidden" name="style" value={selectedStyle.value} />
+                <Button
+                  variant="outline"
+                  className="w-full justify-between mt-1 border"
+                  onClick={handleStyleClick}
+                >
+                  <div className="flex justify-between pl-2 pr-2 w-full items-center">
+                    <div className="flex items-center">
+                      <Image
+                        src={selectedStyle.image}
+                        alt={selectedStyle.name}
+                        size={40}
+                      />
+                      <span className="ml-2">{selectedStyle.name}</span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
                   </div>
-                  <ChevronDown className="h-4 w-4 opacity-50" />
-                </div>
+                </Button>
+              </div>
+              <div>
+                <Label htmlFor="prompt">TEXT PROMPT</Label>
+                <Textarea
+                  id="prompt"
+                  name="prompt"
+                  placeholder="Describe what you want the AI to create..."
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  className="mt-1 border placeholder-gray-400 min-h-[200px] bg-inherit"
+                />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button className="w-full bg-pink-600 hover:bg-pink-700 text-white">
+                CREATE
               </Button>
-            </div>
-            <div>
-              <Label htmlFor="prompt">TEXT PROMPT</Label>
-              <Textarea
-                id="prompt"
-                placeholder="Describe what you want the AI to create..."
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className="mt-1 border placeholder-gray-400 min-h-[200px] bg-inherit"
-              />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button className="w-full bg-pink-600 hover:bg-pink-700 text-white">
-              CREATE
-            </Button>
-          </CardFooter>
-        </Card>
+            </CardFooter>
+          </Card>
+        </Form>
       </main>
 
       <Dialog open={modelDialogOpen} onOpenChange={setModelDialogOpen}>
@@ -245,73 +248,84 @@ const CreatePageForm = () => {
   const renderDesktopLayout = () => (
     <div className="flex justify-between w-full max-w-5xl m-auto">
       <div className="w-1/3 border flex flex-col h-full">
-        <Card className="flex flex-col flex-grow p-4">
-          <CardContent className="space-y-4 flex-grow flex flex-col justify-between mb-4">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="model">Model</Label>
-                <input type="hidden" name="model" value={selectedModel.name} />
-                <Button
-                  variant="outline"
-                  className="w-full justify-between mt-1 border p-2"
-                  onClick={handleModelClick}
-                >
-                  <div className="flex justify-between pl-2 pr-2 w-full items-center">
-                    <div className="flex items-center">
-                      <Image
-                        src={selectedModel.image}
-                        alt={selectedModel.name}
-                        size={80}
-                      />
-                      <span className="ml-2  text-start">
-                        {selectedModel.name}
-                      </span>
+        <Form method="POST">
+          <Card className="flex flex-col flex-grow p-4">
+            <CardContent className="space-y-4 flex-grow flex flex-col justify-between mb-4">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="model">Model</Label>
+                  <input
+                    type="hidden"
+                    name="model"
+                    value={selectedModel.value}
+                  />
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between mt-1 border p-2"
+                    onClick={handleModelClick}
+                  >
+                    <div className="flex justify-between pl-2 pr-2 w-full items-center">
+                      <div className="flex items-center">
+                        <Image
+                          src={selectedModel.image}
+                          alt={selectedModel.name}
+                          size={80}
+                        />
+                        <span className="ml-2  text-start">
+                          {selectedModel.name}
+                        </span>
+                      </div>
+                      <ChevronDown className="h-4 w-4 opacity-50" />
                     </div>
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </div>
-                </Button>
-              </div>
-              <div>
-                <Label htmlFor="style">Style</Label>
-                <input type="hidden" name="style" value={selectedStyle.name} />
-                <Button
-                  variant="outline"
-                  className="w-full justify-between mt-1 border p-2"
-                  onClick={handleStyleClick}
-                >
-                  <div className="flex justify-between pl-2 pr-2 w-full items-center">
-                    <div className="flex items-center">
-                      <Image
-                        src={selectedStyle.image}
-                        alt={selectedStyle.name}
-                        size={80}
-                      />
-                      <span className="ml-2 text-start">
-                        {selectedStyle.name}
-                      </span>
+                  </Button>
+                </div>
+                <div>
+                  <Label htmlFor="style">Style</Label>
+                  <input
+                    type="hidden"
+                    name="style"
+                    value={selectedStyle.value}
+                  />
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between mt-1 border p-2"
+                    onClick={handleStyleClick}
+                  >
+                    <div className="flex justify-between pl-2 pr-2 w-full items-center">
+                      <div className="flex items-center">
+                        <Image
+                          src={selectedStyle.image}
+                          alt={selectedStyle.name}
+                          size={80}
+                        />
+                        <span className="ml-2 text-start">
+                          {selectedStyle.name}
+                        </span>
+                      </div>
+                      <ChevronDown className="h-4 w-4 opacity-50" />
                     </div>
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </div>
-                </Button>
+                  </Button>
+                </div>
               </div>
-            </div>
-            <div className="flex-grow flex flex-col">
-              <Label htmlFor="prompt">Text Prompt</Label>
-              <Textarea
-                id="prompt"
-                placeholder="Describe what you want the AI to create..."
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className="mt-1 border  placeholder-gray-400 min-h-[200px] max-h-[400px] flex-grow bg-inherit"
-              />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button className="w-full bg-pink-600 hover:bg-pink-700 text-white">
-              Generate
-            </Button>
-          </CardFooter>
-        </Card>
+              <div className="flex-grow flex flex-col">
+                <Label htmlFor="prompt">Text Prompt</Label>
+                <Textarea
+                  id="prompt"
+                  name="prompt"
+                  placeholder="Describe what you want the AI to create..."
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  className="mt-1 border  placeholder-gray-400 min-h-[200px] max-h-[400px] flex-grow bg-inherit"
+                />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button className="w-full bg-pink-600 hover:bg-pink-700 text-white">
+                Generate
+              </Button>
+            </CardFooter>
+          </Card>
+        </Form>
       </div>
       <div className="flex-1 pl-4 pr-4">
         {selectedSection === "model" && (
