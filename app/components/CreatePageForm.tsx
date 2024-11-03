@@ -42,6 +42,19 @@ const Image = ({
   );
 };
 
+const DEFAULT_SELECTED_MODEL = {
+  name: "Stable Diffusion 1.5",
+  value: "stable-diffusion-1-5",
+  image: "/assets/model-thumbs/sd-1-5.jpg",
+  description: "The most popular first-generation stable diffusion model.",
+};
+
+const DEFAULT_SELECTED_STYLE = {
+  name: "Anime",
+  value: "anime",
+  image: "/assets/preset-text-styles/anime-v2.jpg",
+};
+
 const CreatePageForm = () => {
   const loaderData = useLoaderData<CreatePageLoader>();
   const styleOptions = loaderData.styleOptions || [];
@@ -50,14 +63,12 @@ const CreatePageForm = () => {
   const [isMobile, setIsMobile] = React.useState(false);
   const [modelDialogOpen, setModelDialogOpen] = React.useState(false);
   const [styleDialogOpen, setStyleDialogOpen] = React.useState(false);
-  const [selectedModel, setSelectedModel] = React.useState({
-    name: "Flux",
-    image: "/assets/model-thumbs/flux-dev-thumb-2.jpg",
-  });
-  const [selectedStyle, setSelectedStyle] = React.useState({
-    name: "NightCafe",
-    image: "/assets/preset-text-styles/nightcafe-4.jpg",
-  });
+  const [selectedModel, setSelectedModel] = React.useState(
+    DEFAULT_SELECTED_MODEL
+  );
+  const [selectedStyle, setSelectedStyle] = React.useState(
+    DEFAULT_SELECTED_STYLE
+  );
   const [prompt, setPrompt] = React.useState("");
   const [selectedSection, setSelectedSection] = React.useState<
     "model" | "style" | null
