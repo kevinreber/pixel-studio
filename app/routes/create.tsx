@@ -8,6 +8,7 @@ import { GeneralErrorBoundary } from "~/components/GeneralErrorBoundary";
 import { requireUserLogin } from "~/services";
 
 import CreatePage from "~/pages/CreatePage";
+import { createNewDallEImages, createNewStableDiffusionImages } from "~/server";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Create AI Generated Images" }];
@@ -132,12 +133,42 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export type CreatePageLoader = typeof loader;
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  await requireUserLogin(request);
-
+  const user = await requireUserLogin(request);
+  console.log(user);
   const formData = await request.formData();
+  const prompt = formData.get("prompt") || "";
+  const model = formData.get("model") || "";
+  const stylePreset = formData.get("style") || "";
+  const numberOfImages = formData.get("numberOfImages") || "1";
+  // const isImagePrivate = formData.get("isImagePrivate") === "true";
   console.log(formData);
 
-  return json({});
+  if (!prompt) {
+    return json({ error: "No prompt provided" }, { status: 400 });
+  }
+
+  if (model === "dall-e") {
+    return await createNewDallEImages(
+      {
+        prompt: prompt.toString(),
+        numberOfImages: parseInt(numberOfImages.toString()),
+        model: model.toString(),
+      },
+      user.id
+    );
+  } else if (model.toString().includes("stable-diffusion")) {
+    return await createNewStableDiffusionImages(
+      {
+        prompt: prompt.toString(),
+        stylePreset: stylePreset.toString(),
+        numberOfImages: parseInt(numberOfImages.toString()),
+        model: model.toString(),
+      },
+      user.id
+    );
+  } else {
+    return json({ error: "Invalid model" }, { status: 400 });
+  }
 };
 
 export default function Index() {
