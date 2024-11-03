@@ -1,4 +1,9 @@
-import { type LoaderFunctionArgs, json, MetaFunction } from "@remix-run/node";
+import {
+  type LoaderFunctionArgs,
+  ActionFunctionArgs,
+  json,
+  MetaFunction,
+} from "@remix-run/node";
 import { GeneralErrorBoundary } from "~/components/GeneralErrorBoundary";
 import { requireUserLogin } from "~/services";
 
@@ -125,6 +130,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export type CreatePageLoader = typeof loader;
+
+export const action = async ({ request }: ActionFunctionArgs) => {
+  await requireUserLogin(request);
+
+  const formData = await request.formData();
+  console.log(formData);
+
+  return json({});
+};
 
 export default function Index() {
   return <CreatePage />;
