@@ -17,6 +17,7 @@ import { ChevronDown, Check } from "lucide-react";
 import { CreatePageLoader } from "~/routes/create";
 
 const MOBILE_WIDTH = 768;
+const MAX_TEXT_AREA_CHAR_COUNT = 300;
 
 const Image = ({
   src,
@@ -148,6 +149,7 @@ const CreatePageForm = () => {
               <div>
                 <Label htmlFor="prompt">TEXT PROMPT</Label>
                 <Textarea
+                  maxLength={MAX_TEXT_AREA_CHAR_COUNT}
                   id="prompt"
                   name="prompt"
                   placeholder="Describe what you want the AI to create..."
@@ -155,6 +157,9 @@ const CreatePageForm = () => {
                   onChange={(e) => setPrompt(e.target.value)}
                   className="mt-1 border placeholder-gray-400 min-h-[200px] bg-inherit"
                 />
+                <span className="text-xs text-gray-400 text-right">
+                  {prompt.length}/{MAX_TEXT_AREA_CHAR_COUNT}
+                </span>
               </div>
             </CardContent>
             <CardFooter>
@@ -310,6 +315,7 @@ const CreatePageForm = () => {
               <div className="flex-grow flex flex-col">
                 <Label htmlFor="prompt">Text Prompt</Label>
                 <Textarea
+                  maxLength={MAX_TEXT_AREA_CHAR_COUNT}
                   id="prompt"
                   name="prompt"
                   placeholder="Describe what you want the AI to create..."
@@ -317,6 +323,9 @@ const CreatePageForm = () => {
                   onChange={(e) => setPrompt(e.target.value)}
                   className="mt-1 border  placeholder-gray-400 min-h-[200px] max-h-[400px] flex-grow bg-inherit"
                 />
+                <span className="text-xs text-gray-400 text-right">
+                  {prompt.length}/{MAX_TEXT_AREA_CHAR_COUNT}
+                </span>
               </div>
             </CardContent>
             <CardFooter>
