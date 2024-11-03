@@ -4,6 +4,7 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+
 jobs:
   test:
     timeout-minutes: 60
@@ -12,12 +13,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: "lts/*"
       - name: Install dependencies
         run: npm ci
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
-      -  name: Create .env file
+      - name: Create .env file
         run: |
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
           echo "SESSION_SECRET=${{ secrets.SESSION_SECRET }}" >> .env
@@ -27,6 +28,8 @@ jobs:
         run: npm run dev & npx wait-on http://localhost:5173
       - name: Run Playwright tests
         run: npx playwright test
+        env:
+          CI: true
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -3,9 +3,13 @@ import PixelStudioIcon from "components/PixelStudioIcon";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import GoogleLoginButton from "../components/GoogleLoginButton";
 import { Card } from "@/components/ui/card";
-import { json } from "@remix-run/react";
+import { json, MetaFunction } from "@remix-run/react";
 // import { getSupabaseWithSessionAndHeaders } from "~/services/supabase.server";
 import { requireAnonymous } from "~/services";
+
+export const meta: MetaFunction = () => {
+  return [{ title: "Login to Pixel Studio AI" }];
+};
 
 export async function loader({ request }: LoaderFunctionArgs) {
   await requireAnonymous(request);
