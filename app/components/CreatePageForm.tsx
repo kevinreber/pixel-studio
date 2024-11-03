@@ -29,11 +29,11 @@ const Image = ({
 }) => {
   return (
     <div
-      className="relative overflow-hidden m-auto"
-      style={{ width: size, height: size }}
+      className="relative overflow-hidden m-auto w-full h-full"
+      style={{ maxWidth: size, maxHeight: size }}
     >
       <img
-        className="inset-0 object-cover cursor-pointer absolute w-full h-full"
+        className="inset-0 object-cover cursor-pointer w-full h-full"
         src={src}
         alt={alt}
         loading="lazy"
