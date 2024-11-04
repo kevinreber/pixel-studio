@@ -16,14 +16,14 @@ export const meta: MetaFunction = () => {
 
 const MODEL_OPTIONS = [
   {
-    name: "Stable Diffusion 1.5",
-    value: "stable-diffusion-1-5",
+    name: "Stable Diffusion 1.6",
+    value: "stable-diffusion-v1-6",
     image: "/assets/model-thumbs/sd-1-5.jpg",
     description: "The most popular first-generation stable diffusion model.",
   },
   {
     name: "Stable Diffusion XL",
-    value: "stable-diffusion-xl",
+    value: "stable-diffusion-xl-1024-v1-0",
     image: "/assets/model-thumbs/sdxlv1.jpg",
     description: "The state-of-the-art in open-source image generation.",
   },

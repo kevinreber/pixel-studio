@@ -9,9 +9,12 @@ import {
 import { getS3BucketURL, getS3BucketThumbnailURL } from "~/utils";
 import OpenAI from "openai";
 
+const DALL_E_MODEL = "dall-e";
+const DALL_E_2_MODEL = "all-e-2";
 const MOCK_IMAGE_ID = "cliid9qad0001r2q9pscacuj0";
 
 export const getDallEMockDataResponse = (numberOfImages = 1) => {
+  console.log("⚠️ Warning – Using DALL-E Mock Data *************************");
   const imageURL = getS3BucketURL(MOCK_IMAGE_ID);
   const thumbnailURL = getS3BucketThumbnailURL(MOCK_IMAGE_ID);
 
@@ -39,7 +42,7 @@ const openai = new OpenAI({
 
 const DEFAULT_NUMBER_OF_IMAGES_CREATED = 1;
 const IMAGE_SIZE = "1024x1024";
-const DEFAULT_AI_IMAGE_LANGUAGE_MODEL = "dall-e";
+const DEFAULT_AI_IMAGE_LANGUAGE_MODEL = DALL_E_MODEL;
 const DEFAULT_IS_IMAGE_PRIVATE = false;
 
 const THREE_SECONDS_IN_MS = 1000 * 3;
@@ -67,20 +70,27 @@ const createDallEImages = async (
   prompt: string,
   numberOfImages = DEFAULT_NUMBER_OF_IMAGES_CREATED
 ) => {
+  console.log("Creating DALL-E images...");
   const promptMessage = prompt;
   const numberOfImagesToGenerate = Math.round(numberOfImages);
 
-  const response = await openai.images.generate({
-    model: "dall-e-2",
-    prompt: promptMessage,
-    n: numberOfImagesToGenerate,
-    size: IMAGE_SIZE,
-    response_format: BASE_64_FORMAT,
-  });
+  try {
+    const response = await openai.images.generate({
+      model: DALL_E_2_MODEL,
+      prompt: promptMessage,
+      n: numberOfImagesToGenerate,
+      size: IMAGE_SIZE,
+      response_format: BASE_64_FORMAT,
+    });
 
-  const base64EncodedImages = response.data.map((result) => result.b64_json);
+    const base64EncodedImages = response.data.map((result) => result.b64_json);
 
-  return base64EncodedImages;
+    console.log("Successfully created DALL-E images");
+    return base64EncodedImages;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
 };
 
 /**
@@ -94,12 +104,9 @@ export const createNewDallEImages = async (
   formData: FormDataPayload = DEFAULT_PAYLOAD,
   userId: string
 ) => {
-  const {
-    prompt,
-    numberOfImages,
-    model,
-    private: isImagePrivate = false,
-  } = formData;
+  console.log("Creating new DALL-E images...");
+  const { prompt, numberOfImages, private: isImagePrivate = false } = formData;
+  const model = DALL_E_MODEL;
 
   if (!userId) {
     throw new Error("User ID is required");
@@ -107,9 +114,6 @@ export const createNewDallEImages = async (
   let setId = "";
   try {
     if (process.env.USE_MOCK_DALLE === "true") {
-      console.log(
-        "\x1b[33m ⚠️ Warning – Using Mock Data ************************* \x1b[0m"
-      );
       const mockData = getDallEMockDataResponse(numberOfImages);
       await setTimeout(THREE_SECONDS_IN_MS);
 
@@ -120,7 +124,10 @@ export const createNewDallEImages = async (
     const imagesImages = await createDallEImages(prompt, numberOfImages);
 
     // Create a new set
-    const set = await createNewSet({ prompt, userId });
+    const set = await createNewSet({
+      prompt,
+      userId,
+    });
     setId = set.id;
 
     const formattedImagesData = await Promise.all(
@@ -134,11 +141,13 @@ export const createNewDallEImages = async (
           isImagePrivate,
           setId,
         });
-        console.log("Stored Image Data in DB: ", imageData.id);
+        console.log(`Successfully stored Image Data in DB: ${imageData.id}`);
 
         // Store Image blob in S3
         await addBase64EncodedImageToAWS(imageImage as string, imageData.id);
-        console.log("Stored S3 Data for Image ID: ", imageData.id);
+        console.log(
+          `Successfully stored S3 Data for Image ID: ${imageData.id}`
+        );
 
         const imageURL = getS3BucketURL(imageData.id);
         const thumbnailURL = getS3BucketThumbnailURL(imageData.id);

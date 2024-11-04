@@ -4,12 +4,15 @@ import {
   createNewImage,
   deleteSet,
 } from "~/server";
-import { getS3BucketThumbnailURL, getS3BucketURL, getEngineId } from "~/utils";
+import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils";
 import { createNewSet } from "./createNewSet";
 
 const MOCK_IMAGE_ID = "stable-diffusion-xl-futuristic-bonsai-tree";
 
 export const getStableDiffusionMockDataResponse = (numberOfImages = 1) => {
+  console.log(
+    "⚠️ Warning – Using Stable Diffusion Mock Data *************************"
+  );
   const imageURL = getS3BucketURL(MOCK_IMAGE_ID);
   const thumbnailURL = getS3BucketThumbnailURL(MOCK_IMAGE_ID);
 
@@ -37,7 +40,7 @@ const IMAGE_WIDTH = 1024;
 const THREE_SECONDS_IN_MS = 1000 * 3;
 
 const DEFAULT_NUMBER_OF_IMAGES_CREATED = 1;
-const DEFAULT_AI_IMAGE_LANGUAGE_MODEL = "stable-diffusion-xl";
+const DEFAULT_AI_IMAGE_LANGUAGE_MODEL = "stable-diffusion-xl-1024-v1-0";
 const DEFAULT_IMAGE_STYLE_PRESET = undefined;
 const DEFAULT_IS_IMAGE_PRIVATE = false;
 
@@ -83,9 +86,13 @@ const createStableDiffusionImages = async ({
   model: string;
   stylePreset?: string;
 }) => {
+  console.log(
+    `Attempting to generate Stable Diffusion images with ${model} model and style preset: ${stylePreset}`
+  );
+
   const promptMessage = prompt;
   const numberOfImagesToGenerate = Math.round(numberOfImages);
-  const engineId = getEngineId(model);
+  const engineId = model;
 
   const body = {
     /**
@@ -121,11 +128,15 @@ const createStableDiffusionImages = async ({
     );
 
     if (!response.ok) {
-      throw new Error("Invalid Response");
+      const errorData = await response.json();
+      console.error("Stability AI Error:", errorData);
+      throw new Error(
+        `API Error: ${response.status} - ${JSON.stringify(errorData)}`
+      );
     }
 
     const responseJSON = (await response.json()) as GenerationResponse;
-    console.log(responseJSON);
+    console.log("Successful response:", responseJSON);
 
     return responseJSON;
   } catch (error) {
@@ -145,6 +156,7 @@ export const createNewStableDiffusionImages = async (
   formData: FormDataPayload = DEFAULT_PAYLOAD,
   userId: string
 ) => {
+  console.log("Creating new Stable Diffusion images...");
   const {
     prompt,
     numberOfImages,
@@ -155,9 +167,6 @@ export const createNewStableDiffusionImages = async (
   let setId = "";
   try {
     if (process.env.USE_MOCK_DALLE === "true") {
-      console.log(
-        "\x1b[33m ⚠️ Warning – Using Mock Data ************************* \x1b[0m"
-      );
       const mockData = getStableDiffusionMockDataResponse(numberOfImages);
       await setTimeout(THREE_SECONDS_IN_MS);
 
@@ -191,11 +200,13 @@ export const createNewStableDiffusionImages = async (
             isImagePrivate,
             setId,
           });
-          console.log("Stored Image Data in DB: ", imageData.id);
+          console.log(`Successfully stored Image Data in DB: ${imageData.id}`);
 
           // Store Image blob in S3
           await addBase64EncodedImageToAWS(image.base64, imageData.id);
-          console.log("Stored S3 Data for Image ID: ", imageData.id);
+          console.log(
+            `Successfully stored S3 Data for Image ID: ${imageData.id}`
+          );
 
           const imageURL = getS3BucketURL(imageData.id);
           const thumbnailURL = getS3BucketThumbnailURL(imageData.id);
