@@ -56,7 +56,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     userData = await getLoggedInUserGoogleSSOData(sessionAuth);
   }
 
-  console.log("userData in root loader:", userData);
+  // console.log("userData in root loader:", userData);
 
   return json(
     {

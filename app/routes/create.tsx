@@ -3,11 +3,13 @@ import {
   ActionFunctionArgs,
   json,
   MetaFunction,
+  redirect,
 } from "@remix-run/node";
 import { GeneralErrorBoundary } from "~/components/GeneralErrorBoundary";
 import { requireUserLogin } from "~/services";
 
 import CreatePage from "~/pages/CreatePage";
+import { createNewDallEImages, createNewStableDiffusionImages } from "~/server";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Create AI Generated Images" }];
@@ -15,14 +17,14 @@ export const meta: MetaFunction = () => {
 
 const MODEL_OPTIONS = [
   {
-    name: "Stable Diffusion 1.5",
-    value: "stable-diffusion-1-5",
+    name: "Stable Diffusion 1.6",
+    value: "stable-diffusion-v1-6",
     image: "/assets/model-thumbs/sd-1-5.jpg",
     description: "The most popular first-generation stable diffusion model.",
   },
   {
     name: "Stable Diffusion XL",
-    value: "stable-diffusion-xl",
+    value: "stable-diffusion-xl-1024-v1-0",
     image: "/assets/model-thumbs/sdxlv1.jpg",
     description: "The state-of-the-art in open-source image generation.",
   },
@@ -132,12 +134,51 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export type CreatePageLoader = typeof loader;
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  await requireUserLogin(request);
-
+  const user = await requireUserLogin(request);
   const formData = await request.formData();
+  const prompt = formData.get("prompt") || "";
+  const model = formData.get("model") || "";
+  const stylePreset = formData.get("style") || "";
+  const numberOfImages = formData.get("numberOfImages") || "1";
   console.log(formData);
 
-  return json({});
+  if (!prompt) {
+    return json({ error: "No prompt provided" }, { status: 400 });
+  }
+
+  let setId = "";
+  if (model === "dall-e") {
+    const response = await createNewDallEImages(
+      {
+        prompt: prompt.toString(),
+        numberOfImages: parseInt(numberOfImages.toString()),
+        model: model.toString(),
+      },
+      user.id
+    );
+
+    setId = response.setId || "";
+  } else if (model.toString().includes("stable-diffusion")) {
+    const response = await createNewStableDiffusionImages(
+      {
+        prompt: prompt.toString(),
+        stylePreset: stylePreset.toString(),
+        numberOfImages: parseInt(numberOfImages.toString()),
+        model: model.toString(),
+      },
+      user.id
+    );
+
+    setId = response.setId || "";
+  } else {
+    return json({ error: "Invalid model" }, { status: 400 });
+  }
+
+  if (setId) {
+    return redirect(`/set/${setId}`);
+  }
+
+  return json({ error: "Failed to create set" }, { status: 500 });
 };
 
 export default function Index() {

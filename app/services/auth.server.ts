@@ -87,6 +87,35 @@ export async function requireAnonymous(request: Request) {
   }
 }
 
+interface UserProfile {
+  provider: "google"; // Assuming the provider is always 'google'
+  id: string;
+  displayName: string;
+  name: {
+    givenName: string;
+  };
+  emails: Email[];
+  photos: Photo[];
+  _json: GoogleUserJson;
+}
+
+interface Email {
+  value: string;
+}
+
+interface Photo {
+  value: string;
+}
+
+interface GoogleUserJson {
+  sub: string;
+  name: string;
+  given_name: string;
+  picture: string;
+  email: string;
+  email_verified: boolean;
+}
+
 /**
  * @description
  * This function validates if a user is logged in and redirects the user to our
@@ -95,9 +124,11 @@ export async function requireAnonymous(request: Request) {
 export const requireUserLogin = async (
   request: Request,
   { redirectTo }: { redirectTo?: string | null } = {}
-) => {
+): Promise<UserProfile> => {
   try {
-    const authUser = await authenticator.isAuthenticated(request);
+    const authUser = (await authenticator.isAuthenticated(
+      request
+    )) as UserProfile;
 
     if (!authUser) {
       const requestUrl = new URL(request.url);

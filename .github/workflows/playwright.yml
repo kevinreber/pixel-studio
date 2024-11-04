@@ -9,6 +9,8 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    env:
+      USE_MOCK_DALLE: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,6 +24,7 @@ jobs:
         run: |
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
           echo "SESSION_SECRET=${{ secrets.SESSION_SECRET }}" >> .env
+          echo "USE_MOCK_DALLE=true" >> .env
       - name: Generate Prisma Client
         run: npx prisma generate
       - name: Start Server
@@ -30,6 +33,7 @@ jobs:
         run: npx playwright test
         env:
           CI: true
+          USE_MOCK_DALLE: "true"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

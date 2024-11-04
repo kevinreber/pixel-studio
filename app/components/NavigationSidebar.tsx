@@ -38,15 +38,15 @@ const NavigationSidebar = () => {
       href: "/explore",
     },
     {
-      title: "Collections",
-      icon: <Layers className="md:h-4 md:w-4" />,
-      href: "/collections",
-    },
-    {
       title: "Create",
       icon: <PenTool className="md:h-4 md:w-4" />,
       href: "/create",
     },
+    // {
+    //   title: "Collections",
+    //   icon: <Layers className="md:h-4 md:w-4" />,
+    //   href: "/collections",
+    // },
     {
       title: "Profile",
       icon: <User className="md:h-4 md:w-4" />,

@@ -1,8 +1,7 @@
 import React from "react";
-import { Form, useLoaderData } from "@remix-run/react";
+import { Form, useLoaderData, useNavigation } from "@remix-run/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-// import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -13,11 +12,23 @@ import {
   DialogOverlay,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check, Loader2 } from "lucide-react";
 import { CreatePageLoader } from "~/routes/create";
 
 const MOBILE_WIDTH = 768;
-const MAX_TEXT_AREA_CHAR_COUNT = 300;
+const MAX_TEXT_AREA_CHAR_COUNT = 500;
+const DEFAULT_SELECTED_MODEL = {
+  name: "Stable Diffusion 1.6",
+  value: "stable-diffusion-v1-6",
+  image: "/assets/model-thumbs/sd-1-5.jpg",
+  description: "The most popular first-generation stable diffusion model.",
+};
+
+const DEFAULT_SELECTED_STYLE = {
+  name: "Anime",
+  value: "anime",
+  image: "/assets/preset-text-styles/anime-v2.jpg",
+};
 
 const Image = ({
   src,
@@ -43,23 +54,40 @@ const Image = ({
   );
 };
 
-const DEFAULT_SELECTED_MODEL = {
-  name: "Stable Diffusion 1.5",
-  value: "stable-diffusion-1-5",
-  image: "/assets/model-thumbs/sd-1-5.jpg",
-  description: "The most popular first-generation stable diffusion model.",
-};
+const NumberSelector = ({ value = 1, onChange }) => {
+  const numbers = [1, 2, 3, 4];
 
-const DEFAULT_SELECTED_STYLE = {
-  name: "Anime",
-  value: "anime",
-  image: "/assets/preset-text-styles/anime-v2.jpg",
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-medium">Number of Images</label>
+      <div className="flex gap-2">
+        {numbers.map((number) => (
+          <Button
+            key={number}
+            type="button"
+            onClick={() => onChange(number)}
+            variant={value === number ? "secondary" : "outline"}
+            className={`w-14 h-[40px] text-lg ${
+              value === number
+                ? "bg-zinc-700 hover:bg-zinc-600"
+                : "bg-zinc-800/50 hover:bg-zinc-700/50"
+            }`}
+          >
+            {number}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
 };
 
 const CreatePageForm = () => {
   const loaderData = useLoaderData<CreatePageLoader>();
   const styleOptions = loaderData.styleOptions || [];
   const modelOptions = loaderData.modelOptions || [];
+
+  const navigation = useNavigation();
+  const isSubmitting = navigation.state === "submitting";
 
   const [isMobile, setIsMobile] = React.useState(false);
   const [modelDialogOpen, setModelDialogOpen] = React.useState(false);
@@ -74,6 +102,7 @@ const CreatePageForm = () => {
   const [selectedSection, setSelectedSection] = React.useState<
     "model" | "style" | null
   >(null);
+  const [numImages, setNumImages] = React.useState(1);
 
   React.useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_WIDTH);
@@ -109,8 +138,10 @@ const CreatePageForm = () => {
                 <input type="hidden" name="model" value={selectedModel.value} />
                 <Button
                   variant="outline"
+                  type="button"
                   className="w-full justify-between mt-1 border"
                   onClick={handleModelClick}
+                  disabled={isSubmitting}
                 >
                   <div className="flex justify-between pl-2 pr-2 w-full items-center">
                     <div className="flex items-center">
@@ -130,8 +161,10 @@ const CreatePageForm = () => {
                 <input type="hidden" name="style" value={selectedStyle.value} />
                 <Button
                   variant="outline"
+                  type="button"
                   className="w-full justify-between mt-1 border"
                   onClick={handleStyleClick}
+                  disabled={isSubmitting}
                 >
                   <div className="flex justify-between pl-2 pr-2 w-full items-center">
                     <div className="flex items-center">
@@ -161,9 +194,20 @@ const CreatePageForm = () => {
                   {prompt.length}/{MAX_TEXT_AREA_CHAR_COUNT}
                 </span>
               </div>
+              <div>
+                <input type="hidden" name="numberOfImages" value={numImages} />
+                <NumberSelector value={numImages} onChange={setNumImages} />
+              </div>
             </CardContent>
             <CardFooter>
-              <Button className="w-full bg-pink-600 hover:bg-pink-700 text-white">
+              <Button
+                type="submit"
+                className="w-full bg-pink-600 hover:bg-pink-700 text-white"
+                disabled={isSubmitting}
+              >
+                {isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 CREATE
               </Button>
             </CardFooter>
@@ -266,8 +310,10 @@ const CreatePageForm = () => {
                   />
                   <Button
                     variant="outline"
+                    type="button"
                     className="w-full justify-between mt-1 border p-2"
                     onClick={handleModelClick}
+                    disabled={isSubmitting}
                   >
                     <div className="flex justify-between pl-2 pr-2 w-full items-center">
                       <div className="flex items-center">
@@ -293,8 +339,10 @@ const CreatePageForm = () => {
                   />
                   <Button
                     variant="outline"
+                    type="button"
                     className="w-full justify-between mt-1 border p-2"
                     onClick={handleStyleClick}
+                    disabled={isSubmitting}
                   >
                     <div className="flex justify-between pl-2 pr-2 w-full items-center">
                       <div className="flex items-center">
@@ -327,9 +375,20 @@ const CreatePageForm = () => {
                   {prompt.length}/{MAX_TEXT_AREA_CHAR_COUNT}
                 </span>
               </div>
+              <div>
+                <input type="hidden" name="numberOfImages" value={numImages} />
+                <NumberSelector value={numImages} onChange={setNumImages} />
+              </div>
             </CardContent>
             <CardFooter>
-              <Button className="w-full bg-pink-600 hover:bg-pink-700 text-white">
+              <Button
+                type="submit"
+                className="w-full bg-pink-600 hover:bg-pink-700 text-white"
+                disabled={isSubmitting}
+              >
+                {isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 Generate
               </Button>
             </CardFooter>
