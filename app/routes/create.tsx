@@ -3,6 +3,7 @@ import {
   ActionFunctionArgs,
   json,
   MetaFunction,
+  redirect,
 } from "@remix-run/node";
 import { GeneralErrorBoundary } from "~/components/GeneralErrorBoundary";
 import { requireUserLogin } from "~/services";
@@ -134,21 +135,20 @@ export type CreatePageLoader = typeof loader;
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
-  console.log(user);
   const formData = await request.formData();
   const prompt = formData.get("prompt") || "";
   const model = formData.get("model") || "";
   const stylePreset = formData.get("style") || "";
   const numberOfImages = formData.get("numberOfImages") || "1";
-  // const isImagePrivate = formData.get("isImagePrivate") === "true";
   console.log(formData);
 
   if (!prompt) {
     return json({ error: "No prompt provided" }, { status: 400 });
   }
 
+  let setId = "";
   if (model === "dall-e") {
-    return await createNewDallEImages(
+    const response = await createNewDallEImages(
       {
         prompt: prompt.toString(),
         numberOfImages: parseInt(numberOfImages.toString()),
@@ -156,8 +156,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       },
       user.id
     );
+
+    setId = response.setId || "";
   } else if (model.toString().includes("stable-diffusion")) {
-    return await createNewStableDiffusionImages(
+    const response = await createNewStableDiffusionImages(
       {
         prompt: prompt.toString(),
         stylePreset: stylePreset.toString(),
@@ -166,9 +168,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       },
       user.id
     );
+
+    setId = response.setId || "";
   } else {
     return json({ error: "Invalid model" }, { status: 400 });
   }
+
+  if (setId) {
+    return redirect(`/set/${setId}`);
+  }
+
+  return json({ error: "Failed to create set" }, { status: 500 });
 };
 
 export default function Index() {
