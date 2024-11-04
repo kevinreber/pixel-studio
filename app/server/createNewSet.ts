@@ -11,6 +11,7 @@ export const createNewSet = async ({
   prompt: string;
   userId: string;
 }) => {
+  console.log("Creating new set in DB...");
   if (!userId) {
     throw new Error("User ID is required");
   }
@@ -18,13 +19,19 @@ export const createNewSet = async ({
     throw new Error("Prompt is required");
   }
 
-  const set = await prisma.set.create({
-    data: {
-      prompt,
-      userId,
-    },
-  });
+  try {
+    const set = await prisma.set.create({
+      data: {
+        prompt,
+        userId,
+      },
+    });
+    console.log(`Successfully created new set in DB: ${set.id}`);
 
-  // Return new set created
-  return set;
+    // Return new set created
+    return set;
+  } catch (error) {
+    console.error(`Error creating new set in DB: ${error}`);
+    throw error;
+  }
 };

@@ -19,22 +19,29 @@ export const createNewImage = async ({
   isImagePrivate: boolean;
   setId: string;
 }) => {
+  console.log("Creating new image in DB...");
   if (!setId) {
     throw new Error("Set ID is required");
   }
 
-  const image = await prisma.image.create({
-    data: {
-      prompt,
-      title: prompt,
-      userId,
-      model,
-      stylePreset: preset,
-      private: isImagePrivate,
-      setId: prompt,
-    },
-  });
+  try {
+    const image = await prisma.image.create({
+      data: {
+        prompt,
+        title: prompt,
+        userId,
+        model,
+        stylePreset: preset,
+        private: isImagePrivate,
+        setId,
+      },
+    });
+    console.log(`Successfully created new image in DB: ${image.id}`);
 
-  // Return new image created
-  return image;
+    // Return new image created
+    return image;
+  } catch (error) {
+    console.error(`Error creating new image in DB: ${error}`);
+    throw error;
+  }
 };
