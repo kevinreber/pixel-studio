@@ -9,7 +9,7 @@ import { getSet } from "~/server/getSet";
 import { requireUserLogin } from "~/services";
 
 export const meta: MetaFunction = () => {
-  return [{ title: "Explore AI Generated Images" }];
+  return [{ title: "Set Details Page" }];
 };
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
