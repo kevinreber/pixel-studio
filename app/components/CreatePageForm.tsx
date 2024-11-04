@@ -17,7 +17,7 @@ import { ChevronDown, Check } from "lucide-react";
 import { CreatePageLoader } from "~/routes/create";
 
 const MOBILE_WIDTH = 768;
-const MAX_TEXT_AREA_CHAR_COUNT = 300;
+const MAX_TEXT_AREA_CHAR_COUNT = 500;
 
 const Image = ({
   src,
@@ -44,8 +44,8 @@ const Image = ({
 };
 
 const DEFAULT_SELECTED_MODEL = {
-  name: "Stable Diffusion 1.5",
-  value: "stable-diffusion-1-5",
+  name: "Stable Diffusion 1.6",
+  value: "stable-diffusion-v1-6",
   image: "/assets/model-thumbs/sd-1-5.jpg",
   description: "The most popular first-generation stable diffusion model.",
 };
