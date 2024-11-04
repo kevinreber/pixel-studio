@@ -52,7 +52,7 @@ const SetDetailsPage = () => {
             <div className="font-semibold">Created At</div>
             <div className="text-sm text-zinc-300">
               {setCreatedAt} by{" "}
-              <a className="font-semibold text-blue-500" href="#">
+              <a className="font-semibold text-blue-500" href="/">
                 {setUser.username}
               </a>
             </div>

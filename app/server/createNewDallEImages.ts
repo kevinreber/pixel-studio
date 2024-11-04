@@ -1,4 +1,3 @@
-// import { Configuration, OpenAIApi } from "openai";
 import { setTimeout } from "timers/promises";
 import {
   addBase64EncodedImageToAWS,
@@ -37,9 +36,17 @@ export const getDallEMockDataResponse = (numberOfImages = 1) => {
   return mockData;
 };
 
-const openai = new OpenAI({
-  apiKey: process.env.DALLE_API_KEY,
-});
+// Move OpenAI client initialization into a function
+const getOpenAIClient = () => {
+  if (!process.env.DALLE_API_KEY) {
+    throw new Error(
+      "DALLE_API_KEY environment variable is required for non-mock usage"
+    );
+  }
+  return new OpenAI({
+    apiKey: process.env.DALLE_API_KEY,
+  });
+};
 
 const DEFAULT_NUMBER_OF_IMAGES_CREATED = 1;
 const IMAGE_SIZE = "1024x1024";
@@ -76,6 +83,7 @@ const createDallEImages = async (
   const numberOfImagesToGenerate = Math.round(numberOfImages);
 
   try {
+    const openai = getOpenAIClient();
     const response = await openai.images.generate({
       model: DALL_E_2_MODEL,
       prompt: promptMessage,
