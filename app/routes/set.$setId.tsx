@@ -4,7 +4,7 @@ import {
   MetaFunction,
   redirect,
 } from "@remix-run/node";
-import { useLoaderData, useParams } from "@remix-run/react";
+import SetDetailsPage from "~/pages/SetDetailsPage";
 import { getSet } from "~/server/getSet";
 import { requireUserLogin } from "~/services";
 
@@ -28,18 +28,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 export type SetPageLoader = typeof loader;
 
 export default function Index() {
-  const loaderData = useLoaderData<SetPageLoader>();
-  const setImages = loaderData.data?.images || [];
-  console.log("*****************Set Images: ", setImages);
-
-  const setId = useParams().setId;
-
   return (
     <>
-      <h1>Set {setId}</h1>
-      {/* {setImages.map((image) => (
-        <div key={image.id}>{image.prompt}</div>
-      ))} */}
+      <SetDetailsPage />
     </>
   );
 }
