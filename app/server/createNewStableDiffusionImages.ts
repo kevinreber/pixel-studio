@@ -8,6 +8,7 @@ import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils";
 import { createNewSet } from "./createNewSet";
 
 const MOCK_IMAGE_ID = "stable-diffusion-xl-futuristic-bonsai-tree";
+const MOCK_SET_ID = "cm32igx0l0011gbosfbtw33ai";
 
 export const getStableDiffusionMockDataResponse = (numberOfImages = 1) => {
   console.log(
@@ -87,7 +88,7 @@ const createStableDiffusionImages = async ({
   stylePreset?: string;
 }) => {
   console.log(
-    `Attempting to generate Stable Diffusion images with ${model} model and style preset: ${stylePreset}`
+    `Attempting to generate ${numberOfImages} Stable Diffusion images with ${model} model and style preset: ${stylePreset}`
   );
 
   const promptMessage = prompt;
@@ -170,7 +171,7 @@ export const createNewStableDiffusionImages = async (
       const mockData = getStableDiffusionMockDataResponse(numberOfImages);
       await setTimeout(THREE_SECONDS_IN_MS);
 
-      return { images: mockData };
+      return { images: mockData, setId: MOCK_SET_ID };
     }
 
     // Generate Images
@@ -223,7 +224,7 @@ export const createNewStableDiffusionImages = async (
     );
 
     // 'https://ai-icon-generator.s3.us-east-2.amazonaws.com/clgueu0pg0001r2fbyg3do2ra'
-    return { images: formattedImagesData };
+    return { images: formattedImagesData, setId };
   } catch (error) {
     console.error(error);
     // Delete the Set if error occurs and Set was created
@@ -231,6 +232,6 @@ export const createNewStableDiffusionImages = async (
       await deleteSet({ setId });
     }
 
-    return { images: [] };
+    return { images: [], setId: "" };
   }
 };

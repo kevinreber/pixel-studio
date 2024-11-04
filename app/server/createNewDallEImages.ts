@@ -12,6 +12,7 @@ import OpenAI from "openai";
 const DALL_E_MODEL = "dall-e";
 const DALL_E_2_MODEL = "all-e-2";
 const MOCK_IMAGE_ID = "cliid9qad0001r2q9pscacuj0";
+const MOCK_SET_ID = "cm32igx0l0011gbosfbtw33ai";
 
 export const getDallEMockDataResponse = (numberOfImages = 1) => {
   console.log("⚠️ Warning – Using DALL-E Mock Data *************************");
@@ -117,7 +118,7 @@ export const createNewDallEImages = async (
       const mockData = getDallEMockDataResponse(numberOfImages);
       await setTimeout(THREE_SECONDS_IN_MS);
 
-      return { images: mockData };
+      return { images: mockData, setId: MOCK_SET_ID };
     }
 
     // Generate Images
@@ -162,7 +163,7 @@ export const createNewDallEImages = async (
     );
 
     // 'https://ai-icon-generator.s3.us-east-2.amazonaws.com/clgueu0pg0001r2fbyg3do2ra'
-    return { images: formattedImagesData };
+    return { images: formattedImagesData, setId };
   } catch (error) {
     console.error(error);
     // Delete the Set if error occurs and Set was created
@@ -170,6 +171,6 @@ export const createNewDallEImages = async (
       await deleteSet({ setId });
     }
 
-    return { images: [] };
+    return { images: [], setId: "" };
   }
 };
