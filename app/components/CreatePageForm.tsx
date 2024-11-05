@@ -54,28 +54,56 @@ const Image = ({
   );
 };
 
-const NumberSelector = ({ value = 1, onChange }) => {
-  const numbers = [1, 2, 3, 4];
+const NumberSelector = ({
+  value = 1,
+  onChange,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+}) => {
+  const firstRow = [1, 2, 3, 4];
+  const secondRow = [5, 6, 7, 8];
 
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">Number of Images</label>
-      <div className="flex gap-2">
-        {numbers.map((number) => (
-          <Button
-            key={number}
-            type="button"
-            onClick={() => onChange(number)}
-            variant={value === number ? "secondary" : "outline"}
-            className={`w-14 h-[40px] text-lg ${
-              value === number
-                ? "bg-zinc-700 hover:bg-zinc-600"
-                : "bg-zinc-800/50 hover:bg-zinc-700/50"
-            }`}
-          >
-            {number}
-          </Button>
-        ))}
+      <div className="flex flex-col gap-2">
+        {/* First Row */}
+        <div className="flex gap-2">
+          {firstRow.map((number) => (
+            <Button
+              key={number}
+              type="button"
+              onClick={() => onChange(number)}
+              variant={value === number ? "secondary" : "outline"}
+              className={`w-14 h-[40px] text-lg ${
+                value === number
+                  ? "bg-zinc-700 hover:bg-zinc-600"
+                  : "bg-zinc-800/50 hover:bg-zinc-700/50"
+              }`}
+            >
+              {number}
+            </Button>
+          ))}
+        </div>
+        {/* Second Row */}
+        <div className="flex gap-2">
+          {secondRow.map((number) => (
+            <Button
+              key={number}
+              type="button"
+              onClick={() => onChange(number)}
+              variant={value === number ? "secondary" : "outline"}
+              className={`w-14 h-[40px] text-lg ${
+                value === number
+                  ? "bg-zinc-700 hover:bg-zinc-600"
+                  : "bg-zinc-800/50 hover:bg-zinc-700/50"
+              }`}
+            >
+              {number}
+            </Button>
+          ))}
+        </div>
       </div>
     </div>
   );
