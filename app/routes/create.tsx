@@ -7,9 +7,9 @@ import {
 } from "@remix-run/node";
 import { GeneralErrorBoundary } from "~/components/GeneralErrorBoundary";
 import { requireUserLogin } from "~/services";
-
 import CreatePage from "~/pages/CreatePage";
-import { createNewDallEImages, createNewStableDiffusionImages } from "~/server";
+import { createNewImages, updateUserCredits } from "~/server";
+import { z } from "zod";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Create AI Generated Images" }];
@@ -109,7 +109,11 @@ const STYLE_OPTIONS = [
     value: "photographic",
     image: "/assets/preset-text-styles/photo.jpg",
   },
-  // { name: "Enhance", image: "/assets/preset-text-styles/.jpg" },
+  {
+    name: "None",
+    value: "none",
+    image: "",
+  },
   // { name: "Isometric", image: "/assets/preset-text-styles/.jpg" },
   // { name: "Line Art", image: "/assets/preset-text-styles/.jpg" },
   // { name: "Low Poly", image: "/assets/preset-text-styles/.jpg" },
@@ -125,6 +129,55 @@ const STYLE_OPTIONS = [
   // },
 ];
 
+const MAX_PROMPT_CHARACTERS = 3500;
+const MIN_NUMBER_OF_IMAGES = 1;
+const MAX_NUMBER_OF_IMAGES = 10;
+
+const CreateImagesFormSchema = z.object({
+  prompt: z
+    .string()
+    .trim()
+    .min(1, { message: "Prompt can not be empty" })
+    .max(MAX_PROMPT_CHARACTERS, {
+      message: `Prompt must be ${MAX_PROMPT_CHARACTERS} characters or less`,
+    }),
+  stylePreset: z
+    .string()
+    .min(1)
+    .optional()
+    .refine(
+      (value) => {
+        if (!value || value === "none") return true;
+        // Check if value is invalid
+        return STYLE_OPTIONS.some((preset) => preset.value.includes(value));
+      },
+      {
+        // overrides the error message here
+        message: "Invalid preset selected",
+      }
+    ),
+  model: z
+    .string()
+    .min(1, { message: "Language model can not be empty" })
+    .refine(
+      (value) =>
+        // Check if value is invalid
+        MODEL_OPTIONS.some((model) => model.value.includes(value)),
+      {
+        // overrides the error message here
+        message: "Invalid language model selected",
+      }
+    ),
+  numberOfImages: z
+    .number()
+    .min(MIN_NUMBER_OF_IMAGES, {
+      message: `Number of images to generate must be ${MIN_NUMBER_OF_IMAGES}-${MAX_NUMBER_OF_IMAGES}`,
+    })
+    .max(MAX_NUMBER_OF_IMAGES, {
+      message: `Number of images to generate must be ${MIN_NUMBER_OF_IMAGES}-${MAX_NUMBER_OF_IMAGES}`,
+    }),
+});
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await requireUserLogin(request);
 
@@ -136,46 +189,54 @@ export type CreatePageLoader = typeof loader;
 export const action = async ({ request }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
   const formData = await request.formData();
+
   const prompt = formData.get("prompt") || "";
   const model = formData.get("model") || "";
-  const stylePreset = formData.get("style") || "";
+  let stylePreset = formData.get("style") || undefined;
   const numberOfImages = formData.get("numberOfImages") || "1";
-  console.log(formData);
 
-  if (!prompt) {
-    return json({ error: "No prompt provided" }, { status: 400 });
+  if (stylePreset === "none") {
+    stylePreset = undefined;
   }
 
-  let setId = "";
-  if (model === "dall-e") {
-    const response = await createNewDallEImages(
-      {
-        prompt: prompt.toString(),
-        numberOfImages: parseInt(numberOfImages.toString()),
-        model: model.toString(),
-      },
-      user.id
-    );
+  const validateFormData = CreateImagesFormSchema.safeParse({
+    prompt: prompt.toString(),
+    numberOfImages: parseInt(numberOfImages.toString()),
+    model: model.toString(),
+    stylePreset,
+  });
 
-    setId = response.setId || "";
-  } else if (model.toString().includes("stable-diffusion")) {
-    const response = await createNewStableDiffusionImages(
+  if (!validateFormData.success) {
+    return json(
       {
-        prompt: prompt.toString(),
-        stylePreset: stylePreset.toString(),
-        numberOfImages: parseInt(numberOfImages.toString()),
-        model: model.toString(),
+        message: "Error invalid form data",
+        error: validateFormData.error.flatten(),
       },
-      user.id
+      {
+        status: 400,
+      }
     );
-
-    setId = response.setId || "";
-  } else {
-    return json({ error: "Invalid model" }, { status: 400 });
   }
 
-  if (setId) {
-    return redirect(`/set/${setId}`);
+  // Verify user has enough credits
+  try {
+    await updateUserCredits(user.id, parseInt(numberOfImages.toString()));
+  } catch (error: unknown) {
+    console.error(error);
+
+    return json(
+      {
+        message: "Error updating user credits",
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
+
+  const response = await createNewImages(validateFormData.data, user.id);
+
+  if (response.setId) {
+    return redirect(`/set/${response.setId}`);
   }
 
   return json({ error: "Failed to create set" }, { status: 500 });

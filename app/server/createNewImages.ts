@@ -1,8 +1,7 @@
 import {
   createNewStableDiffusionImages,
-  // addBase64EncodedImageToAWS,
-  // addNewImageToDB,
   createNewDallEImages,
+  deleteSet,
 } from "~/server";
 import { invariantResponse } from "~/utils/invariantResponse";
 
@@ -21,10 +20,10 @@ const DEFAULT_PAYLOAD = {
 
 type FormDataPayload = {
   prompt: string;
-  numberOfImages: number;
   model: string;
   stylePreset?: string;
-  private?: boolean;
+  numberOfImages: number;
+  // private?: boolean;
 };
 
 /**
@@ -38,23 +37,32 @@ export const createNewImages = async (
   const AILanguageModelToUse = formData.model;
 
   invariantResponse(AILanguageModelToUse, "Must select a language model");
+  invariantResponse(formData.prompt, "Must provide a prompt");
+
+  let setId = "";
 
   try {
     if (AILanguageModelToUse === "dall-e") {
       const data = await createNewDallEImages(formData, userId);
 
-      return data;
-    }
+      setId = data.setId || "";
 
-    if (AILanguageModelToUse.includes("stable-diffusion")) {
+      return data;
+    } else if (AILanguageModelToUse.includes("stable-diffusion")) {
       const data = await createNewStableDiffusionImages(formData, userId);
 
+      setId = data.setId || "";
+
       return data;
     }
-    return { images: [] };
+
+    throw new Error("Invalid model");
   } catch (error) {
     console.error(error);
+    if (setId) {
+      await deleteSet({ setId });
+    }
 
-    return { images: [] };
+    throw new Error(`Failed to create images: ${error}`);
   }
 };
