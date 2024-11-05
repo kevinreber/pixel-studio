@@ -9,6 +9,7 @@ import { GeneralErrorBoundary } from "~/components/GeneralErrorBoundary";
 import { requireUserLogin } from "~/services";
 import CreatePage from "~/pages/CreatePage";
 import { createNewImages, updateUserCredits } from "~/server";
+import { z } from "zod";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Create AI Generated Images" }];
@@ -108,7 +109,11 @@ const STYLE_OPTIONS = [
     value: "photographic",
     image: "/assets/preset-text-styles/photo.jpg",
   },
-  // { name: "Enhance", image: "/assets/preset-text-styles/.jpg" },
+  {
+    name: "None",
+    value: "none",
+    image: "",
+  },
   // { name: "Isometric", image: "/assets/preset-text-styles/.jpg" },
   // { name: "Line Art", image: "/assets/preset-text-styles/.jpg" },
   // { name: "Low Poly", image: "/assets/preset-text-styles/.jpg" },
@@ -124,6 +129,55 @@ const STYLE_OPTIONS = [
   // },
 ];
 
+const MAX_PROMPT_CHARACTERS = 3500;
+const MIN_NUMBER_OF_IMAGES = 1;
+const MAX_NUMBER_OF_IMAGES = 10;
+
+const CreateImagesFormSchema = z.object({
+  prompt: z
+    .string()
+    .trim()
+    .min(1, { message: "Prompt can not be empty" })
+    .max(MAX_PROMPT_CHARACTERS, {
+      message: `Prompt must be ${MAX_PROMPT_CHARACTERS} characters or less`,
+    }),
+  stylePreset: z
+    .string()
+    .min(1)
+    .optional()
+    .refine(
+      (value) => {
+        if (!value || value === "none") return true;
+        // Check if value is invalid
+        return STYLE_OPTIONS.some((preset) => preset.value.includes(value));
+      },
+      {
+        // overrides the error message here
+        message: "Invalid preset selected",
+      }
+    ),
+  model: z
+    .string()
+    .min(1, { message: "Language model can not be empty" })
+    .refine(
+      (value) =>
+        // Check if value is invalid
+        MODEL_OPTIONS.some((model) => model.value.includes(value)),
+      {
+        // overrides the error message here
+        message: "Invalid language model selected",
+      }
+    ),
+  numberOfImages: z
+    .number()
+    .min(MIN_NUMBER_OF_IMAGES, {
+      message: `Number of images to generate must be ${MIN_NUMBER_OF_IMAGES}-${MAX_NUMBER_OF_IMAGES}`,
+    })
+    .max(MAX_NUMBER_OF_IMAGES, {
+      message: `Number of images to generate must be ${MIN_NUMBER_OF_IMAGES}-${MAX_NUMBER_OF_IMAGES}`,
+    }),
+});
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await requireUserLogin(request);
 
@@ -135,21 +189,38 @@ export type CreatePageLoader = typeof loader;
 export const action = async ({ request }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
   const formData = await request.formData();
+
   const prompt = formData.get("prompt") || "";
   const model = formData.get("model") || "";
-  const stylePreset = formData.get("style") || "";
+  let stylePreset = formData.get("style") || undefined;
   const numberOfImages = formData.get("numberOfImages") || "1";
 
-  const payload = {
+  if (stylePreset === "none") {
+    stylePreset = undefined;
+  }
+
+  const validateFormData = CreateImagesFormSchema.safeParse({
     prompt: prompt.toString(),
-    stylePreset: stylePreset.toString(),
     numberOfImages: parseInt(numberOfImages.toString()),
     model: model.toString(),
-  };
+    stylePreset,
+  });
+
+  if (!validateFormData.success) {
+    return json(
+      {
+        message: "Error invalid form data",
+        error: validateFormData.error.flatten(),
+      },
+      {
+        status: 400,
+      }
+    );
+  }
 
   // Verify user has enough credits
   try {
-    await updateUserCredits(user.id, payload.numberOfImages);
+    await updateUserCredits(user.id, parseInt(numberOfImages.toString()));
   } catch (error: unknown) {
     console.error(error);
 
@@ -162,7 +233,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     );
   }
 
-  const response = await createNewImages(payload, user.id);
+  const response = await createNewImages(validateFormData.data, user.id);
 
   if (response.setId) {
     return redirect(`/set/${response.setId}`);
