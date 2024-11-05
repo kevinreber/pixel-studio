@@ -7,9 +7,8 @@ import {
 } from "@remix-run/node";
 import { GeneralErrorBoundary } from "~/components/GeneralErrorBoundary";
 import { requireUserLogin } from "~/services";
-
 import CreatePage from "~/pages/CreatePage";
-import { createNewDallEImages, createNewStableDiffusionImages } from "~/server";
+import { createNewImages, updateUserCredits } from "~/server";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Create AI Generated Images" }];
@@ -140,42 +139,33 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const model = formData.get("model") || "";
   const stylePreset = formData.get("style") || "";
   const numberOfImages = formData.get("numberOfImages") || "1";
-  console.log(formData);
 
-  if (!prompt) {
-    return json({ error: "No prompt provided" }, { status: 400 });
+  const payload = {
+    prompt: prompt.toString(),
+    stylePreset: stylePreset.toString(),
+    numberOfImages: parseInt(numberOfImages.toString()),
+    model: model.toString(),
+  };
+
+  // Verify user has enough credits
+  try {
+    await updateUserCredits(user.id, payload.numberOfImages);
+  } catch (error: unknown) {
+    console.error(error);
+
+    return json(
+      {
+        message: "Error updating user credits",
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
   }
 
-  let setId = "";
-  if (model === "dall-e") {
-    const response = await createNewDallEImages(
-      {
-        prompt: prompt.toString(),
-        numberOfImages: parseInt(numberOfImages.toString()),
-        model: model.toString(),
-      },
-      user.id
-    );
+  const response = await createNewImages(payload, user.id);
 
-    setId = response.setId || "";
-  } else if (model.toString().includes("stable-diffusion")) {
-    const response = await createNewStableDiffusionImages(
-      {
-        prompt: prompt.toString(),
-        stylePreset: stylePreset.toString(),
-        numberOfImages: parseInt(numberOfImages.toString()),
-        model: model.toString(),
-      },
-      user.id
-    );
-
-    setId = response.setId || "";
-  } else {
-    return json({ error: "Invalid model" }, { status: 400 });
-  }
-
-  if (setId) {
-    return redirect(`/set/${setId}`);
+  if (response.setId) {
+    return redirect(`/set/${response.setId}`);
   }
 
   return json({ error: "Failed to create set" }, { status: 500 });
