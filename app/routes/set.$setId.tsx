@@ -4,6 +4,7 @@ import {
   MetaFunction,
   redirect,
 } from "@remix-run/node";
+import { PageContainer, GeneralErrorBoundary } from "~/components";
 import SetDetailsPage from "~/pages/SetDetailsPage";
 import { getSet } from "~/server/getSet";
 import { requireUserLogin } from "~/services";
@@ -34,3 +35,11 @@ export default function Index() {
     </>
   );
 }
+
+export const ErrorBoundary = () => {
+  return (
+    <PageContainer>
+      <GeneralErrorBoundary />
+    </PageContainer>
+  );
+};

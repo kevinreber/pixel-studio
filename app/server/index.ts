@@ -15,3 +15,4 @@ export * from "./getImage";
 export * from "./getImageBase64";
 export * from "./getImageBlobFromS3";
 export * from "./updateUserCredits";
+export * from "./getUserDataByUserId";

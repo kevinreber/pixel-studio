@@ -24,7 +24,7 @@ type StatusHandler = (info: {
   params: Record<string, string | undefined>;
 }) => JSX.Element | null;
 
-export function GeneralErrorBoundary({
+const GeneralErrorBoundary =    ({
   defaultStatusHandler = ({ error }) => (
     <p>
       {error.status} {getErrorMessage(error.data)}
@@ -36,7 +36,7 @@ export function GeneralErrorBoundary({
   defaultStatusHandler?: StatusHandler;
   statusHandlers?: Record<number, StatusHandler>;
   unexpectedErrorHandler?: (error: unknown) => JSX.Element | null;
-}) {
+}) => {
   const error = useRouteError();
   const params = useParams();
 
@@ -54,4 +54,6 @@ export function GeneralErrorBoundary({
         : unexpectedErrorHandler(error)}
     </div>
   );
-}
+};
+
+export { GeneralErrorBoundary };

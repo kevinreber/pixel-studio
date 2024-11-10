@@ -1,10 +1,8 @@
 import React from "react";
 import { Form, useLoaderData, useSearchParams } from "@remix-run/react";
-import { ErrorList } from "components/ErrorList";
-import ImageV2 from "components/ImageV2";
-import { type ExplorePageLoader } from "../routes/explore";
+import { type ExplorePageLoader } from "../routes/explore._index";
 import { Search as MagnifyingGlassIcon } from "lucide-react";
-import { PageContainer } from "~/components";
+import { PageContainer, ImageCard, ErrorList } from "~/components";
 
 /**
  *
@@ -13,6 +11,7 @@ import { PageContainer } from "~/components";
 
 const ExplorePage = () => {
   const loaderData = useLoaderData<ExplorePageLoader>();
+
   const images = loaderData.data.images || [];
   const [searchParams] = useSearchParams();
   const initialSearchTerm = searchParams.get("q") || "";
@@ -52,13 +51,13 @@ const ExplorePage = () => {
       <div className="container pt-8 max-w-5xl">
         {/* highlight on hover reference: https://www.hyperui.dev/blog/highlight-hover-effect-with-tailwindcss */}
         {images.length > 0 ? (
-          <ul className="grid grid-cols-3 gap-1 lg:gap-4">
+          <ul className="grid grid-cols-2 md:grid-cols-3 gap-1 md:gap-4 lg:gap-6">
             {images.map(
               (image) =>
                 // This removes Typescript error: "image is possibly 'null'."
                 image && (
                   <li key={image.id} className="hover:!opacity-60">
-                    <ImageV2 imageData={image} />
+                    <ImageCard imageData={image} />
                   </li>
                 )
             )}

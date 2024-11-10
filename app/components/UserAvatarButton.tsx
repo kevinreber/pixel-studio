@@ -66,7 +66,7 @@ const UserAvatarButton = () => {
           <Avatar>
             <AvatarImage
               src={avatarSrc}
-              alt="User"
+              alt={displayName}
               className="max-w-[40px] rounded-full"
             />
             <AvatarFallback className="max-w-[40px] rounded-full">

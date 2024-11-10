@@ -1,4 +1,4 @@
-import { PageContainer } from "~/components";
+import { PageContainer, GeneralErrorBoundary } from "~/components";
 import PixelStudioIcon from "components/PixelStudioIcon";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import GoogleLoginButton from "../components/GoogleLoginButton";
@@ -43,3 +43,11 @@ export default function Index() {
     </PageContainer>
   );
 }
+
+export const ErrorBoundary = () => {
+  return (
+    <PageContainer>
+      <GeneralErrorBoundary />
+    </PageContainer>
+  );
+};
