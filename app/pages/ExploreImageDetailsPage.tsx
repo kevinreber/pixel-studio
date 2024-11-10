@@ -6,6 +6,7 @@ import { convertUtcDateToLocalDateString, fallbackImageSource } from "~/client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Heart,
@@ -15,7 +16,6 @@ import {
   Bookmark,
   Info,
 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CopyToClipboardButton } from "~/components";
 
 interface ExploreImageDetailsPageProps {

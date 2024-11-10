@@ -5,12 +5,11 @@ import {
   MetaFunction,
   redirect,
 } from "@remix-run/node";
-import { GeneralErrorBoundary } from "~/components/GeneralErrorBoundary";
 import { requireUserLogin } from "~/services";
 import CreatePage from "~/pages/CreatePage";
 import { createNewImages, updateUserCredits } from "~/server";
 import { z } from "zod";
-import { PageContainer } from "~/components";
+import { PageContainer, GeneralErrorBoundary } from "~/components";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Create AI Generated Images" }];

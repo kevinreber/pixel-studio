@@ -4,8 +4,7 @@ import {
   MetaFunction,
   redirect,
 } from "@remix-run/node";
-import { PageContainer } from "~/components";
-import { GeneralErrorBoundary } from "~/components/GeneralErrorBoundary";
+import { PageContainer, GeneralErrorBoundary } from "~/components";
 import SetDetailsPage from "~/pages/SetDetailsPage";
 import { getSet } from "~/server/getSet";
 import { requireUserLogin } from "~/services";

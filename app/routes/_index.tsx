@@ -1,6 +1,5 @@
 import LandingPage from "pages/LandingPage";
-import { PageContainer } from "~/components";
-import { GeneralErrorBoundary } from "~/components/GeneralErrorBoundary";
+import { PageContainer, GeneralErrorBoundary } from "~/components";
 
 export default function Index() {
   return <LandingPage />;

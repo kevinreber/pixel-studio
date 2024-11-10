@@ -1,15 +1,13 @@
 import {
   type LoaderFunctionArgs,
   json,
-  SerializeFrom,
   MetaFunction,
 } from "@remix-run/node";
 import UserProfilePage from "~/pages/UserProfilePage";
 import { getUserDataByUserId } from "~/server";
 import { loader as UserLoaderData } from "../root";
 import { invariantResponse } from "~/utils/invariantResponse";
-import { GeneralErrorBoundary } from "~/components/GeneralErrorBoundary";
-import { PageContainer } from "~/components";
+import { PageContainer, GeneralErrorBoundary } from "~/components";
 
 export const meta: MetaFunction<
   typeof loader,

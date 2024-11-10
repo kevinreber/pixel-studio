@@ -8,8 +8,7 @@ import { useNavigate } from "@remix-run/react";
 import { getImage } from "~/server";
 import { invariantResponse } from "~/utils";
 import ExploreImageDetailsPage from "~/pages/ExploreImageDetailsPage";
-import { GeneralErrorBoundary } from "~/components/GeneralErrorBoundary";
-import { PageContainer } from "~/components";
+import { GeneralErrorBoundary, PageContainer } from "~/components";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Explore AI Generated Images" }];

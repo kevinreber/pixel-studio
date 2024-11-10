@@ -1,10 +1,8 @@
 import React from "react";
 import { Form, useLoaderData, useSearchParams } from "@remix-run/react";
-import { ErrorList } from "components/ErrorList";
-import ImageV2 from "components/ImageV2";
 import { type ExplorePageLoader } from "../routes/explore._index";
 import { Search as MagnifyingGlassIcon } from "lucide-react";
-import { PageContainer } from "~/components";
+import { PageContainer, ImageCard, ErrorList } from "~/components";
 
 /**
  *
@@ -59,7 +57,7 @@ const ExplorePage = () => {
                 // This removes Typescript error: "image is possibly 'null'."
                 image && (
                   <li key={image.id} className="hover:!opacity-60">
-                    <ImageV2 imageData={image} />
+                    <ImageCard imageData={image} />
                   </li>
                 )
             )}

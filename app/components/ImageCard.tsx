@@ -2,7 +2,7 @@ import { Link } from "@remix-run/react";
 // import { Heart, MessageCircle } from "lucide-react";
 import { ImageTagType } from "server/getImages";
 
-const ImageV2 = ({
+const ImageCard = ({
   imageData,
   onClickRedirectTo = "",
 }: {
@@ -38,4 +38,4 @@ const ImageV2 = ({
   );
 };
 
-export default ImageV2;
+export default ImageCard;

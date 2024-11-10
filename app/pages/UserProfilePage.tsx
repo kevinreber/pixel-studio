@@ -3,10 +3,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 // import { Grid, Settings, User } from "lucide-react";
-import { PageContainer } from "~/components";
+import { PageContainer, ImageCard } from "~/components";
 import type { UserProfilePageLoader } from "~/routes/profile.$userId";
-import ImageV2 from "~/components/ImageV2";
-import { Grid, Settings, User, Heart, MessageCircle } from "lucide-react";
+import { Grid, User } from "lucide-react";
 
 const UserDoesNotExist = () => {
   return (
@@ -150,7 +149,7 @@ export default function UserProfilePage() {
                         className="relative aspect-square group cursor-pointer hover:opacity-90 transition-opacity" */}
                         {/* > */}
                         {/* <div className="absolute inset-0"> */}
-                        <ImageV2
+                        <ImageCard
                           imageData={image}
                           className="w-full h-full object-cover"
                         />

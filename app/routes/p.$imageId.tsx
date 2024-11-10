@@ -5,7 +5,7 @@ import {
   MetaFunction,
 } from "@remix-run/node";
 import { getImage } from "~/server";
-import { GeneralErrorBoundary } from "~/components/GeneralErrorBoundary";
+import { GeneralErrorBoundary } from "~/components";
 import { invariantResponse } from "~/utils";
 
 export const meta: MetaFunction = () => {
