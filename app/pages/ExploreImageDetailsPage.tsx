@@ -188,6 +188,7 @@ const ExploreImageDetailsPage = ({ onClose }: ExploreImageDetailsPageProps) => {
                         variant="ghost"
                         size="icon"
                         className="hover:text-zinc-600"
+                        disabled={isLoadingFetcher}
                       >
                         <Heart className="h-6 w-6" />
                       </Button>
@@ -202,6 +203,7 @@ const ExploreImageDetailsPage = ({ onClose }: ExploreImageDetailsPageProps) => {
                         variant="ghost"
                         size="icon"
                         className="hover:text-zinc-600"
+                        disabled={isLoadingFetcher}
                       >
                         <Send className="h-6 w-6" />
                       </Button>
@@ -210,6 +212,7 @@ const ExploreImageDetailsPage = ({ onClose }: ExploreImageDetailsPageProps) => {
                       variant="ghost"
                       size="icon"
                       className="hover:text-zinc-600"
+                      disabled={isLoadingFetcher}
                     >
                       <Bookmark className="h-6 w-6" />
                     </Button>
