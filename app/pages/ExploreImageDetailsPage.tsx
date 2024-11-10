@@ -19,11 +19,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CopyToClipboardButton } from "~/components";
 
-interface ImageDetailsPageProps {
+interface ExploreImageDetailsPageProps {
   onClose: () => void;
 }
 
-const ImageDetailsPage = ({ onClose }: ImageDetailsPageProps) => {
+const ExploreImageDetailsPage = ({ onClose }: ExploreImageDetailsPageProps) => {
   const { data: imageData } = useLoaderData<ExplorePageImageLoader>();
   const userData = useLoggedInUser();
   const isUserLoggedIn = Boolean(userData);
@@ -259,4 +259,4 @@ const ImageDetailsPage = ({ onClose }: ImageDetailsPageProps) => {
     </>
   );
 };
-export default ImageDetailsPage;
+export default ExploreImageDetailsPage;

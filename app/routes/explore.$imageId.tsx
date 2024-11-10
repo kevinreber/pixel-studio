@@ -7,7 +7,7 @@ import {
 import { useNavigate } from "@remix-run/react";
 import { getImage } from "~/server";
 import { invariantResponse } from "~/utils";
-import ImageDetailsPage from "~/pages/ImageDetailsPage";
+import ExploreImageDetailsPage from "~/pages/ExploreImageDetailsPage";
 import { GeneralErrorBoundary } from "~/components/GeneralErrorBoundary";
 
 export const meta: MetaFunction = () => {
@@ -31,8 +31,7 @@ export default function Index() {
     navigate("/explore");
   };
 
-
-  return <ImageDetailsPage onClose={handleCloseModal} />;
+  return <ExploreImageDetailsPage onClose={handleCloseModal} />;
 }
 
 export const ErrorBoundary = () => {
