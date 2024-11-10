@@ -9,6 +9,7 @@ import { getUserDataByUserId } from "~/server";
 import { loader as UserLoaderData } from "../root";
 import { invariantResponse } from "~/utils/invariantResponse";
 import { GeneralErrorBoundary } from "~/components/GeneralErrorBoundary";
+import { PageContainer } from "~/components";
 
 export const meta: MetaFunction<
   typeof loader,
@@ -46,7 +47,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   return json(data);
 };
 
-export type UserProfilePageLoader = SerializeFrom<typeof loader>;
+export type UserProfilePageLoader = typeof loader;
 
 export default function Index() {
   return <UserProfilePage />;
@@ -54,13 +55,15 @@ export default function Index() {
 
 export const ErrorBoundary = () => {
   return (
-    <GeneralErrorBoundary
-      statusHandlers={{
-        403: () => <p>You do not have permission</p>,
-        404: ({ params }) => (
-          <p>User with id: &quot;{params.userId}&quot; does not exist</p>
-        ),
-      }}
-    />
+    <PageContainer>
+      <GeneralErrorBoundary
+        statusHandlers={{
+          403: () => <p>You do not have permission</p>,
+          404: ({ params }) => (
+            <p>User with id: &quot;{params.userId}&quot; does not exist</p>
+          ),
+        }}
+      />
+    </PageContainer>
   );
 };

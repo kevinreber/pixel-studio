@@ -2,6 +2,8 @@ import { type LoaderFunctionArgs, json, MetaFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import ExplorePage from "pages/ExplorePage";
 import { getImages } from "server/getImages";
+import { PageContainer } from "~/components";
+import { GeneralErrorBoundary } from "~/components/GeneralErrorBoundary";
 import { requireUserLogin } from "~/services";
 
 export const meta: MetaFunction = () => {
@@ -31,3 +33,11 @@ export default function Index() {
     </>
   );
 }
+
+export const ErrorBoundary = () => {
+  return (
+    <PageContainer>
+      <GeneralErrorBoundary />
+    </PageContainer>
+  );
+};

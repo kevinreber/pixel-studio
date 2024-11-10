@@ -9,6 +9,7 @@ import { getImage } from "~/server";
 import { invariantResponse } from "~/utils";
 import ExploreImageDetailsPage from "~/pages/ExploreImageDetailsPage";
 import { GeneralErrorBoundary } from "~/components/GeneralErrorBoundary";
+import { PageContainer } from "~/components";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Explore AI Generated Images" }];
@@ -36,13 +37,15 @@ export default function Index() {
 
 export const ErrorBoundary = () => {
   return (
-    <GeneralErrorBoundary
-      statusHandlers={{
-        403: () => <p>You do not have permission</p>,
+    <PageContainer>
+      <GeneralErrorBoundary
+        statusHandlers={{
+          403: () => <p>You do not have permission</p>,
         404: ({ params }) => (
           <p>Image with id: &quot;{params.imageId}&quot; does not exist</p>
         ),
       }}
-    />
+      />
+    </PageContainer>
   );
 };

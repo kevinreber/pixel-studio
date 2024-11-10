@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { json, MetaFunction } from "@remix-run/react";
 // import { getSupabaseWithSessionAndHeaders } from "~/services/supabase.server";
 import { requireAnonymous } from "~/services";
+import { GeneralErrorBoundary } from "~/components/GeneralErrorBoundary";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Login to Pixel Studio AI" }];
@@ -43,3 +44,11 @@ export default function Index() {
     </PageContainer>
   );
 }
+
+export const ErrorBoundary = () => {
+  return (
+    <PageContainer>
+      <GeneralErrorBoundary />
+    </PageContainer>
+  );
+};
