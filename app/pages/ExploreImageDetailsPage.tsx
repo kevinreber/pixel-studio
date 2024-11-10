@@ -12,7 +12,6 @@ import {
   MessageCircle,
   Send,
   User,
-  X,
   Bookmark,
   Info,
 } from "lucide-react";
@@ -45,18 +44,9 @@ const ExploreImageDetailsPage = ({ onClose }: ExploreImageDetailsPageProps) => {
 
       <Dialog open={true} onOpenChange={onClose}>
         <DialogContent
-          className="max-w-[90%] h-[90vh] p-0 gap-0 bg-white dark:bg-zinc-900 overflow-hidden z-[100]"
+          className="max-w-[90%] h-[90vh] p-0 gap-0 dark:bg-zinc-900 overflow-hidden z-[100] [&>button]:absolute [&>button]:right-4 [&>button]:top-4 [&>button]:z-10 [&>button_span]:hidden"
           onInteractOutside={(e) => e.preventDefault()}
         >
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-4 top-4 z-10"
-            onClick={onClose}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-
           <div className="flex h-full">
             {/* Left side - Image */}
             <div className="flex-1 bg-black">
