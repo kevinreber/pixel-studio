@@ -8,11 +8,12 @@ import {
   ScrollRestoration,
   useLoaderData,
   useLocation,
-  useRouteLoaderData,
+  // useRouteLoaderData,
 } from "@remix-run/react";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { Analytics } from "@vercel/analytics/react";
-import { Toaster, toast as showToast } from "sonner";
+// import { Toaster, toast as showToast } from "sonner";
+import { Toaster } from "@/components/ui/toaster";
 import NavigationSidebar from "components/NavigationSidebar";
 import { csrf } from "./utils/csrf.server";
 import { getEnv } from "./utils/env.server";
@@ -20,7 +21,7 @@ import { combineHeaders } from "./utils/combineHeaders";
 import { AuthenticityTokenProvider } from "remix-utils/csrf/react";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
 import { honeypot } from "utils/honeypot.server";
-import { getToast, type Toast } from "utils/toast.server";
+// import { getToast, type Toast } from "utils/toast.server";
 import { getLoggedInUserGoogleSSOData } from "./server";
 import { GeneralErrorBoundary } from "./components/GeneralErrorBoundary";
 import {
@@ -37,7 +38,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const [csrfToken, csrfCookieHeader] = await csrf.commitToken(request);
   const honeyProps = honeypot.getInputProps();
 
-  const { toast, headers: toastHeaders } = await getToast(request);
+  // const { toast, headers: toastHeaders } = await getToast(request);
 
   // let user;
   // try {
@@ -61,7 +62,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   return json(
     {
       userData,
-      toast,
+      // toast,
       ENV: getEnv(),
       csrfToken,
       honeyProps,
@@ -69,8 +70,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     },
     {
       headers: combineHeaders(
-        csrfCookieHeader ? { "set-cookie": csrfCookieHeader } : null,
-        toastHeaders
+        csrfCookieHeader ? { "set-cookie": csrfCookieHeader } : null
+        // toastHeaders
         // sessionCookieHeader
       ),
     }
@@ -115,7 +116,7 @@ function Document({
             __html: `window.ENV = ${JSON.stringify(env)}`,
           }}
         /> */}
-        <Toaster closeButton position="top-center" />
+        {/* <Toaster closeButton position="top-center" /> */}
         <ScrollRestoration />
         <Scripts />
         <Analytics />
@@ -125,7 +126,7 @@ function Document({
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const loaderData = useRouteLoaderData<typeof loader>("root");
+  // const loaderData = useRouteLoaderData<typeof loader>("root");
   // console.log(loaderData);
   const location = useLocation();
   const isHome = location.pathname === "/";
@@ -135,9 +136,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* <Document env={loaderData.ENV}> */}
       <Document>
         {!isHome && <NavigationSidebar />} {children}
-        {loaderData && loaderData.toast ? (
+        {/* {loaderData && loaderData.toast ? (
           <ShowToast toast={loaderData.toast} />
-        ) : null}
+        ) : null} */}
       </Document>
     </>
   );
@@ -150,20 +151,21 @@ export default function App() {
     <HoneypotProvider {...loaderData.honeyProps}>
       <AuthenticityTokenProvider token={loaderData.csrfToken}>
         <Outlet context={{ userData: loaderData.userData }} />
+        <Toaster />
       </AuthenticityTokenProvider>
     </HoneypotProvider>
   );
 }
 
-function ShowToast({ toast }: { toast: Toast }) {
-  const { id, type, title, description } = toast;
-  React.useEffect(() => {
-    setTimeout(() => {
-      showToast[type](title, { id, description });
-    }, 0);
-  }, [description, id, title, type]);
-  return null;
-}
+// function ShowToast({ toast }: { toast: Toast }) {
+//   const { id, type, title, description } = toast;
+//   React.useEffect(() => {
+//     setTimeout(() => {
+//       showToast[type](title, { id, description });
+//     }, 0);
+//   }, [description, id, title, type]);
+//   return null;
+// }
 
 export function ErrorBoundary() {
   return <GeneralErrorBoundary />;
