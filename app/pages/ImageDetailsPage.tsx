@@ -7,7 +7,17 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Send, User, X, Bookmark } from "lucide-react";
+import {
+  Heart,
+  MessageCircle,
+  Send,
+  User,
+  X,
+  Bookmark,
+  Info,
+} from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CopyToClipboardButton } from "~/components";
 
 interface ImageDetailsPageProps {
   onClose: () => void;
@@ -65,61 +75,114 @@ const ImageDetailsPage = ({ onClose }: ImageDetailsPageProps) => {
             <div className="w-[420px] flex flex-col h-[90vh] border-l border-zinc-200 dark:border-zinc-800">
               {/* Header */}
               <div className="shrink-0 p-4 border-b border-zinc-200 dark:border-zinc-800">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>
-                      <User className="h-4 w-4" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col">
-                    <a
-                      href={`/profile/${imageData.user?.username}`}
-                      className="font-semibold text-sm hover:underline"
-                    >
-                      {imageData.user?.username}
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              {/* Comments Section - Scrollable */}
-              <div className="flex-1 overflow-y-auto">
-                <div className="p-4">
-                  {/* Original Post */}
-                  <div className="flex items-start gap-3 mb-4">
-                    <Avatar className="h-8 w-8 shrink-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
                       <AvatarFallback>
                         <User className="h-4 w-4" />
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex gap-2">
-                        <a
-                          href={`/profile/${imageData.user?.username}`}
-                          className="font-semibold text-sm shrink-0"
-                        >
-                          {imageData.user?.username}
-                        </a>
-                        <span className="text-sm break-words">
-                          {imageData.prompt}
-                        </span>
+                    <div className="flex flex-col">
+                      <a
+                        href={`/profile/${imageData.user?.username}`}
+                        className="font-semibold text-sm hover:underline"
+                      >
+                        {imageData.user?.username}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tabs Section */}
+              <Tabs
+                defaultValue="comments"
+                className="flex-1 flex flex-col mt-2"
+              >
+                <TabsList className="grid w-full grid-cols-2 p-1">
+                  <TabsTrigger
+                    value="comments"
+                    className="flex items-center gap-2"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Comments
+                  </TabsTrigger>
+                  <TabsTrigger value="info" className="flex items-center gap-2">
+                    <Info className="h-4 w-4" />
+                    Info
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent
+                  value="comments"
+                  className="flex-1 overflow-y-auto"
+                >
+                  <div className="p-4">
+                    {/* Original Post */}
+                    {/* <div className="flex items-start gap-3 mb-4">
+                      <Avatar className="h-8 w-8 shrink-0">
+                        <AvatarFallback>
+                          <User className="h-4 w-4" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex gap-2">
+                          <a
+                            href={`/profile/${imageData.user?.username}`}
+                            className="font-semibold text-sm shrink-0"
+                          >
+                            {imageData.user?.username}
+                          </a>
+                          <span className="text-sm break-words">
+                            {imageData.prompt}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex gap-4 text-xs text-zinc-500">
+                          <span>
+                            {convertUtcDateToLocalDateString(
+                              imageData.createdAt!
+                            )}
+                          </span>
+                        </div>
                       </div>
-                      <div className="mt-1 flex gap-4 text-xs text-zinc-500">
-                        <span>
-                          {convertUtcDateToLocalDateString(
-                            imageData.createdAt!
-                          )}
-                        </span>
+                    </div> */}
+
+                    {imageData.comments && imageData.comments.length ? (
+                      imageData.comments.map((comment) => (
+                        <div key={comment.id}>{comment.message}</div>
+                      ))
+                    ) : (
+                      <p className="text-center text-sm text-zinc-500 py-8">
+                        No comments yet.
+                      </p>
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="info" className="flex-1 overflow-y-auto">
+                  <div className="p-4 space-y-4">
+                    <div className="space-y-1">
+                      <h4 className="font-semibold">Engine Model</h4>
+                      <p className="italic text-sm">{imageData.model}</p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <h4 className="font-semibold">Style Preset</h4>
+                      <p className="italic text-sm">{imageData.stylePreset}</p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <h4 className="font-semibold">Prompt</h4>
+                      <div className="flex items-start gap-2">
+                        <p className="italic text-sm">{imageData.prompt}</p>
+                        <CopyToClipboardButton
+                          stringToCopy={imageData.prompt || ""}
+                        />
                       </div>
                     </div>
                   </div>
-
-                  {/* Comments placeholder */}
-                  <p className="text-center text-sm text-zinc-500 py-8">
-                    No comments yet.
-                  </p>
-                </div>
-              </div>
+                </TabsContent>
+              </Tabs>
 
               {/* Actions Bar - Fixed at bottom */}
               <div className="shrink-0 border-t border-zinc-200 dark:border-zinc-800">
@@ -133,13 +196,13 @@ const ImageDetailsPage = ({ onClose }: ImageDetailsPageProps) => {
                       >
                         <Heart className="h-6 w-6" />
                       </Button>
-                      <Button
+                      {/* <Button
                         variant="ghost"
                         size="icon"
                         className="hover:text-zinc-600"
                       >
                         <MessageCircle className="h-6 w-6" />
-                      </Button>
+                      </Button> */}
                       <Button
                         variant="ghost"
                         size="icon"
