@@ -25,6 +25,7 @@ interface ExploreImageDetailsPageProps {
 
 const ExploreImageDetailsPage = ({ onClose }: ExploreImageDetailsPageProps) => {
   const { data: imageData } = useLoaderData<ExplorePageImageLoader>();
+
   const userData = useLoggedInUser();
   const isUserLoggedIn = Boolean(userData);
   const formRef = React.useRef<HTMLFormElement>(null);
@@ -77,14 +78,19 @@ const ExploreImageDetailsPage = ({ onClose }: ExploreImageDetailsPageProps) => {
               <div className="shrink-0 p-4 border-b border-zinc-200 dark:border-zinc-800">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
+                    <Avatar
+                      className="h-8 w-8"
+                      src={imageData.user?.image}
+                      alt={imageData.user?.username}
+                    >
                       <AvatarFallback>
-                        <User className="h-4 w-4" />
+                        {imageData.user?.username.charAt(0) || ""}
+                        {/* <User className="h-4 w-4" /> */}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
                       <a
-                        href={`/profile/${imageData.user?.username}`}
+                        href={`/profile/${imageData.user?.id}`}
                         className="font-semibold text-sm hover:underline"
                       >
                         {imageData.user?.username}
@@ -259,4 +265,5 @@ const ExploreImageDetailsPage = ({ onClose }: ExploreImageDetailsPageProps) => {
     </>
   );
 };
+
 export default ExploreImageDetailsPage;

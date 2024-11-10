@@ -50,8 +50,7 @@ const NavigationSidebar = () => {
     {
       title: "Profile",
       icon: <User className="md:h-4 md:w-4" />,
-      // href: `/profile/${userData?.username || ""}`,
-      href: `/profile/`,
+      href: `/profile/${userData?.id || ""}`,
     },
     // ! TODO: Hide for now, get barebones out first
     // {
