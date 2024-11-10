@@ -8,14 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Heart,
-  MessageCircle,
-  Send,
-  User,
-  Bookmark,
-  Info,
-} from "lucide-react";
+import { Heart, MessageCircle, Send, User, Bookmark, Info } from "lucide-react";
 import { CopyToClipboardButton } from "~/components";
 
 interface ExploreImageDetailsPageProps {
@@ -164,7 +157,13 @@ const ExploreImageDetailsPage = ({ onClose }: ExploreImageDetailsPageProps) => {
 
                     <div className="space-y-1">
                       <h4 className="font-semibold">Style Preset</h4>
-                      <p className="italic text-sm">{imageData.stylePreset}</p>
+                      {imageData.stylePreset ? (
+                        <p className="italic text-sm">
+                          {imageData.stylePreset}
+                        </p>
+                      ) : (
+                        <p className="italic text-sm text-zinc-500">none</p>
+                      )}
                     </div>
 
                     <div className="space-y-1">
