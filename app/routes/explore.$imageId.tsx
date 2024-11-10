@@ -29,7 +29,11 @@ export default function Index() {
   const navigate = useNavigate();
 
   const handleCloseModal = () => {
-    navigate("/explore");
+    if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      navigate("/explore"); // Fallback if there's no history
+    }
   };
 
   return <ExploreImageDetailsPage onClose={handleCloseModal} />;
