@@ -6,3 +6,4 @@ export * from "./CreatePageForm";
 export { default as CopyToClipboardButton } from "./CopyToClipboardButton";
 export { default as ImageCard } from "./ImageCard";
 export * from "./GeneralErrorBoundary";
+export { default as ImageGridSkeleton } from "./ImageGridSkeleton";
