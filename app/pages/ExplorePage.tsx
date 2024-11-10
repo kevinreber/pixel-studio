@@ -2,7 +2,7 @@ import React from "react";
 import { Form, useLoaderData, useSearchParams } from "@remix-run/react";
 import { ErrorList } from "components/ErrorList";
 import ImageV2 from "components/ImageV2";
-import { type ExplorePageLoader } from "../routes/explore";
+import { type ExplorePageLoader } from "../routes/explore._index";
 import { Search as MagnifyingGlassIcon } from "lucide-react";
 import { PageContainer } from "~/components";
 
