@@ -142,34 +142,22 @@ export default function UserProfilePage() {
             <div className="mt-4">
               <TabsContent value="posts">
                 {userImages.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-1 md:gap-4 lg:gap-6">
+                  <ul className="grid grid-cols-2 md:grid-cols-3 gap-1 md:gap-4 lg:gap-6">
                     {userImages.map((image) => (
-                      <div
+                      <li key={image.id} className="hover:!opacity-60">
+                        {/* <div
                         key={image.id}
-                        className="relative aspect-square group cursor-pointer hover:opacity-90 transition-opacity"
-                      >
-                        <div className="absolute inset-0">
-                          <ImageV2
-                            imageData={image}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        {/* Hover Overlay */}
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <div className="flex items-center gap-8 text-white">
-                            <div className="flex items-center gap-2">
-                              <Heart className="h-6 w-6 fill-white" />
-                              <span className="font-semibold">0</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <MessageCircle className="h-6 w-6 fill-white" />
-                              <span className="font-semibold">0</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                        className="relative aspect-square group cursor-pointer hover:opacity-90 transition-opacity" */}
+                        {/* > */}
+                        {/* <div className="absolute inset-0"> */}
+                        <ImageV2
+                          imageData={image}
+                          className="w-full h-full object-cover"
+                        />
+                        {/* </div> */}
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 ) : (
                   <div className="text-center py-12">
                     <h2 className="font-semibold text-lg mb-2">No Posts Yet</h2>
