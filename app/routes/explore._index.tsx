@@ -1,5 +1,9 @@
-import { type LoaderFunctionArgs, json, MetaFunction } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import {
+  type LoaderFunctionArgs,
+  MetaFunction,
+  defer,
+  type SerializeFrom,
+} from "@remix-run/node";
 import ExplorePage from "pages/ExplorePage";
 import { getImages } from "server/getImages";
 import { PageContainer, GeneralErrorBoundary } from "~/components";
@@ -15,22 +19,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const searchTerm = searchParams.get("q") || "";
   const currentPage = Math.max(Number(searchParams.get("page") || 1), 1);
 
-  const data = await getImages(searchTerm, currentPage);
+  const imagesPromise = getImages(searchTerm, currentPage);
 
-  return json({ data });
+  return defer({
+    images: imagesPromise,
+    searchTerm,
+    currentPage,
+  });
 };
 
-export type ExplorePageLoader = typeof loader;
+export type ExplorePageLoader = SerializeFrom<typeof loader>;
 
 export default function Index() {
-  const loaderData = useLoaderData<ExplorePageLoader>();
-  console.log(loaderData);
-
-  return (
-    <>
-      <ExplorePage />
-    </>
-  );
+  return <ExplorePage />;
 }
 
 export const ErrorBoundary = () => {

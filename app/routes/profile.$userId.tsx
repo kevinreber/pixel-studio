@@ -1,7 +1,8 @@
 import {
   type LoaderFunctionArgs,
-  json,
   MetaFunction,
+  defer,
+  SerializeFrom,
 } from "@remix-run/node";
 import UserProfilePage from "~/pages/UserProfilePage";
 import { getUserDataByUserId } from "~/server";
@@ -38,14 +39,15 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const currentPage = Math.max(Number(searchParams.get("page") || 1), 1);
   const pageSize = Number(searchParams.get("page_size")) || 250;
 
-  const data = await getUserDataByUserId(userId, currentPage, pageSize);
+  // Get initial user data
+  const data = getUserDataByUserId(userId, currentPage, pageSize);
 
-  invariantResponse(data.user, "User does not exist");
-
-  return json(data);
+  return defer({
+    userDataPromise: data,
+  });
 };
 
-export type UserProfilePageLoader = typeof loader;
+export type UserProfilePageLoader = SerializeFrom<typeof loader>;
 
 export default function Index() {
   return <UserProfilePage />;

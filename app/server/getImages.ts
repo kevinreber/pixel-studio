@@ -22,7 +22,7 @@ type Image = {
   title?: string | undefined | null;
   prompt: string;
   model: string;
-  stylePreset?: string;
+  stylePreset?: string | null;
   userId: string;
   createdAt: string;
 };
