@@ -1,32 +1,8 @@
 import React from "react";
 import { Await, useLoaderData, useAsyncValue } from "@remix-run/react";
-import { PageContainer, ErrorList } from "~/components";
+import { PageContainer, ErrorList, ImageCard } from "~/components";
 import { SetPageLoader } from "~/routes/set.$setId";
 import { Skeleton } from "@/components/ui/skeleton";
-
-const Image = ({
-  src,
-  alt,
-  size = 24,
-}: {
-  src: string;
-  alt: string;
-  size?: number;
-}) => {
-  return (
-    <div
-      className="relative overflow-hidden m-auto w-full h-full"
-      style={{ maxWidth: size, maxHeight: size }}
-    >
-      <img
-        className="inset-0 object-cover cursor-pointer w-full h-full"
-        src={src}
-        alt={alt}
-        loading="lazy"
-      />
-    </div>
-  );
-};
 
 const SetDetailsAccessor = () => {
   const asyncValue = useAsyncValue() as Awaited<SetPageLoader["data"]>;
@@ -64,13 +40,13 @@ const SetDetailsAccessor = () => {
         </div>
         <div>
           <div className="font-semibold mb-2">Images</div>
-          <div className="flex flex-wrap gap-4">
+          <ul className="grid grid-cols-2 md:grid-cols-3 gap-1 md:gap-4 lg:gap-6">
             {setImages.map((image) => (
-              <div key={image.id}>
-                <Image src={image.url} alt={image.title} size={200} />
-              </div>
+              <li key={image.id} className="hover:!opacity-60">
+                <ImageCard imageData={image} />
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </div>
     </div>
@@ -79,7 +55,7 @@ const SetDetailsAccessor = () => {
 
 const SetDetailsPage = () => {
   const loaderData = useLoaderData<SetPageLoader>();
-  console.log("loaderData", loaderData);
+
   return (
     <PageContainer>
       <React.Suspense
