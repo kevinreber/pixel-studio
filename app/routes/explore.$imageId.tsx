@@ -1,6 +1,6 @@
 import {
   type LoaderFunctionArgs,
-  json,
+  defer,
   type SerializeFrom,
   MetaFunction,
 } from "@remix-run/node";
@@ -18,8 +18,11 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
   const imageId = params.imageId || "";
   invariantResponse(imageId, "Image does not exist");
 
-  const image = await getImage(imageId);
-  return json({ data: image });
+  const imagePromise = getImage(imageId);
+
+  return defer({
+    data: imagePromise,
+  });
 };
 
 export type ExplorePageImageLoader = SerializeFrom<typeof loader>;
@@ -31,7 +34,7 @@ export default function Index() {
     if (window.history.length > 2) {
       navigate(-1);
     } else {
-      navigate("/explore"); // Fallback if there's no history
+      navigate("/explore");
     }
   };
 
@@ -44,10 +47,10 @@ export const ErrorBoundary = () => {
       <GeneralErrorBoundary
         statusHandlers={{
           403: () => <p>You do not have permission</p>,
-        404: ({ params }) => (
-          <p>Image with id: &quot;{params.imageId}&quot; does not exist</p>
-        ),
-      }}
+          404: ({ params }) => (
+            <p>Image with id: &quot;{params.imageId}&quot; does not exist</p>
+          ),
+        }}
       />
     </PageContainer>
   );
