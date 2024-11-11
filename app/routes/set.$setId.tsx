@@ -1,6 +1,6 @@
 import {
   type LoaderFunctionArgs,
-  json,
+  defer,
   MetaFunction,
   redirect,
 } from "@remix-run/node";
@@ -21,19 +21,17 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     return redirect("/");
   }
 
-  const data = await getSet({ setId });
+  const setDataPromise = getSet({ setId });
 
-  return json({ data });
+  return defer({
+    data: setDataPromise,
+  });
 };
 
 export type SetPageLoader = typeof loader;
 
 export default function Index() {
-  return (
-    <>
-      <SetDetailsPage />
-    </>
-  );
+  return <SetDetailsPage />;
 }
 
 export const ErrorBoundary = () => {

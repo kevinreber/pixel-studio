@@ -1,6 +1,5 @@
 import {
   type LoaderFunctionArgs,
-  json,
   MetaFunction,
   defer,
   SerializeFrom,
