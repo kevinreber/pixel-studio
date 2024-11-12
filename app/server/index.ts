@@ -18,3 +18,6 @@ export * from "./updateUserCredits";
 export * from "./getUserDataByUserId";
 export * from "./createImageLike.server";
 export * from "./deleteImageLike.server";
+export * from "./createComment";
+export * from "./deleteComment";
+export * from "./commentLikes";
