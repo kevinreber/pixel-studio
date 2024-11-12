@@ -16,3 +16,5 @@ export * from "./getImageBase64";
 export * from "./getImageBlobFromS3";
 export * from "./updateUserCredits";
 export * from "./getUserDataByUserId";
+export * from "./createImageLike.server";
+export * from "./deleteImageLike.server";
