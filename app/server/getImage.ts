@@ -1,7 +1,50 @@
 import { prisma } from "~/services/prisma.server";
 import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils";
 
-export const getImage = async (imageId: string) => {
+interface ImageComment {
+  id: string;
+  message: string;
+  createdAt: Date;
+  updatedAt: Date;
+  parentId: string | null;
+  user: {
+    id: string;
+    username: string;
+    image: string | null;
+  };
+  likes: Array<{ userId: string }>;
+}
+
+interface ImageUser {
+  id: string;
+  username: string;
+}
+
+interface ImageLike {
+  userId: string;
+}
+
+export interface ImageData {
+  id: string;
+  title: string | null;
+  prompt: string;
+  model: string | null;
+  stylePreset: string | null;
+  private: boolean | null;
+  user: ImageUser;
+  createdAt: Date;
+  comments: ImageComment[];
+  likes: ImageLike[];
+}
+
+export interface GetImageDataAPIResponse extends ImageData {
+  url: string;
+  thumbnailURL: string;
+}
+
+export const getImage = async (
+  imageId: string
+): Promise<GetImageDataAPIResponse | null> => {
   const image = await prisma.image.findUnique({
     where: { id: imageId },
     select: {
@@ -46,12 +89,14 @@ export const getImage = async (imageId: string) => {
     },
   });
 
+  if (!image) return null;
+
   // Append Images source URL since we cannot use `env` variables in our UI
-  const formattedImages = {
+  const formattedImage: GetImageDataAPIResponse = {
     ...image,
     url: getS3BucketURL(imageId),
     thumbnailURL: getS3BucketThumbnailURL(imageId),
   };
 
-  return formattedImages;
+  return formattedImage;
 };
