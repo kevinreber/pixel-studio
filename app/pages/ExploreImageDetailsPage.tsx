@@ -168,6 +168,18 @@ const ExploreImageDetailsPageAccessor = () => {
 
             <TabsContent value="info" className="flex-1 overflow-y-auto">
               <div className="p-4 space-y-4">
+                {imageData.setId && (
+                  <div className="space-y-1">
+                    <h4 className="font-semibold">Set</h4>
+                    <a
+                      href={`/set/${imageData.setId}`}
+                      className="text-sm text-blue-500 hover:text-blue-600 hover:underline"
+                    >
+                      View Set
+                    </a>
+                  </div>
+                )}
+
                 <div className="space-y-1">
                   <h4 className="font-semibold">Engine Model</h4>
                   <p className="italic text-sm">{imageData.model}</p>

@@ -35,6 +35,7 @@ export interface ImageData {
   createdAt: Date;
   comments: ImageComment[];
   likes: ImageLike[];
+  setId: string | null;
 }
 
 export interface GetImageDataAPIResponse extends ImageData {
@@ -86,6 +87,7 @@ export const getImage = async (
           userId: true,
         },
       },
+      setId: true,
     },
   });
 
