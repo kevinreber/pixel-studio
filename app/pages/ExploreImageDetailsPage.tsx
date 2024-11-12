@@ -8,15 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Heart,
-  MessageCircle,
-  Send,
-  Bookmark,
-  Info,
-  Loader2,
-} from "lucide-react";
+import { MessageCircle, Bookmark, Info, Loader2 } from "lucide-react";
 import { CopyToClipboardButton } from "~/components";
+import { LikeImageButton } from "~/components/LikeImageButton";
 // import { Skeleton } from "@/components/ui/skeleton";
 
 interface ExploreImageDetailsPageProps {
@@ -82,7 +76,7 @@ interface ExploreImageDetailsPageProps {
 // };
 
 type AsyncImageData = Awaited<ExplorePageImageLoader["data"]>;
-type ImageUserData = NonNullable<AsyncImageData["user"]>;
+export type ImageUserData = NonNullable<AsyncImageData["user"]>;
 
 const ExploreImageDetailsPageAccessor = () => {
   const imageData = useAsyncValue() as AsyncImageData;
@@ -233,16 +227,9 @@ const ExploreImageDetailsPageAccessor = () => {
           {/* Actions Bar - Fixed at bottom */}
           <div className="shrink-0 border-t border-zinc-200 dark:border-zinc-800">
             <div className="p-4">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-4">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hover:text-zinc-600"
-                    disabled={isLoadingFetcher}
-                  >
-                    <Heart className="h-6 w-6" />
-                  </Button>
+                  <LikeImageButton imageData={imageData} />
                   {/* <Button
                         variant="ghost"
                         size="icon"
@@ -250,14 +237,14 @@ const ExploreImageDetailsPageAccessor = () => {
                       >
                         <MessageCircle className="h-6 w-6" />
                       </Button> */}
-                  <Button
+                  {/* <Button
                     variant="ghost"
                     size="icon"
                     className="hover:text-zinc-600"
                     disabled={isLoadingFetcher}
                   >
                     <Send className="h-6 w-6" />
-                  </Button>
+                  </Button> */}
                 </div>
                 <Button
                   variant="ghost"
@@ -270,7 +257,6 @@ const ExploreImageDetailsPageAccessor = () => {
               </div>
 
               <div className="mb-4 pb-3 border-b border-zinc-200 dark:border-zinc-800">
-                <p className="text-sm font-semibold">0 likes</p>
                 <p className="text-xs text-zinc-500">
                   {convertUtcDateToLocalDateString(imageData.createdAt!)}
                 </p>
