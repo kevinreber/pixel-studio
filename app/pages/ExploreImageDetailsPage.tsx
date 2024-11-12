@@ -5,13 +5,12 @@ import { ExplorePageImageLoader } from "~/routes/explore.$imageId";
 import { convertUtcDateToLocalDateString, fallbackImageSource } from "~/client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { MessageCircle, Bookmark, Info, Loader2 } from "lucide-react";
 import { CopyToClipboardButton } from "~/components";
 import { LikeImageButton } from "~/components/LikeImageButton";
-// import { Skeleton } from "@/components/ui/skeleton";
+import { CommentForm } from "~/components/CommentForm";
 
 interface ExploreImageDetailsPageProps {
   onClose: () => void;
@@ -83,14 +82,7 @@ const ExploreImageDetailsPageAccessor = () => {
   const imageUserData = imageData.user as ImageUserData;
   const userData = useLoggedInUser();
   const isUserLoggedIn = Boolean(userData);
-  const formRef = React.useRef<HTMLFormElement>(null);
   const isLoadingFetcher = false;
-
-  const handleCommentFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    formRef.current?.reset();
-  };
-
   if (!imageData) return null;
 
   return (
@@ -263,28 +255,7 @@ const ExploreImageDetailsPageAccessor = () => {
               </div>
 
               {/* Comment Input - Now separated with better contrast */}
-              {isUserLoggedIn && (
-                <form
-                  ref={formRef}
-                  onSubmit={handleCommentFormSubmit}
-                  className="flex gap-2 items-center bg-zinc-50 dark:bg-zinc-800/50 rounded-lg px-3 py-2"
-                >
-                  <Input
-                    name="comment"
-                    placeholder="Add a comment..."
-                    className="flex-1 text-sm border-none bg-transparent focus-visible:ring-0 placeholder:text-zinc-500"
-                  />
-                  <Button
-                    type="submit"
-                    variant="outline"
-                    size="sm"
-                    className="px-4 py-2 font-semibold"
-                    disabled={isLoadingFetcher}
-                  >
-                    Post
-                  </Button>
-                </form>
-              )}
+              {isUserLoggedIn && <CommentForm imageId={imageData.id} />}
             </div>
           </div>
         </div>
