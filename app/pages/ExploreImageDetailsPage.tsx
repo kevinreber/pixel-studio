@@ -11,6 +11,7 @@ import { MessageCircle, Bookmark, Info, Loader2 } from "lucide-react";
 import { CopyToClipboardButton } from "~/components";
 import { LikeImageButton } from "~/components/LikeImageButton";
 import { CommentForm } from "~/components/CommentForm";
+import { ImageComment } from "~/components/ImageComment";
 
 interface ExploreImageDetailsPageProps {
   onClose: () => void;
@@ -145,39 +146,17 @@ const ExploreImageDetailsPageAccessor = () => {
             </TabsList>
 
             <TabsContent value="comments" className="flex-1 overflow-y-auto">
-              <div className="p-4">
-                {/* Original Post */}
-                {/* <div className="flex items-start gap-3 mb-4">
-                      <Avatar className="h-8 w-8 shrink-0">
-                        <AvatarFallback>
-                          <User className="h-4 w-4" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex gap-2">
-                          <a
-                            href={`/profile/${imageData.user?.username}`}
-                            className="font-semibold text-sm shrink-0"
-                          >
-                            {imageData.user?.username}
-                          </a>
-                          <span className="text-sm break-words">
-                            {imageData.prompt}
-                          </span>
-                        </div>
-                        <div className="mt-1 flex gap-4 text-xs text-zinc-500">
-                          <span>
-                            {convertUtcDateToLocalDateString(
-                              imageData.createdAt!
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                    </div> */}
-
-                {imageData.comments && imageData.comments.length ? (
+              <div className="p-4 space-y-4">
+                {imageData.comments && imageData.comments.length > 0 ? (
                   imageData.comments.map((comment) => (
-                    <div key={comment.id}>{comment.message}</div>
+                    <ImageComment
+                      key={comment.id}
+                      id={comment.id}
+                      message={comment.message}
+                      createdAt={comment.createdAt}
+                      user={comment.user}
+                      likes={comment.likes}
+                    />
                   ))
                 ) : (
                   <p className="text-center text-sm text-zinc-500 py-8">
