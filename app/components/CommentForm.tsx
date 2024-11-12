@@ -3,21 +3,7 @@ import { useFetcher } from "@remix-run/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-
-interface CommentResponse {
-  success: boolean;
-  comment?: {
-    id: string;
-    message: string;
-    createdAt: Date;
-    user: {
-      id: string;
-      username: string;
-      image: string | null;
-    };
-  };
-  error?: string;
-}
+import { CommentSchema, type CommentResponse } from "~/schemas/comment";
 
 export const CommentForm = ({ imageId }: { imageId: string }) => {
   const fetcher = useFetcher<CommentResponse>();
@@ -41,24 +27,34 @@ export const CommentForm = ({ imageId }: { imageId: string }) => {
     if (isLoading || now - lastSubmitTime < SUBMIT_DELAY) return;
 
     const formData = new FormData(event.currentTarget);
-    const comment = formData.get("comment")?.toString().trim();
+    const comment = formData.get("comment")?.toString() ?? "";
 
-    if (!comment) {
-      toast.error("Please enter a comment");
-      return;
-    }
+    try {
+      // Validate the data before submitting
+      const validatedData = CommentSchema.parse({
+        imageId,
+        comment,
+      });
 
-    setLastSubmitTime(now);
+      setLastSubmitTime(now);
 
-    fetcher.submit(
-      { imageId, comment },
-      {
-        method: "POST",
-        action: `/api/images/${imageId}/comment`,
+      fetcher.submit(
+        { ...validatedData },
+        {
+          method: "POST",
+          action: `/api/images/${imageId}/comment`,
+        }
+      );
+
+      formRef.current?.reset();
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const errors = error.errors.map((e) => e.message);
+        toast.error(errors.join("\n"));
+      } else {
+        toast.error("Failed to validate comment");
       }
-    );
-
-    formRef.current?.reset();
+    }
   };
 
   return (
@@ -74,6 +70,7 @@ export const CommentForm = ({ imageId }: { imageId: string }) => {
         disabled={isLoading}
         minLength={1}
         maxLength={500}
+        required
       />
       <Button
         type="submit"

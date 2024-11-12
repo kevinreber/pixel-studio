@@ -1,57 +1,56 @@
 import { ActionFunctionArgs, json } from "@remix-run/node";
 import { requireUserLogin } from "~/services";
-import { invariantResponse } from "~/utils";
-import { createComment, type CommentResponse } from "~/server/createComment";
-
-interface CommentAPIResponse {
-  success: boolean;
-  comment?: CommentResponse;
-  error?: string;
-}
+import { createComment } from "~/server/createComment";
+import { CommentSchema, CommentResponseSchema } from "~/schemas/comment";
+import { z } from "zod";
 
 export const action = async ({
   request,
   params,
 }: ActionFunctionArgs): Promise<Response> => {
   const user = await requireUserLogin(request);
+  const formData = Object.fromEntries(await request.formData());
   const imageId = params.imageId;
-  invariantResponse(imageId, "Image ID is required");
-
-  const formData = await request.formData();
-  const message = formData.get("comment")?.toString().trim();
-
-  if (!message) {
-    return json<CommentAPIResponse>(
-      { success: false, error: "Comment message is required" },
-      { status: 400 }
-    );
-  }
 
   try {
+    // Validate the incoming data
+    const validatedData = CommentSchema.parse({
+      imageId,
+      comment: formData.comment,
+    });
+
     if (request.method === "POST") {
       const comment = await createComment({
-        message,
-        imageId,
+        message: validatedData.comment,
+        imageId: validatedData.imageId,
         userId: user.id,
       });
 
-      return json<CommentAPIResponse>({
+      // Validate the response
+      const response = CommentResponseSchema.parse({
         success: true,
         comment,
       });
+
+      return json(response);
     }
 
-    return json<CommentAPIResponse>(
+    return json(
       { success: false, error: "Method not allowed" },
       { status: 405 }
     );
   } catch (error) {
     console.error("Error creating comment:", error);
-    return json<CommentAPIResponse>(
-      {
-        success: false,
-        error: "Failed to create comment",
-      },
+
+    if (error instanceof z.ZodError) {
+      return json(
+        { success: false, error: error.errors[0].message },
+        { status: 400 }
+      );
+    }
+
+    return json(
+      { success: false, error: "Failed to create comment" },
       { status: 500 }
     );
   }
