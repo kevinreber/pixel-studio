@@ -5,19 +5,13 @@ import { ExplorePageImageLoader } from "~/routes/explore.$imageId";
 import { convertUtcDateToLocalDateString, fallbackImageSource } from "~/client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Heart,
-  MessageCircle,
-  Send,
-  Bookmark,
-  Info,
-  Loader2,
-} from "lucide-react";
+import { MessageCircle, Bookmark, Info, Loader2 } from "lucide-react";
 import { CopyToClipboardButton } from "~/components";
-// import { Skeleton } from "@/components/ui/skeleton";
+import { LikeImageButton } from "~/components/LikeImageButton";
+import { CommentForm } from "~/components/CommentForm";
+import { ImageComment } from "~/components/ImageComment";
 
 interface ExploreImageDetailsPageProps {
   onClose: () => void;
@@ -82,21 +76,14 @@ interface ExploreImageDetailsPageProps {
 // };
 
 type AsyncImageData = Awaited<ExplorePageImageLoader["data"]>;
-type ImageUserData = NonNullable<AsyncImageData["user"]>;
+export type ImageUserData = NonNullable<AsyncImageData["user"]>;
 
 const ExploreImageDetailsPageAccessor = () => {
   const imageData = useAsyncValue() as AsyncImageData;
   const imageUserData = imageData.user as ImageUserData;
   const userData = useLoggedInUser();
   const isUserLoggedIn = Boolean(userData);
-  const formRef = React.useRef<HTMLFormElement>(null);
   const isLoadingFetcher = false;
-
-  const handleCommentFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    formRef.current?.reset();
-  };
-
   if (!imageData) return null;
 
   return (
@@ -159,39 +146,17 @@ const ExploreImageDetailsPageAccessor = () => {
             </TabsList>
 
             <TabsContent value="comments" className="flex-1 overflow-y-auto">
-              <div className="p-4">
-                {/* Original Post */}
-                {/* <div className="flex items-start gap-3 mb-4">
-                      <Avatar className="h-8 w-8 shrink-0">
-                        <AvatarFallback>
-                          <User className="h-4 w-4" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex gap-2">
-                          <a
-                            href={`/profile/${imageData.user?.username}`}
-                            className="font-semibold text-sm shrink-0"
-                          >
-                            {imageData.user?.username}
-                          </a>
-                          <span className="text-sm break-words">
-                            {imageData.prompt}
-                          </span>
-                        </div>
-                        <div className="mt-1 flex gap-4 text-xs text-zinc-500">
-                          <span>
-                            {convertUtcDateToLocalDateString(
-                              imageData.createdAt!
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                    </div> */}
-
-                {imageData.comments && imageData.comments.length ? (
+              <div className="p-4 space-y-4">
+                {imageData.comments && imageData.comments.length > 0 ? (
                   imageData.comments.map((comment) => (
-                    <div key={comment.id}>{comment.message}</div>
+                    <ImageComment
+                      key={comment.id}
+                      id={comment.id}
+                      message={comment.message}
+                      createdAt={comment.createdAt}
+                      user={comment.user}
+                      likes={comment.likes}
+                    />
                   ))
                 ) : (
                   <p className="text-center text-sm text-zinc-500 py-8">
@@ -203,6 +168,18 @@ const ExploreImageDetailsPageAccessor = () => {
 
             <TabsContent value="info" className="flex-1 overflow-y-auto">
               <div className="p-4 space-y-4">
+                {imageData.setId && (
+                  <div className="space-y-1">
+                    <h4 className="font-semibold">Set</h4>
+                    <a
+                      href={`/set/${imageData.setId}`}
+                      className="text-sm text-blue-500 hover:text-blue-600 hover:underline"
+                    >
+                      View Set
+                    </a>
+                  </div>
+                )}
+
                 <div className="space-y-1">
                   <h4 className="font-semibold">Engine Model</h4>
                   <p className="italic text-sm">{imageData.model}</p>
@@ -233,16 +210,9 @@ const ExploreImageDetailsPageAccessor = () => {
           {/* Actions Bar - Fixed at bottom */}
           <div className="shrink-0 border-t border-zinc-200 dark:border-zinc-800">
             <div className="p-4">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-4">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hover:text-zinc-600"
-                    disabled={isLoadingFetcher}
-                  >
-                    <Heart className="h-6 w-6" />
-                  </Button>
+                  <LikeImageButton imageData={imageData} />
                   {/* <Button
                         variant="ghost"
                         size="icon"
@@ -250,14 +220,14 @@ const ExploreImageDetailsPageAccessor = () => {
                       >
                         <MessageCircle className="h-6 w-6" />
                       </Button> */}
-                  <Button
+                  {/* <Button
                     variant="ghost"
                     size="icon"
                     className="hover:text-zinc-600"
                     disabled={isLoadingFetcher}
                   >
                     <Send className="h-6 w-6" />
-                  </Button>
+                  </Button> */}
                 </div>
                 <Button
                   variant="ghost"
@@ -270,35 +240,13 @@ const ExploreImageDetailsPageAccessor = () => {
               </div>
 
               <div className="mb-4 pb-3 border-b border-zinc-200 dark:border-zinc-800">
-                <p className="text-sm font-semibold">0 likes</p>
                 <p className="text-xs text-zinc-500">
                   {convertUtcDateToLocalDateString(imageData.createdAt!)}
                 </p>
               </div>
 
               {/* Comment Input - Now separated with better contrast */}
-              {isUserLoggedIn && (
-                <form
-                  ref={formRef}
-                  onSubmit={handleCommentFormSubmit}
-                  className="flex gap-2 items-center bg-zinc-50 dark:bg-zinc-800/50 rounded-lg px-3 py-2"
-                >
-                  <Input
-                    name="comment"
-                    placeholder="Add a comment..."
-                    className="flex-1 text-sm border-none bg-transparent focus-visible:ring-0 placeholder:text-zinc-500"
-                  />
-                  <Button
-                    type="submit"
-                    variant="outline"
-                    size="sm"
-                    className="px-4 py-2 font-semibold"
-                    disabled={isLoadingFetcher}
-                  >
-                    Post
-                  </Button>
-                </form>
-              )}
+              {isUserLoggedIn && <CommentForm imageId={imageData.id} />}
             </div>
           </div>
         </div>
