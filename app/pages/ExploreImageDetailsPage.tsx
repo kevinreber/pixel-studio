@@ -7,11 +7,12 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { MessageCircle, Bookmark, Info, Loader2 } from "lucide-react";
+import { MessageCircle, Info, Loader2 } from "lucide-react";
 import { CopyToClipboardButton } from "~/components";
 import { LikeImageButton } from "~/components/LikeImageButton";
 import { CommentForm } from "~/components/CommentForm";
 import { ImageComment } from "~/components/ImageComment";
+import { AddImageToCollectionButton } from "~/components/AddImageToCollectionButton";
 
 interface ExploreImageDetailsPageProps {
   onClose: () => void;
@@ -83,7 +84,7 @@ const ExploreImageDetailsPageAccessor = () => {
   const imageUserData = imageData.user as ImageUserData;
   const userData = useLoggedInUser();
   const isUserLoggedIn = Boolean(userData);
-  const isLoadingFetcher = false;
+
   if (!imageData) return null;
 
   return (
@@ -213,30 +214,13 @@ const ExploreImageDetailsPageAccessor = () => {
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-4">
                   <LikeImageButton imageData={imageData} />
-                  {/* <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:text-zinc-600"
-                      >
-                        <MessageCircle className="h-6 w-6" />
-                      </Button> */}
-                  {/* <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hover:text-zinc-600"
-                    disabled={isLoadingFetcher}
-                  >
-                    <Send className="h-6 w-6" />
-                  </Button> */}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="hover:text-zinc-600"
-                  disabled={isLoadingFetcher}
-                >
-                  <Bookmark className="h-6 w-6" />
-                </Button>
+                <AddImageToCollectionButton
+                  imageId={imageData.id}
+                  disabled={!isUserLoggedIn}
+                  initialCollections={imageData.collections || []}
+                  isInitiallySaved={imageData.savedToCollection}
+                />
               </div>
 
               <div className="mb-4 pb-3 border-b border-zinc-200 dark:border-zinc-800">
