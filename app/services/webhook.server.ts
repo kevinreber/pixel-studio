@@ -18,7 +18,7 @@ export const handleStripeEvent = async (
     }
 
     switch (type) {
-      case CHECKOUT_SESSION_COMPLETED:
+      case CHECKOUT_SESSION_COMPLETED: {
         const checkoutSessionCompleted = data.object as {
           id: string;
           amount: number;
@@ -29,7 +29,7 @@ export const handleStripeEvent = async (
 
         const creditsToAdd = 100;
         console.log("CHECKOUT SESSION COMPLETED: ", checkoutSessionCompleted);
-        // Update users credits in DB after checkout
+
         const userData = await prisma.user.update({
           where: {
             id: checkoutSessionCompleted.metadata.userId,
@@ -42,6 +42,7 @@ export const handleStripeEvent = async (
         });
         console.log("DONE UPDATING USER DATA: ", userData);
         return userData;
+      }
 
       default:
         console.log(`Unhandled event type: ${type}`);

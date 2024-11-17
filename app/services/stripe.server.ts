@@ -19,7 +19,7 @@ export const stripeCheckout = async ({ userId }: { userId: string }) => {
     });
 
     return session.url!;
-  } catch (error: any) {
+  } catch (error: Error) {
     console.error(error);
     throw json({ errors: [{ message: error.message }] }, 400);
   }
