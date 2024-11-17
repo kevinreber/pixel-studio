@@ -215,12 +215,12 @@ const ExploreImageDetailsPageAccessor = () => {
                 <div className="flex items-center gap-4">
                   <LikeImageButton imageData={imageData} />
                 </div>
-                <AddImageToCollectionButton
+                {/* <AddImageToCollectionButton
                   imageId={imageData.id}
                   disabled={!isUserLoggedIn}
                   initialCollections={imageData.collections || []}
                   isInitiallySaved={imageData.savedToCollection}
-                />
+                /> */}
               </div>
 
               <div className="mb-4 pb-3 border-b border-zinc-200 dark:border-zinc-800">
