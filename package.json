@@ -57,7 +57,8 @@
     "stripe": "^12.3.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "winston": "^3.11.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.46.1",

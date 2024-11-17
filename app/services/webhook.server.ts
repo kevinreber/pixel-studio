@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 import { prisma } from "./prisma.server";
+import { Logger } from "~/utils/logger.server";
 
 const CHECKOUT_SESSION_COMPLETED = "checkout.session.completed";
 
@@ -9,11 +10,14 @@ export const handleStripeEvent = async (
   id: string
 ) => {
   try {
-    console.log("HANDLING STRIPE EVENT.......");
-    console.log("TYPE: ", type);
-    const isTestEvent = id === "evt_00000000000000";
+    Logger.info({
+      message: "Processing Stripe webhook event",
+      metadata: { type, id }
+    });
 
+    const isTestEvent = id === "evt_00000000000000";
     if (isTestEvent) {
+      Logger.info({ message: "Skipping test event" });
       return;
     }
 
@@ -28,7 +32,14 @@ export const handleStripeEvent = async (
         };
 
         const creditsToAdd = 100;
-        console.log("CHECKOUT SESSION COMPLETED: ", checkoutSessionCompleted);
+        Logger.info({
+          message: "Processing completed checkout session",
+          metadata: {
+            sessionId: checkoutSessionCompleted.id,
+            userId: checkoutSessionCompleted.metadata.userId,
+            creditsToAdd
+          }
+        });
 
         const userData = await prisma.user.update({
           where: {
@@ -40,16 +51,31 @@ export const handleStripeEvent = async (
             },
           },
         });
-        console.log("DONE UPDATING USER DATA: ", userData);
+
+        Logger.info({
+          message: "Successfully updated user credits",
+          metadata: {
+            userId: userData.id,
+            newCreditBalance: userData.credits
+          }
+        });
+
         return userData;
       }
 
       default:
-        console.log(`Unhandled event type: ${type}`);
+        Logger.warn({
+          message: "Unhandled webhook event type",
+          metadata: { type }
+        });
     }
 
     return;
   } catch (error) {
-    console.error({ message: error });
+    Logger.error({
+      message: "Error processing Stripe webhook",
+      error: error instanceof Error ? error : new Error(String(error)),
+      metadata: { type, id }
+    });
   }
 };

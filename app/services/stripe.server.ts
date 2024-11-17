@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { json } from "@remix-run/node";
+import { Logger } from "~/utils/logger.server";
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2022-11-15",
@@ -7,6 +8,11 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export const stripeCheckout = async ({ userId }: { userId: string }) => {
   try {
+    Logger.info({
+      message: "Creating Stripe checkout session",
+      metadata: { userId },
+    });
+
     const session = await stripe.checkout.sessions.create({
       success_url: `${process.env.ORIGIN}/create`!,
       cancel_url: `${process.env.ORIGIN}/create`!,
@@ -18,9 +24,24 @@ export const stripeCheckout = async ({ userId }: { userId: string }) => {
       payment_method_types: ["card", "us_bank_account"],
     });
 
+    Logger.info({
+      message: "Stripe checkout session created successfully",
+      metadata: {
+        userId,
+        sessionId: session.id,
+      },
+    });
+
     return session.url!;
-  } catch (error: Error) {
-    console.error(error);
-    throw json({ errors: [{ message: error.message }] }, 400);
+  } catch (error: unknown) {
+    Logger.error({
+      message: "Failed to create Stripe checkout session",
+      error: error instanceof Error ? error : new Error(String(error)),
+      metadata: { userId },
+    });
+    throw json(
+      { errors: [{ message: "Failed to create checkout session" }] },
+      400
+    );
   }
 };
