@@ -167,16 +167,16 @@ const CreatePageForm = () => {
                 <Button
                   variant="outline"
                   type="button"
-                  className="w-full justify-between mt-1 border"
+                  className="w-full justify-between mt-1 border min-h-[80px]"
                   onClick={handleModelClick}
                   disabled={isSubmitting}
                 >
-                  <div className="flex justify-between pl-2 pr-2 w-full items-center">
+                  <div className="flex justify-between pl-2 pr-2 w-full items-center ">
                     <div className="flex items-center">
                       <Image
                         src={selectedModel.image}
                         alt={selectedModel.name}
-                        size={40}
+                        size={60}
                       />
                       <span className="ml-2">{selectedModel.name}</span>
                     </div>
@@ -190,16 +190,16 @@ const CreatePageForm = () => {
                 <Button
                   variant="outline"
                   type="button"
-                  className="w-full justify-between mt-1 border"
+                  className="w-full justify-between mt-1 border min-h-[80px]"
                   onClick={handleStyleClick}
                   disabled={isSubmitting}
                 >
-                  <div className="flex justify-between pl-2 pr-2 w-full items-center">
+                  <div className="flex justify-between pl-2 pr-2 w-full items-center ">
                     <div className="flex items-center">
                       <Image
                         src={selectedStyle.image}
                         alt={selectedStyle.name}
-                        size={40}
+                        size={60}
                       />
                       <span className="ml-2">{selectedStyle.name}</span>
                     </div>
@@ -339,11 +339,11 @@ const CreatePageForm = () => {
                   <Button
                     variant="outline"
                     type="button"
-                    className="w-full justify-between mt-1 border p-2"
+                    className="w-full justify-between mt-1 border p-2 h-fit"
                     onClick={handleModelClick}
                     disabled={isSubmitting}
                   >
-                    <div className="flex justify-between pl-2 pr-2 w-full items-center">
+                    <div className="flex justify-between pl-2 pr-2 w-full items-center min-h-[40px] h-fit">
                       <div className="flex items-center">
                         <Image
                           src={selectedModel.image}
@@ -368,11 +368,11 @@ const CreatePageForm = () => {
                   <Button
                     variant="outline"
                     type="button"
-                    className="w-full justify-between mt-1 border p-2"
+                    className="w-full justify-between mt-1 border p-2 h-fit"
                     onClick={handleStyleClick}
                     disabled={isSubmitting}
                   >
-                    <div className="flex justify-between pl-2 pr-2 w-full items-center">
+                    <div className="flex justify-between pl-2 pr-2 w-full items-center min-h-[40px] h-fit">
                       <div className="flex items-center">
                         <Image
                           src={selectedStyle.image}
