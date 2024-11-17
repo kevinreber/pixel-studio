@@ -1,5 +1,5 @@
 import { prisma } from "~/services/prisma.server";
-import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils";
+import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
 
 interface ImageComment {
   id: string;
