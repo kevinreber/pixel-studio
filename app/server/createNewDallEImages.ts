@@ -5,7 +5,7 @@ import {
   createNewSet,
   deleteSet,
 } from "~/server";
-import { getS3BucketURL, getS3BucketThumbnailURL } from "~/utils";
+import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
 import OpenAI from "openai";
 
 const DALL_E_MODEL = "dall-e";

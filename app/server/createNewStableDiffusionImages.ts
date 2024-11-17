@@ -4,7 +4,7 @@ import {
   createNewImage,
   deleteSet,
 } from "~/server";
-import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils";
+import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
 import { createNewSet } from "./createNewSet";
 
 const MOCK_IMAGE_ID = "stable-diffusion-xl-futuristic-bonsai-tree";

@@ -21,3 +21,4 @@ export * from "./deleteImageLike.server";
 export * from "./createComment";
 export * from "./deleteComment";
 export * from "./commentLikes";
+export * from "./getUserCollections";
