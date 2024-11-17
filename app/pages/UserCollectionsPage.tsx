@@ -1,4 +1,4 @@
-import { useLoaderData, useNavigation } from "@remix-run/react";
+import { Await, useLoaderData, useNavigation } from "@remix-run/react";
 import type { GetUserCollectionsResponse } from "~/server/getUserCollections";
 import { PageContainer } from "~/components";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,13 +11,31 @@ import {
 } from "@/components/ui/table";
 import { CreateCollectionDialog } from "~/components/CreateCollectionDialog";
 import { CollectionRow } from "~/components/CollectionRow";
+import { Skeleton } from "@/components/ui/skeleton";
+import React from "react";
+
+const CollectionsTableSkeleton = () => {
+  return (
+    <div className="space-y-4">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="flex items-center gap-4 p-4">
+          <Skeleton className="h-6 w-48 bg-gray-700/50" />
+          <Skeleton className="h-6 flex-1 bg-gray-700/50" />
+          <Skeleton className="h-6 w-16 bg-gray-700/50" />
+          <Skeleton className="h-8 w-20 bg-gray-700/50" />
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const UserCollectionsPage = () => {
-  const loaderData = useLoaderData<{ data: GetUserCollectionsResponse }>();
-  const collections = loaderData.data.collections || [];
+  const { data } = useLoaderData<{
+    data: Promise<GetUserCollectionsResponse>;
+  }>();
 
   const navigation = useNavigation();
-  const isLoadingData = navigation.state !== "idle";
+  const isNavigating = navigation.state !== "idle";
 
   return (
     <PageContainer>
@@ -26,34 +44,53 @@ const UserCollectionsPage = () => {
           <h1 className="text-2xl font-bold">My Collections</h1>
           <CreateCollectionDialog />
         </div>
-
         <Card className="mb-6">
           <CardContent className="p-0">
             <div className="relative min-h-[400px]">
-              {isLoadingData ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/10">
-                  <div className="animate-spin">Loading...</div>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Images</TableHead>
-                      <TableHead className="w-[100px]">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {collections.map((collection) => (
-                      <CollectionRow
-                        key={collection.id}
-                        collection={collection}
-                      />
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+              <React.Suspense fallback={<CollectionsTableSkeleton />}>
+                <Await
+                  resolve={data}
+                  errorElement={
+                    <div className="p-4 text-red-500">
+                      Error loading collections
+                    </div>
+                  }
+                >
+                  {(resolvedData) => {
+                    return (
+                      <>
+                        {isNavigating && (
+                          <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
+                            <div className="animate-spin">Loading...</div>
+                          </div>
+                        )}
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Title</TableHead>
+                              <TableHead>Description</TableHead>
+                              <TableHead className="text-right">
+                                Images
+                              </TableHead>
+                              <TableHead className="w-[100px]">
+                                Actions
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {resolvedData.collections.map((collection) => (
+                              <CollectionRow
+                                key={collection.id}
+                                collection={collection}
+                              />
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </>
+                    );
+                  }}
+                </Await>
+              </React.Suspense>
             </div>
           </CardContent>
         </Card>
