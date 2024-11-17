@@ -1,4 +1,4 @@
-import { getS3BucketURL } from "~/utils";
+import { getS3BucketURL } from "~/utils/s3Utils";
 
 export const getImageBase64 = async (imageId: string) => {
   const imageURL = getS3BucketURL(imageId);
