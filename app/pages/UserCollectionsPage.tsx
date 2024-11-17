@@ -1,19 +1,16 @@
-import { Link, useLoaderData, useNavigation } from "@remix-run/react";
+import { useLoaderData, useNavigation } from "@remix-run/react";
 import type { GetUserCollectionsResponse } from "~/server/getUserCollections";
-import { convertNumberToLocaleString } from "~/utils";
 import { PageContainer } from "~/components";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { CreateCollectionDialog } from "~/components/CreateCollectionDialog";
+import { CollectionRow } from "~/components/CollectionRow";
 
 const UserCollectionsPage = () => {
   const loaderData = useLoaderData<{ data: GetUserCollectionsResponse }>();
@@ -27,10 +24,7 @@ const UserCollectionsPage = () => {
       <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">My Collections</h1>
-          <Button className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Create Collection
-          </Button>
+          <CreateCollectionDialog />
         </div>
 
         <Card className="mb-6">
@@ -52,34 +46,10 @@ const UserCollectionsPage = () => {
                   </TableHeader>
                   <TableBody>
                     {collections.map((collection) => (
-                      <TableRow key={collection.id}>
-                        <TableCell>
-                          <Link
-                            to={`/collections/${collection.id}`}
-                            className="hover:underline font-medium"
-                          >
-                            {collection.title}
-                          </Link>
-                        </TableCell>
-                        <TableCell className="text-zinc-500">
-                          {collection.description}
-                        </TableCell>
-                        <TableCell className="text-right text-zinc-500">
-                          {convertNumberToLocaleString(
-                            collection.images.length
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="icon">
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                      <CollectionRow
+                        key={collection.id}
+                        collection={collection}
+                      />
                     ))}
                   </TableBody>
                 </Table>
@@ -92,4 +62,4 @@ const UserCollectionsPage = () => {
   );
 };
 
-export default UserCollectionsPage; 
+export default UserCollectionsPage;
