@@ -9,6 +9,7 @@
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
     "start": "remix-serve ./build/server/index.js",
     "typecheck": "tsc",
+    "stripe:listen": "stripe listen --forward-to localhost:3000/webhook",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -53,6 +54,7 @@
     "remix-auth-google": "^2.0.0",
     "remix-utils": "^7.6.0",
     "sonner": "^1.5.0",
+    "stripe": "^12.3.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.23.8"

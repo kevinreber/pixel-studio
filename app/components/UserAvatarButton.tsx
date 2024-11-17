@@ -33,15 +33,11 @@ const NavButton = ({
 );
 
 const NAV_LINKS = [
-  //   {
-  //     title: "Profile",
-  //     icon: <User className="md:h-4 md:w-4" />,
-  //     href: "/profile",
-  //   },
+
   {
     title: "Buy Credits",
     icon: <CreditCard className="md:h-4 md:w-4" />,
-    href: "/buy-credits",
+    href: "/checkout",
   },
   {
     title: "Settings",
