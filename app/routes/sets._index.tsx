@@ -5,7 +5,11 @@ import {
   type ActionFunctionArgs,
 } from "@remix-run/node";
 import { useLoaderData, useNavigation, Form } from "@remix-run/react";
-import { PageContainer, GeneralErrorBoundary } from "~/components";
+import {
+  PageContainer,
+  GeneralErrorBoundary,
+  CopyToClipboardButton,
+} from "~/components";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -28,12 +32,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { getS3BucketThumbnailURL } from "~/utils/s3Utils";
+import { convertUtcDateToLocalDateString } from "~/client";
 
 type Set = {
   id: string;
   prompt: string;
-  createdAt: string;
-  images: Array<{ id: string }>;
+  createdAt: string | Date;
+  images: Array<{
+    id: string;
+    prompt: string;
+    thumbnailUrl: string;
+  }>;
   user: { username: string };
 };
 
@@ -46,8 +56,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
     },
     include: {
       images: {
+        take: 4,
         select: {
           id: true,
+          prompt: true,
+          // thumbnailUrl: true,
         },
       },
       user: {
@@ -61,7 +74,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
     },
   });
 
-  return json({ sets });
+  const formattedData: Array<Set> = [];
+  for (const set of sets) {
+    const formattedImages = set.images.map((image) => ({
+      ...image,
+      thumbnailUrl: getS3BucketThumbnailURL(image.id),
+    }));
+
+    formattedData.push({
+      ...set,
+      images: formattedImages,
+    });
+  }
+
+  return json({ sets: formattedData });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -116,15 +142,24 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 }
 
-const SetsTableSkeleton = () => {
+const ImagePreviewGrid = ({ images }: { images: Set["images"] }) => {
+  if (images.length === 0) return null;
+
   return (
-    <div className="space-y-4">
-      {[1, 2, 3, 4].map((i) => (
-        <div key={i} className="flex items-center gap-4 p-4">
-          <Skeleton className="h-6 w-48 bg-gray-700/50" />
-          <Skeleton className="h-6 flex-1 bg-gray-700/50" />
-          <Skeleton className="h-6 w-16 bg-gray-700/50" />
-          <Skeleton className="h-8 w-20 bg-gray-700/50" />
+    <div className="grid grid-cols-2 gap-0.5 w-24 h-24 rounded-md overflow-hidden bg-muted">
+      {images.slice(0, 4).map((image) => (
+        <div
+          key={image.id}
+          className="relative aspect-square overflow-hidden bg-muted"
+        >
+          <div
+            className="w-full h-full bg-muted"
+            style={{
+              backgroundImage: `url(${image.thumbnailUrl})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          />
         </div>
       ))}
     </div>
@@ -180,25 +215,46 @@ const SetRow = ({ set }: { set: Set }) => {
   return (
     <TableRow>
       <td className="p-4">
-        <a
-          href={`/set/${set.id}`}
-          className="text-foreground hover:text-blue-500 transition-colors"
-        >
-          {set.prompt}
-        </a>
+        <div className="flex items-center gap-4">
+          <a
+            href={`/set/${set.id}`}
+            className="text-foreground hover:text-blue-500 transition-colors line-clamp-2"
+          >
+            <ImagePreviewGrid images={set.images} />
+          </a>
+          <div className="flex flex-1 line-clamp-2">
+            {set.prompt}
+            <span className="ml-2">
+              <CopyToClipboardButton stringToCopy={set.prompt} />
+            </span>
+          </div>
+        </div>
       </td>
-      <td className="p-4 text-right">{set.images.length}</td>
-      <td className="p-4">
-        {new Date(set.createdAt).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        })}
+      <td className="p-4 text-right whitespace-nowrap">{set.images.length}</td>
+      <td className="p-4 whitespace-nowrap">
+        {convertUtcDateToLocalDateString(set.createdAt)}
       </td>
       <td className="p-4 flex items-center justify-end">
         <DeleteSetDialog setId={set.id} imagesCount={set.images.length} />
       </td>
     </TableRow>
+  );
+};
+
+const SetsTableSkeleton = () => {
+  return (
+    <div className="space-y-4">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="flex items-center gap-4 p-4">
+          <Skeleton className="h-24 w-24 bg-gray-700/50" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-3/4 bg-gray-700/50" />
+            <Skeleton className="h-4 w-1/2 bg-gray-700/50" />
+          </div>
+          <Skeleton className="h-8 w-20 bg-gray-700/50" />
+        </div>
+      ))}
+    </div>
   );
 };
 
