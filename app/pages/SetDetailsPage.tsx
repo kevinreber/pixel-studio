@@ -36,7 +36,7 @@ const SetDetailsAccessor = () => {
             {convertUtcDateToLocalDateString(setCreatedAt)} by{" "}
             <a
               className="font-semibold text-blue-500"
-              href={`/profile/${setUser.username}`}
+              href={`/profile/${setUser.id}`}
             >
               {setUser.username}
             </a>
