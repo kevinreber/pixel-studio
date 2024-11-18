@@ -60,7 +60,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
         select: {
           id: true,
           prompt: true,
-          // thumbnailUrl: true,
         },
       },
       user: {
@@ -83,6 +82,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     formattedData.push({
       ...set,
+      // createdAt: set.createdAt.toISOString(),
       images: formattedImages,
     });
   }
