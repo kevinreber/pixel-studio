@@ -217,7 +217,7 @@ const SetRow = ({ set }: { set: Set }) => {
       <td className="p-4">
         <div className="flex items-center gap-4">
           <a
-            href={`/set/${set.id}`}
+            href={`/sets/${set.id}`}
             className="text-foreground hover:text-blue-500 transition-colors line-clamp-2"
           >
             <ImagePreviewGrid images={set.images} />

@@ -1,7 +1,7 @@
 import React from "react";
 import { Await, useLoaderData, useAsyncValue } from "@remix-run/react";
 import { PageContainer, ErrorList, ImageCard } from "~/components";
-import { SetPageLoader } from "~/routes/set.$setId";
+import { SetPageLoader } from "~/routes/sets.$setId";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const SetDetailsAccessor = () => {
