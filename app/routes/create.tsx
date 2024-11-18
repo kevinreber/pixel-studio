@@ -236,7 +236,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const response = await createNewImages(validateFormData.data, user.id);
 
   if (response.setId) {
-    return redirect(`/set/${response.setId}`);
+    return redirect(`/sets/${response.setId}`);
   }
 
   return json({ error: "Failed to create set" }, { status: 500 });

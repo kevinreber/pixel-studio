@@ -173,7 +173,7 @@ const ExploreImageDetailsPageAccessor = () => {
                   <div className="space-y-1">
                     <h4 className="font-semibold">Set</h4>
                     <a
-                      href={`/set/${imageData.setId}`}
+                      href={`/sets/${imageData.setId}`}
                       className="text-sm text-blue-500 hover:text-blue-600 hover:underline"
                     >
                       View Set
