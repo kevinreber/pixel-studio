@@ -3,6 +3,7 @@ import { Await, useLoaderData, useAsyncValue } from "@remix-run/react";
 import { PageContainer, ErrorList, ImageCard } from "~/components";
 import { SetPageLoader } from "~/routes/sets.$setId";
 import { Skeleton } from "@/components/ui/skeleton";
+import { convertUtcDateToLocalDateString } from "~/client";
 
 const SetDetailsAccessor = () => {
   const asyncValue = useAsyncValue() as Awaited<SetPageLoader["data"]>;
@@ -32,7 +33,7 @@ const SetDetailsAccessor = () => {
         <div>
           <div className="font-semibold">Created At</div>
           <div className="text-sm text-zinc-300">
-            {setCreatedAt} by{" "}
+            {convertUtcDateToLocalDateString(setCreatedAt)} by{" "}
             <a className="font-semibold text-blue-500" href="/">
               {setUser.username}
             </a>
