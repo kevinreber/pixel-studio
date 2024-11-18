@@ -90,6 +90,12 @@ function Document({
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>Pixel Studio AI</title>
+        <meta property="og:title" content="Pixel Studio AI" />
+        <meta
+          name="description"
+          content="Generate images with the power of AI"
+        />
         <Meta />
         <Links />
         {/* Google Analytics Script */}
