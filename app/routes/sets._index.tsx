@@ -4,7 +4,7 @@ import {
   type LoaderFunctionArgs,
   type ActionFunctionArgs,
 } from "@remix-run/node";
-import { useLoaderData, useNavigation, Form } from "@remix-run/react";
+import { useLoaderData, useNavigation, Form, Link } from "@remix-run/react";
 import {
   PageContainer,
   GeneralErrorBoundary,
@@ -23,7 +23,6 @@ import { requireUserLogin } from "~/services/auth.server";
 import { prisma } from "~/services/prisma.server";
 import { Button } from "@/components/ui/button";
 import { Logger } from "~/utils/logger.server";
-import { Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { getS3BucketThumbnailURL } from "~/utils/s3Utils";
 import { convertUtcDateToLocalDateString } from "~/client";
+import { Loader2, Trash2 } from "lucide-react";
 
 type Set = {
   id: string;
@@ -216,12 +216,13 @@ const SetRow = ({ set }: { set: Set }) => {
     <TableRow>
       <td className="p-4">
         <div className="flex items-center gap-4">
-          <a
-            href={`/sets/${set.id}`}
+          <Link
+            to={`/sets/${set.id}`}
+            prefetch="intent"
             className="text-foreground hover:text-blue-500 transition-colors line-clamp-2"
           >
             <ImagePreviewGrid images={set.images} />
-          </a>
+          </Link>
           <div className="flex flex-1 line-clamp-2">
             {set.prompt}
             <span className="ml-2">
@@ -286,7 +287,7 @@ const SetsTable = ({ sets }: { sets: Array<Set> }) => {
   );
 };
 
-export default function SetsPage() {
+export default function Index() {
   const { sets } = useLoaderData<typeof loader>();
   const navigation = useNavigation();
   const isLoading = navigation.state !== "idle";
@@ -296,18 +297,32 @@ export default function SetsPage() {
       <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">My Sets</h1>
-          <a
-            href="/create"
+          <Link
+            to="/create"
+            prefetch="intent"
             className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2"
           >
             Create New Set
-          </a>
+          </Link>
         </div>
 
         <Card className="mb-6">
           <CardContent className="p-0">
             <div className="relative min-h-[400px]">
-              {isLoading ? <SetsTableSkeleton /> : <SetsTable sets={sets} />}
+              {isLoading ? (
+                <SetsTableSkeleton />
+              ) : (
+                <div className="relative">
+                  {isLoading && (
+                    <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                      </div>
+                    </div>
+                  )}
+                  <SetsTable sets={sets} />
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -322,12 +337,13 @@ export function ErrorBoundary() {
       <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-8 mb-4">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">My Sets</h1>
-          <a
-            href="/create"
+          <Link
+            to="/create"
+            prefetch="intent"
             className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2"
           >
             Create New Set
-          </a>
+          </Link>
         </div>
       </div>
       <GeneralErrorBoundary />

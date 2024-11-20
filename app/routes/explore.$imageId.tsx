@@ -21,7 +21,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   invariantResponse(imageId, "Image does not exist");
 
   // Try to get user, but don't require login
-  let user = null;
+  let user: any = null;
   try {
     user = await requireUserLogin(request);
   } catch {
@@ -31,7 +31,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   // Get image data and collection info in parallel
   const [image, collections] = await Promise.all([
     getImage(imageId),
-    user
+    user && user.id
       ? prisma.collection.findMany({
           where: {
             userId: user.id,

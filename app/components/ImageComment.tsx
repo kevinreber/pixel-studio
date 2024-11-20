@@ -1,11 +1,12 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Heart, Trash2 } from "lucide-react";
-import { useFetcher } from "@remix-run/react";
+import { Link, useFetcher } from "@remix-run/react";
 import { useLoggedInUser } from "~/hooks";
 import React from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { AvatarImage } from "@radix-ui/react-avatar";
 
 interface CommentUser {
   id: string;
@@ -20,7 +21,7 @@ interface CommentLike {
 interface ImageCommentProps {
   id: string;
   message: string;
-  createdAt: Date;
+  createdAt: Date | string;
   user: CommentUser;
   likes: CommentLike[];
 }
@@ -86,18 +87,20 @@ export const ImageComment = ({
   return (
     <div className={cn("flex gap-3 group", isDeleting && "opacity-50")}>
       <Avatar className="h-8 w-8 shrink-0">
+        {user.image && <AvatarImage src={user.image} alt={user.username} />}
         <AvatarFallback>{user.username.charAt(0)}</AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 break-words">
             <p className="text-sm leading-normal">
-              <a
-                href={`/profile/${user.id}`}
+              <Link
+                to={`/profile/${user.id}`}
+                prefetch="intent"
                 className="font-semibold hover:underline mr-2"
               >
                 {user.username}
-              </a>
+              </Link>
               <span className="text-zinc-200">{message}</span>
             </p>
             <div className="flex items-center gap-2 mt-1 text-xs text-zinc-500">

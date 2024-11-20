@@ -1,9 +1,16 @@
 import React from "react";
-import { Await, useLoaderData, useAsyncValue } from "@remix-run/react";
+import {
+  Await,
+  useLoaderData,
+  useAsyncValue,
+  Link,
+  useNavigation,
+} from "@remix-run/react";
 import { PageContainer, ErrorList, ImageCard } from "~/components";
 import { SetPageLoader } from "~/routes/sets.$setId";
 import { Skeleton } from "@/components/ui/skeleton";
 import { convertUtcDateToLocalDateString } from "~/client";
+import { Loader2 } from "lucide-react";
 
 const SetDetailsAccessor = () => {
   const asyncValue = useAsyncValue() as Awaited<SetPageLoader["data"]>;
@@ -34,12 +41,13 @@ const SetDetailsAccessor = () => {
           <div className="font-semibold">Created At</div>
           <div className="text-sm text-zinc-300">
             {convertUtcDateToLocalDateString(setCreatedAt)} by{" "}
-            <a
+            <Link
+              to={`/profile/${setUser.id}`}
               className="font-semibold text-blue-500"
-              href={`/profile/${setUser.id}`}
+              prefetch="intent"
             >
               {setUser.username}
-            </a>
+            </Link>
           </div>
         </div>
         <div>
@@ -59,6 +67,8 @@ const SetDetailsAccessor = () => {
 
 const SetDetailsPage = () => {
   const loaderData = useLoaderData<SetPageLoader>();
+  const navigation = useNavigation();
+  const isNavigating = navigation.state !== "idle";
 
   return (
     <PageContainer>
@@ -95,7 +105,16 @@ const SetDetailsPage = () => {
             />
           }
         >
-          <SetDetailsAccessor />
+          <div className="relative">
+            {isNavigating && (
+              <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              </div>
+            )}
+            <SetDetailsAccessor />
+          </div>
         </Await>
       </React.Suspense>
     </PageContainer>

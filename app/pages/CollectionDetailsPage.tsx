@@ -1,8 +1,8 @@
-import { Await, useLoaderData } from "@remix-run/react";
+import { Await, Link, useLoaderData, useNavigation } from "@remix-run/react";
 import type { CollectionDetailsLoader } from "~/routes/collections.$collectionId";
 import { PageContainer, ImageCard } from "~/components";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { User, Loader2 } from "lucide-react";
 import { convertUtcDateToLocalDateString } from "~/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import React from "react";
@@ -38,6 +38,8 @@ const CollectionDetailsSkeleton = () => {
 
 export default function CollectionDetailsPage() {
   const { collection } = useLoaderData<CollectionDetailsLoader>();
+  const navigation = useNavigation();
+  const isNavigating = navigation.state !== "idle";
 
   return (
     <PageContainer>
@@ -51,7 +53,15 @@ export default function CollectionDetailsPage() {
           }
         >
           {(resolvedCollection) => (
-            <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
+            <div className="relative w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
+              {isNavigating && (
+                <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                </div>
+              )}
+
               {/* Collection Header */}
               <div className="py-8 border-b border-zinc-200 dark:border-zinc-800">
                 <div className="flex flex-col gap-4">
@@ -68,10 +78,9 @@ export default function CollectionDetailsPage() {
                 <div className="flex items-center gap-4 mt-6">
                   <Avatar className="h-8 w-8">
                     {resolvedCollection.user.image ? (
-                      <img
+                      <AvatarImage
                         src={resolvedCollection.user.image}
                         alt={resolvedCollection.user.username}
-                        className="object-cover w-full h-full rounded-full"
                       />
                     ) : (
                       <AvatarFallback>
@@ -80,12 +89,13 @@ export default function CollectionDetailsPage() {
                     )}
                   </Avatar>
                   <div>
-                    <a
-                      href={`/profile/${resolvedCollection.user.id}`}
+                    <Link
+                      to={`/profile/${resolvedCollection.user.id}`}
+                      prefetch="intent"
                       className="font-medium hover:underline"
                     >
                       {resolvedCollection.user.username}
-                    </a>
+                    </Link>
                     <div className="flex items-center gap-2 text-sm text-zinc-500">
                       <span>
                         {resolvedCollection.imageCount}{" "}

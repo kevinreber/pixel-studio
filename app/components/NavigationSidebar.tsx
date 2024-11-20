@@ -15,15 +15,16 @@ const NavButton = ({
   icon: React.ReactElement;
   link: string;
 }) => (
-  <a
-    href={link}
+  <Link
+    to={link}
+    prefetch="intent"
     className="w-full flex items-center px-3 py-2 rounded-md text-gray-300 hover:bg-gray-800 hover:text-white transition-colors font-medium"
     {...props}
   >
     {icon}
     {/* </span> */}
     <span className="ml-2">{title}</span>
-  </a>
+  </Link>
 );
 
 const NavigationSidebar = () => {
@@ -111,7 +112,7 @@ const NavigationSidebar = () => {
             }}
           >
             <div>
-              <Link to="/" className="flex align-baseline">
+              <Link to="/" prefetch="intent" className="flex align-baseline">
                 <div className="w-8 mr-3">
                   <PixelStudioIcon />
                 </div>
@@ -134,9 +135,10 @@ const NavigationSidebar = () => {
             {navLinksToRender.map((link) => (
               <Link
                 key={link.href}
+                to={link.href}
+                prefetch="intent"
                 className="text-white group flex items-center px-2 py-2 text-medium font-medium rounded-md"
                 // className="bg-gray-900 text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
-                to={link.href}
               >
                 <span>{link.icon}</span>
               </Link>

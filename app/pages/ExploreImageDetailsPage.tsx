@@ -1,18 +1,19 @@
 import React from "react";
 import { useLoggedInUser } from "~/hooks";
-import { Await, useAsyncValue, useLoaderData } from "@remix-run/react";
+import { Await, Link, useAsyncValue, useLoaderData } from "@remix-run/react";
 import { ExplorePageImageLoader } from "~/routes/explore.$imageId";
 import { convertUtcDateToLocalDateString, fallbackImageSource } from "~/client";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MessageCircle, Info, Loader2 } from "lucide-react";
 import { CopyToClipboardButton } from "~/components";
 import { LikeImageButton } from "~/components/LikeImageButton";
 import { CommentForm } from "~/components/CommentForm";
 import { ImageComment } from "~/components/ImageComment";
 import { AddImageToCollectionButton } from "~/components/AddImageToCollectionButton";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 interface ExploreImageDetailsPageProps {
   onClose: () => void;
@@ -95,6 +96,7 @@ const ExploreImageDetailsPageAccessor = () => {
           <div className="h-full flex items-center justify-center">
             <img
               loading="lazy"
+              decoding="async"
               src={imageData.url}
               alt={imageData.prompt || "Generated Image"}
               className="max-h-[90vh] w-auto object-contain"
@@ -111,23 +113,23 @@ const ExploreImageDetailsPageAccessor = () => {
           <div className="shrink-0 p-4 border-b border-zinc-200 dark:border-zinc-800">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Avatar
-                  className="h-8 w-8"
-                  src={imageUserData?.image}
-                  alt={imageUserData?.username}
-                >
+                <Avatar className="h-8 w-8">
+                  <AvatarImage
+                    src={imageUserData.image}
+                    alt={imageUserData.username}
+                  />
                   <AvatarFallback>
                     {imageUserData?.username.charAt(0) || ""}
-                    {/* <User className="h-4 w-4" /> */}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
-                  <a
-                    href={`/profile/${imageUserData?.id}`}
+                  <Link
+                    to={`/profile/${imageUserData?.id}`}
                     className="font-semibold text-sm hover:underline"
+                    prefetch="intent"
                   >
                     {imageUserData?.username}
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -172,12 +174,13 @@ const ExploreImageDetailsPageAccessor = () => {
                 {imageData.setId && (
                   <div className="space-y-1">
                     <h4 className="font-semibold">Set</h4>
-                    <a
-                      href={`/sets/${imageData.setId}`}
+                    <Link
+                      to={`/sets/${imageData.setId}`}
                       className="text-sm text-blue-500 hover:text-blue-600 hover:underline"
+                      prefetch="intent"
                     >
                       View Set
-                    </a>
+                    </Link>
                   </div>
                 )}
 
@@ -230,7 +233,9 @@ const ExploreImageDetailsPageAccessor = () => {
               </div>
 
               {/* Comment Input - Now separated with better contrast */}
-              {isUserLoggedIn && <CommentForm imageId={imageData.id} />}
+              {isUserLoggedIn && (
+                <CommentForm imageId={imageData.id as string} />
+              )}
             </div>
           </div>
         </div>
@@ -269,6 +274,9 @@ const ExploreImageDetailsPage = ({ onClose }: ExploreImageDetailsPageProps) => {
               className="max-w-[90%] h-[90vh] p-0 gap-0 dark:bg-zinc-900 overflow-hidden z-[100] [&>button]:absolute [&>button]:right-4 [&>button]:top-4 [&>button]:z-10 [&>button_span]:hidden"
               onInteractOutside={(e) => e.preventDefault()}
             >
+              <VisuallyHidden asChild>
+                <DialogTitle>Image Details</DialogTitle>
+              </VisuallyHidden>
               <ExploreImageDetailsPageAccessor />
             </DialogContent>
           </Dialog>

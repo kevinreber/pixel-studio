@@ -1,6 +1,7 @@
 import { PageContainer } from "~/components";
 import PixelStudioIcon from "components/PixelStudioIcon";
-import { Link } from "@remix-run/react";
+import { Link, useNavigation } from "@remix-run/react";
+import { Loader2 } from "lucide-react";
 
 /**
  *
@@ -40,11 +41,21 @@ const BROOKLYN_BRIDGE_FROM_TRAIN =
   "https://ai-icon-generator-resized.s3.us-east-2.amazonaws.com/resized-clov3hb17001gr2qvnx15mvf7";
 
 const LandingPage = () => {
+  const navigation = useNavigation();
+  const isNavigating = navigation.state !== "idle";
+
   return (
     <PageContainer
       styles={{ width: "100%", height: "100%", padding: 0, margin: 0 }}
     >
-      <main className="h-full">
+      <main className="h-full relative">
+        {isNavigating && (
+          <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          </div>
+        )}
         <div className="absolute top-6 left-6 z-10">
           <Link to="/" className="flex align-baseline">
             <div className="w-8 mr-3">
@@ -109,18 +120,20 @@ const LandingPage = () => {
                     life.
                   </p>
                   <div className="mt-10 flex items-center gap-x-6">
-                    <a
-                      href="/create"
+                    <Link
+                      to="/create"
+                      prefetch="intent"
                       className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                     >
                       Get started
-                    </a>
-                    <a
-                      href="/explore"
+                    </Link>
+                    <Link
+                      to="/explore"
+                      prefetch="intent"
                       className="rounded-md px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm  focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 border border-gray-500 hover:bg-gray-800 hover:text-gray-200"
                     >
                       Explore
-                    </a>
+                    </Link>
                   </div>
                 </div>
                 <div className="mt-14 flex justify-end gap-8 sm:-mt-44 sm:justify-start sm:pl-20 lg:mt-0 lg:pl-0">
@@ -130,6 +143,8 @@ const LandingPage = () => {
                         src={BONSAI_TREE_SRC}
                         alt=""
                         className="aspect-[2/3] w-full rounded-xl bg-gray-900/5 object-cover shadow-lg"
+                        decoding="async"
+                        loading="lazy"
                       />
                       <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-gray-900/10" />
                     </div>
@@ -140,6 +155,8 @@ const LandingPage = () => {
                         src={BROOKLYN_BRIDGE_FROM_TRAIN}
                         alt=""
                         className="aspect-[2/3] w-full rounded-xl bg-gray-900/5 object-cover shadow-lg"
+                        decoding="async"
+                        loading="lazy"
                       />
                       <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-gray-900/10" />
                     </div>
@@ -148,6 +165,8 @@ const LandingPage = () => {
                         src={PIRATE_SPACE_SHIP}
                         alt=""
                         className="aspect-[2/3] w-full rounded-xl bg-gray-900/5 object-cover shadow-lg"
+                        decoding="async"
+                        loading="lazy"
                       />
                       <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-gray-900/10" />
                     </div>
@@ -158,6 +177,8 @@ const LandingPage = () => {
                         src={MAN_STANDING_STARGATE}
                         alt=""
                         className="aspect-[2/3] w-full rounded-xl bg-gray-900/5 object-cover shadow-lg"
+                        decoding="async"
+                        loading="lazy"
                       />
                       <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-gray-900/10" />
                     </div>
@@ -166,6 +187,8 @@ const LandingPage = () => {
                         src={ISO_SPACE_STATION}
                         alt=""
                         className="aspect-[2/3] w-full rounded-xl bg-gray-900/5 object-cover shadow-lg"
+                        decoding="async"
+                        loading="lazy"
                       />
                       <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-gray-900/10" />
                     </div>

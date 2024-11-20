@@ -45,10 +45,7 @@ export function CreateCollectionDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button 
-          className="flex items-center gap-2"
-          disabled={isPending}
-        >
+        <Button className="flex items-center gap-2" disabled={isPending}>
           {isPending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
@@ -57,7 +54,7 @@ export function CreateCollectionDialog() {
           {isPending ? "Creating..." : "Create Collection"}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]" hideClose>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Create New Collection</DialogTitle>
         </DialogHeader>
@@ -88,11 +85,7 @@ export function CreateCollectionDialog() {
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
-              disabled={isPending}
-              className="min-w-[80px]"
-            >
+            <Button type="submit" disabled={isPending} className="min-w-[80px]">
               {isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
