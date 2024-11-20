@@ -13,6 +13,7 @@ import { CreateCollectionDialog } from "~/components/CreateCollectionDialog";
 import { CollectionRow } from "~/components/CollectionRow";
 import { Skeleton } from "@/components/ui/skeleton";
 import React from "react";
+import { Loader2 } from "lucide-react";
 
 const CollectionsTableSkeleton = () => {
   return (
@@ -61,7 +62,9 @@ const UserCollectionsPage = () => {
                       <>
                         {isNavigating && (
                           <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
-                            <div className="animate-spin">Loading...</div>
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Loader2 className="h-8 w-8 animate-spin" />
+                            </div>
                           </div>
                         )}
                         <Table>

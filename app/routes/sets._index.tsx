@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { getS3BucketThumbnailURL } from "~/utils/s3Utils";
 import { convertUtcDateToLocalDateString } from "~/client";
+import { Loader2 } from "lucide-react";
 
 type Set = {
   id: string;
@@ -309,7 +310,20 @@ export default function SetsPage() {
         <Card className="mb-6">
           <CardContent className="p-0">
             <div className="relative min-h-[400px]">
-              {isLoading ? <SetsTableSkeleton /> : <SetsTable sets={sets} />}
+              {isLoading ? (
+                <SetsTableSkeleton />
+              ) : (
+                <div className="relative">
+                  {isLoading && (
+                    <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                      </div>
+                    </div>
+                  )}
+                  <SetsTable sets={sets} />
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
