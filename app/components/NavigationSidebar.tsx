@@ -48,11 +48,11 @@ const NavigationSidebar = () => {
       icon: <Images className="md:h-4 md:w-4" />,
       href: "/sets",
     },
-    {
-      title: "Collections",
-      icon: <Layers className="md:h-4 md:w-4" />,
-      href: "/collections",
-    },
+    // {
+    //   title: "Collections",
+    //   icon: <Layers className="md:h-4 md:w-4" />,
+    //   href: "/collections",
+    // },
     {
       title: "Profile",
       icon: <User className="md:h-4 md:w-4" />,
