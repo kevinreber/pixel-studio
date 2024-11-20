@@ -1,12 +1,11 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Heart, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, Trash2 } from "lucide-react";
 import { Link, useFetcher } from "@remix-run/react";
 import { useLoggedInUser } from "~/hooks";
 import React from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { AvatarImage } from "@radix-ui/react-avatar";
 
 interface CommentUser {
   id: string;
@@ -117,19 +116,25 @@ export const ImageComment = ({
               variant="ghost"
               size="icon"
               className={cn(
-                "h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity",
-                isLiked && "text-red-500 opacity-100"
+                "h-8 w-8 group-hover:opacity-100 transition-opacity",
+                isLiked
+                  ? "text-red-500 opacity-100"
+                  : "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 rounded-full"
               )}
               onClick={handleLikeClick}
               disabled={isLoading || !loggedInUser}
             >
-              <Heart className={cn("h-4 w-4", isLiked && "fill-current")} />
+              {isLiked ? (
+                <Heart className="h-4 w-4 fill-current" />
+              ) : (
+                <Heart className="h-4 w-4" strokeWidth={1.5} />
+              )}
             </Button>
             {isCommentOwner && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-8 w-8 group-hover:opacity-100 transition-opacity text-zinc-500 rounded-full"
                 onClick={handleDeleteClick}
                 disabled={isDeleting}
               >
