@@ -8,6 +8,7 @@ import { invariantResponse } from "~/utils";
 import { prisma } from "~/services/prisma.server";
 import CollectionDetailsPage from "~/pages/CollectionDetailsPage";
 import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
+import { Link } from "@remix-run/react";
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
   const collection = data?.collection;
@@ -111,14 +112,16 @@ export function ErrorBoundary() {
       <div className="text-center">
         <h1 className="text-2xl font-bold mb-4">Collection Not Found</h1>
         <p className="text-zinc-500 mb-4">
-          The collection you're looking for doesn't exist or has been removed.
+          The collection you&apos;re looking for doesn&apos;t exist or has been
+          removed.
         </p>
-        <a
-          href="/explore"
+        <Link
+          to="/explore"
+          prefetch="intent"
           className="text-blue-500 hover:text-blue-600 hover:underline"
         >
           Back to Explore
-        </a>
+        </Link>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { Await, useLoaderData } from "@remix-run/react";
+import { Await, Link, useLoaderData } from "@remix-run/react";
 import type { CollectionDetailsLoader } from "~/routes/collections.$collectionId";
 import { PageContainer, ImageCard } from "~/components";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -80,12 +80,13 @@ export default function CollectionDetailsPage() {
                     )}
                   </Avatar>
                   <div>
-                    <a
-                      href={`/profile/${resolvedCollection.user.id}`}
+                    <Link
+                      to={`/profile/${resolvedCollection.user.id}`}
+                      prefetch="intent"
                       className="font-medium hover:underline"
                     >
                       {resolvedCollection.user.username}
-                    </a>
+                    </Link>
                     <div className="flex items-center gap-2 text-sm text-zinc-500">
                       <span>
                         {resolvedCollection.imageCount}{" "}

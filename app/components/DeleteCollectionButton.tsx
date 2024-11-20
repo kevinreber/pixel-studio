@@ -48,7 +48,7 @@ export function DeleteCollectionButton({
       >
         <Trash2 className="h-4 w-4" />
       </Button>
-      <DialogContent hideClose>
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Delete Collection</DialogTitle>
           <DialogDescription>

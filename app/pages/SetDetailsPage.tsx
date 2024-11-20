@@ -1,5 +1,5 @@
 import React from "react";
-import { Await, useLoaderData, useAsyncValue } from "@remix-run/react";
+import { Await, useLoaderData, useAsyncValue, Link } from "@remix-run/react";
 import { PageContainer, ErrorList, ImageCard } from "~/components";
 import { SetPageLoader } from "~/routes/sets.$setId";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,12 +34,13 @@ const SetDetailsAccessor = () => {
           <div className="font-semibold">Created At</div>
           <div className="text-sm text-zinc-300">
             {convertUtcDateToLocalDateString(setCreatedAt)} by{" "}
-            <a
+            <Link
+              to={`/profile/${setUser.id}`}
               className="font-semibold text-blue-500"
-              href={`/profile/${setUser.id}`}
+              prefetch="intent"
             >
               {setUser.username}
-            </a>
+            </Link>
           </div>
         </div>
         <div>

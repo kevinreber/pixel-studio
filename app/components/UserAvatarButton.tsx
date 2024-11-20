@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOutButton } from "./LogOutButton";
 import { useLoggedInUser } from "~/hooks/useLoggedInUser";
+import { Link } from "@remix-run/react";
 
 const NavButton = ({
   title,
@@ -22,18 +23,18 @@ const NavButton = ({
   icon: React.ReactElement;
   link: string;
 }) => (
-  <a
-    href={link}
+  <Link
+    to={link}
+    prefetch="intent"
     className="w-full flex items-center rounded-md text-gray-300 hover:bg-gray-800 hover:text-white transition-colors font-medium"
     {...props}
   >
     {icon}
     <span className="ml-2">{title}</span>
-  </a>
+  </Link>
 );
 
 const NAV_LINKS = [
-
   {
     title: "Buy Credits",
     icon: <CreditCard className="md:h-4 md:w-4" />,

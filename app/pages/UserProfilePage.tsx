@@ -1,5 +1,5 @@
-import { Await, useLoaderData, useAsyncValue } from "@remix-run/react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Await, useLoaderData, useAsyncValue, Link } from "@remix-run/react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -86,6 +86,7 @@ const UserProfileAccessor = () => {
           {/* Avatar */}
           {userData.image && (
             <Avatar className="w-32 h-32">
+              <AvatarImage src={userData.image} alt={userData.username} />
               <AvatarFallback className="text-2xl">
                 {userData.name?.charAt(0)}
               </AvatarFallback>
@@ -142,7 +143,9 @@ const UserProfileAccessor = () => {
                     When you create images, they will appear here.
                   </p>
                   <Button className="mt-4" asChild>
-                    <a href="/create">Create Your First Image</a>
+                    <Link to="/create" prefetch="intent">
+                      Create Your First Image
+                    </Link>
                   </Button>
                 </div>
               )}

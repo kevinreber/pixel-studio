@@ -13,7 +13,11 @@ const ImageCard = ({
 
   return (
     <div className="relative w-full h-full pt-[100%]">
-      <Link className="absolute inset-0 block" to={redirectTo}>
+      <Link
+        className="absolute inset-0 block"
+        prefetch="intent"
+        to={redirectTo}
+      >
         <img
           // className="w-full h-full object-cover"
           className="inset-0 object-cover cursor-pointer absolute w-full h-full"

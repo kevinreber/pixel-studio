@@ -62,7 +62,7 @@ export function EditCollectionDialog({
           <Pencil className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]" hideClose>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Edit Collection</DialogTitle>
         </DialogHeader>

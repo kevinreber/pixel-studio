@@ -10,13 +10,14 @@ interface ImageComment {
   user: {
     id: string;
     username: string;
-    image: string | null;
+    image: string;
   };
   likes: Array<{ userId: string }>;
 }
 
 interface ImageUser {
   id: string;
+  image: string;
   username: string;
 }
 
@@ -59,6 +60,7 @@ export const getImage = async (
         select: {
           id: true,
           username: true,
+          image: true,
         },
       },
       createdAt: true,

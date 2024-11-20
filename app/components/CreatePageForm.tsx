@@ -57,9 +57,11 @@ const Image = ({
 const NumberSelector = ({
   value = 1,
   onChange,
+  disabled = false,
 }: {
   value: number;
   onChange: (value: number) => void;
+  disabled: boolean;
 }) => {
   const firstRow = [1, 2, 3, 4];
   const secondRow = [5, 6, 7, 8];
@@ -74,6 +76,7 @@ const NumberSelector = ({
             <Button
               key={number}
               type="button"
+              disabled={disabled}
               onClick={() => onChange(number)}
               variant={value === number ? "secondary" : "outline"}
               className={`w-14 h-[40px] text-lg ${
@@ -92,6 +95,7 @@ const NumberSelector = ({
             <Button
               key={number}
               type="button"
+              disabled={disabled}
               onClick={() => onChange(number)}
               variant={value === number ? "secondary" : "outline"}
               className={`w-14 h-[40px] text-lg ${
@@ -224,7 +228,11 @@ const CreatePageForm = () => {
               </div>
               <div>
                 <input type="hidden" name="numberOfImages" value={numImages} />
-                <NumberSelector value={numImages} onChange={setNumImages} />
+                <NumberSelector
+                  value={numImages}
+                  onChange={setNumImages}
+                  disabled={isSubmitting}
+                />
               </div>
             </CardContent>
             <CardFooter>
@@ -405,7 +413,11 @@ const CreatePageForm = () => {
               </div>
               <div>
                 <input type="hidden" name="numberOfImages" value={numImages} />
-                <NumberSelector value={numImages} onChange={setNumImages} />
+                <NumberSelector
+                  value={numImages}
+                  onChange={setNumImages}
+                  disabled={isSubmitting}
+                />
               </div>
             </CardContent>
             <CardFooter>

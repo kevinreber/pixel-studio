@@ -1,4 +1,4 @@
-;import { Link, useFetcher } from "@remix-run/react";
+import { Link, useFetcher } from "@remix-run/react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { EditCollectionDialog } from "~/components/EditCollectionDialog";
 import { DeleteCollectionButton } from "~/components/DeleteCollectionButton";
@@ -39,6 +39,7 @@ export function CollectionRow({ collection }: CollectionRowProps) {
         <Link
           to={`/collections/${collection.id}`}
           className="hover:underline font-medium"
+          prefetch="intent"
         >
           {collection.title}
         </Link>
