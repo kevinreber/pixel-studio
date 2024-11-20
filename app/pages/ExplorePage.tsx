@@ -109,6 +109,8 @@ type ExplorePageLoaderData = Awaited<ExplorePageLoader>;
 
 const ExplorePage = () => {
   const loaderData = useLoaderData() as ExplorePageLoaderData;
+  const navigation = useNavigation();
+  const isNavigating = navigation.state !== "idle";
 
   return (
     <PageContainer>
@@ -121,7 +123,16 @@ const ExplorePage = () => {
               <ErrorList errors={["There was an error loading images"]} />
             }
           >
-            <ExplorePageAccessor />
+            <div className="relative">
+              {isNavigating && (
+                <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                </div>
+              )}
+              <ExplorePageAccessor />
+            </div>
           </Await>
         </React.Suspense>
       </div>

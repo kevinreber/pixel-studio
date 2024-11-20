@@ -1,4 +1,10 @@
-import { Await, useLoaderData, useAsyncValue, Link } from "@remix-run/react";
+import {
+  Await,
+  useLoaderData,
+  useAsyncValue,
+  Link,
+  useNavigation,
+} from "@remix-run/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,7 +15,7 @@ import {
   ImageGridSkeleton,
 } from "~/components";
 import type { UserProfilePageLoader } from "~/routes/profile.$userId";
-import { Grid, User } from "lucide-react";
+import { Grid, User, Loader2 } from "lucide-react";
 import React from "react";
 
 const UserDoesNotExist = () => {
@@ -159,6 +165,8 @@ const UserProfileAccessor = () => {
 
 export default function UserProfilePage() {
   const data = useLoaderData<UserProfilePageLoader>();
+  const navigation = useNavigation();
+  const isNavigating = navigation.state !== "idle";
 
   return (
     <PageContainer>
@@ -190,7 +198,16 @@ export default function UserProfilePage() {
             />
           }
         >
-          <UserProfileAccessor />
+          <div className="relative">
+            {isNavigating && (
+              <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              </div>
+            )}
+            <UserProfileAccessor />
+          </div>
         </Await>
       </React.Suspense>
     </PageContainer>

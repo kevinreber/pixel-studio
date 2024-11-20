@@ -1,6 +1,7 @@
 import { PageContainer } from "~/components";
 import PixelStudioIcon from "components/PixelStudioIcon";
-import { Link } from "@remix-run/react";
+import { Link, useNavigation } from "@remix-run/react";
+import { Loader2 } from "lucide-react";
 
 /**
  *
@@ -40,11 +41,21 @@ const BROOKLYN_BRIDGE_FROM_TRAIN =
   "https://ai-icon-generator-resized.s3.us-east-2.amazonaws.com/resized-clov3hb17001gr2qvnx15mvf7";
 
 const LandingPage = () => {
+  const navigation = useNavigation();
+  const isNavigating = navigation.state !== "idle";
+
   return (
     <PageContainer
       styles={{ width: "100%", height: "100%", padding: 0, margin: 0 }}
     >
-      <main className="h-full">
+      <main className="h-full relative">
+        {isNavigating && (
+          <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          </div>
+        )}
         <div className="absolute top-6 left-6 z-10">
           <Link to="/" className="flex align-baseline">
             <div className="w-8 mr-3">
