@@ -96,6 +96,7 @@ const ExploreImageDetailsPageAccessor = () => {
           <div className="h-full flex items-center justify-center">
             <img
               loading="lazy"
+              decoding="async"
               src={imageData.url}
               alt={imageData.prompt || "Generated Image"}
               className="max-h-[90vh] w-auto object-contain"

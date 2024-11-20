@@ -6,6 +6,7 @@ import { useLoggedInUser } from "~/hooks";
 import React from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { AvatarImage } from "@radix-ui/react-avatar";
 
 interface CommentUser {
   id: string;
@@ -86,6 +87,7 @@ export const ImageComment = ({
   return (
     <div className={cn("flex gap-3 group", isDeleting && "opacity-50")}>
       <Avatar className="h-8 w-8 shrink-0">
+        {user.image && <AvatarImage src={user.image} alt={user.username} />}
         <AvatarFallback>{user.username.charAt(0)}</AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0 space-y-1">

@@ -1,7 +1,7 @@
 import { Await, Link, useLoaderData } from "@remix-run/react";
 import type { CollectionDetailsLoader } from "~/routes/collections.$collectionId";
 import { PageContainer, ImageCard } from "~/components";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User } from "lucide-react";
 import { convertUtcDateToLocalDateString } from "~/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -68,10 +68,9 @@ export default function CollectionDetailsPage() {
                 <div className="flex items-center gap-4 mt-6">
                   <Avatar className="h-8 w-8">
                     {resolvedCollection.user.image ? (
-                      <img
+                      <AvatarImage
                         src={resolvedCollection.user.image}
                         alt={resolvedCollection.user.username}
-                        className="object-cover w-full h-full rounded-full"
                       />
                     ) : (
                       <AvatarFallback>

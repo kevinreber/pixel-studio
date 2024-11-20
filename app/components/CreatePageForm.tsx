@@ -49,6 +49,7 @@ const Image = ({
         src={src}
         alt={alt}
         loading="lazy"
+        decoding="async"
       />
     </div>
   );

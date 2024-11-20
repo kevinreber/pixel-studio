@@ -19,10 +19,11 @@ const ImageCard = ({
         to={redirectTo}
       >
         <img
-          // className="w-full h-full object-cover"
-          className="inset-0 object-cover cursor-pointer absolute w-full h-full"
+          loading="lazy"
           src={imageData.thumbnailURL}
           alt={imageData.prompt}
+          className="inset-0 object-cover cursor-pointer absolute w-full h-full"
+          decoding="async"
         />
       </Link>
       {/* Hover Overlay */}
