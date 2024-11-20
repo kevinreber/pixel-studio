@@ -14,6 +14,11 @@ import { CommentForm } from "~/components/CommentForm";
 import { ImageComment } from "~/components/ImageComment";
 import { AddImageToCollectionButton } from "~/components/AddImageToCollectionButton";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface ExploreImageDetailsPageProps {
   onClose: () => void;
@@ -85,6 +90,19 @@ const ExploreImageDetailsPageAccessor = () => {
   const imageUserData = imageData.user as ImageUserData;
   const userData = useLoggedInUser();
   const isUserLoggedIn = Boolean(userData);
+
+  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsPopoverOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   if (!imageData) return null;
 
@@ -159,10 +177,66 @@ const ExploreImageDetailsPageAccessor = () => {
           {/* Action buttons - Mobile only */}
           <div className="shrink-0 p-4 border-b border-zinc-200 dark:border-zinc-800 md:hidden">
             <div className="flex items-center justify-between">
-              <LikeImageButton imageData={imageData} />
-              <p className="text-xs text-zinc-500">
-                {convertUtcDateToLocalDateString(imageData.createdAt!)}
-              </p>
+              <div className="flex items-center gap-3">
+                <LikeImageButton imageData={imageData} />
+              </div>
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-zinc-500">
+                  {convertUtcDateToLocalDateString(imageData.createdAt!)}
+                </p>
+                <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
+                      <Info className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    side="bottom"
+                    align="end"
+                    className="max-w-[280px] p-3 space-y-2 z-[2000] w-screen sm:w-auto mx-4 sm:mx-0 bg-zinc-800"
+                  >
+                    <p>Image Details</p>
+                    {imageData.setId && (
+                      <div className="space-y-1">
+                        <p className="text-xs">
+                          <Link
+                            to={`/sets/${imageData.setId}`}
+                            className="ml-1 text-blue-500 hover:text-blue-600 hover:underline"
+                            prefetch="intent"
+                          >
+                            View Set
+                          </Link>
+                        </p>
+                      </div>
+                    )}
+                    <div className="space-y-1">
+                      <p className="text-xs">
+                        <span className="font-semibold">Model:</span>{" "}
+                        <span className="italic">{imageData.model}</span>
+                      </p>
+                    </div>
+                    {imageData.stylePreset && (
+                      <div className="space-y-1">
+                        <p className="text-xs">
+                          <span className="font-semibold">Style:</span>{" "}
+                          <span className="italic">
+                            {imageData.stylePreset}
+                          </span>
+                        </p>
+                      </div>
+                    )}
+                    <div className="space-y-1">
+                      <p className="text-xs">
+                        <span className="font-semibold">Prompt:</span>{" "}
+                        <span className="italic">{imageData.prompt}</span>
+                      </p>
+                      {/* <CopyToClipboardButton
+                        stringToCopy={imageData.prompt || ""}
+                      /> */}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
           </div>
 
@@ -243,9 +317,9 @@ const ExploreImageDetailsPageAccessor = () => {
                       <h4 className="font-semibold">Prompt</h4>
                       <div className="flex items-start gap-2">
                         <p className="italic text-sm">{imageData.prompt}</p>
-                        <CopyToClipboardButton
+                        {/* <CopyToClipboardButton
                           stringToCopy={imageData.prompt || ""}
-                        />
+                        /> */}
                       </div>
                     </div>
                   </div>
