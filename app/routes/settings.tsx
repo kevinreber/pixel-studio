@@ -77,7 +77,7 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 }
 
-export default function SettingsPage() {
+export default function Index() {
   const user = useLoggedInUser();
   const actionData = useActionData<typeof action>();
 

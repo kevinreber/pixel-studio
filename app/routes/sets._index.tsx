@@ -23,7 +23,6 @@ import { requireUserLogin } from "~/services/auth.server";
 import { prisma } from "~/services/prisma.server";
 import { Button } from "@/components/ui/button";
 import { Logger } from "~/utils/logger.server";
-import { Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -34,7 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { getS3BucketThumbnailURL } from "~/utils/s3Utils";
 import { convertUtcDateToLocalDateString } from "~/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 
 type Set = {
   id: string;
@@ -288,7 +287,7 @@ const SetsTable = ({ sets }: { sets: Array<Set> }) => {
   );
 };
 
-export default function SetsPage() {
+export default function Index() {
   const { sets } = useLoaderData<typeof loader>();
   const navigation = useNavigation();
   const isLoading = navigation.state !== "idle";

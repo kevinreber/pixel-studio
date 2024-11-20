@@ -17,6 +17,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   });
 };
 
-export default function CollectionsRoute() {
+export default function Index() {
   return <UserCollectionsPage />;
 }

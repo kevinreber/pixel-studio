@@ -102,7 +102,7 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
 
 export type CollectionDetailsLoader = SerializeFrom<typeof loader>;
 
-export default function CollectionRoute() {
+export default function Index() {
   return <CollectionDetailsPage />;
 }
 
