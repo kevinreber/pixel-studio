@@ -11,71 +11,80 @@ export const handleStripeEvent = async (
 ) => {
   try {
     Logger.info({
-      message: "Processing Stripe webhook event",
-      metadata: { type, id }
+      message: "[webhook.server]: Processing Stripe webhook event",
+      metadata: { type, id, data: JSON.stringify(data) },
     });
-
-    const isTestEvent = id === "evt_00000000000000";
-    if (isTestEvent) {
-      Logger.info({ message: "Skipping test event" });
-      return;
-    }
 
     switch (type) {
       case CHECKOUT_SESSION_COMPLETED: {
-        const checkoutSessionCompleted = data.object as {
-          id: string;
-          amount: number;
-          metadata: {
-            userId: string;
-          };
-        };
-
-        const creditsToAdd = 100;
-        Logger.info({
-          message: "Processing completed checkout session",
-          metadata: {
-            sessionId: checkoutSessionCompleted.id,
-            userId: checkoutSessionCompleted.metadata.userId,
-            creditsToAdd
-          }
-        });
-
-        const userData = await prisma.user.update({
-          where: {
-            id: checkoutSessionCompleted.metadata.userId,
-          },
-          data: {
-            credits: {
-              increment: creditsToAdd,
-            },
-          },
-        });
-
-        Logger.info({
-          message: "Successfully updated user credits",
-          metadata: {
-            userId: userData.id,
-            newCreditBalance: userData.credits
-          }
-        });
-
-        return userData;
+        const session = data.object as Stripe.Checkout.Session;
+        return handleCheckoutSession(session);
       }
 
       default:
         Logger.warn({
-          message: "Unhandled webhook event type",
-          metadata: { type }
+          message: "[webhook.server]: Unhandled webhook event type",
+          metadata: { type },
         });
+        return null;
     }
-
-    return;
   } catch (error) {
     Logger.error({
-      message: "Error processing Stripe webhook",
+      message: "[webhook.server]: Error processing Stripe webhook",
       error: error instanceof Error ? error : new Error(String(error)),
-      metadata: { type, id }
+      metadata: { type, id },
     });
+    throw error;
   }
+};
+
+const handleCheckoutSession = async (session: Stripe.Checkout.Session) => {
+  Logger.info({
+    message: "[webhook.server]: Processing checkout session",
+    metadata: {
+      sessionId: session.id,
+      metadata: session.metadata,
+      customerId: session.customer,
+      paymentStatus: session.payment_status,
+    },
+  });
+
+  if (!session.metadata?.userId) {
+    throw new Error("No userId found in session metadata");
+  }
+
+  return await updateUserCredits(session.metadata.userId);
+};
+
+const updateUserCredits = async (userId: string) => {
+  const creditsToAdd = 100;
+
+  Logger.info({
+    message: "[webhook.server]: Updating user credits",
+    metadata: {
+      userId,
+      creditsToAdd,
+    },
+  });
+
+  const userData = await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      credits: {
+        increment: creditsToAdd,
+      },
+    },
+  });
+
+  Logger.info({
+    message: "[webhook.server]: Successfully updated user credits",
+    metadata: {
+      userId: userData.id,
+      newCreditBalance: userData.credits,
+    },
+  });
+
+  return userData;
 };

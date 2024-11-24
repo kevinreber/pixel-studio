@@ -3,29 +3,34 @@ import { json } from "@remix-run/node";
 import { Logger } from "~/utils/logger.server";
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2022-11-15",
+  apiVersion: "2024-11-20.acacia",
 });
 
 export const stripeCheckout = async ({ userId }: { userId: string }) => {
   try {
     Logger.info({
-      message: "Creating Stripe checkout session",
+      message: "[stripe.server]: Creating Stripe checkout session",
       metadata: { userId },
     });
 
     const session = await stripe.checkout.sessions.create({
-      success_url: `${process.env.ORIGIN}/create`!,
-      cancel_url: `${process.env.ORIGIN}/create`!,
+      success_url: `${process.env.ORIGIN}/create`,
+      cancel_url: `${process.env.ORIGIN}/create`,
       line_items: [{ price: process.env.STRIPE_CREDITS_PRICE_ID, quantity: 1 }],
       mode: "payment",
       metadata: {
         userId,
       },
       payment_method_types: ["card", "us_bank_account"],
+      payment_intent_data: {
+        metadata: {
+          userId,
+        },
+      },
     });
 
     Logger.info({
-      message: "Stripe checkout session created successfully",
+      message: "[stripe.server]: Stripe checkout session created successfully",
       metadata: {
         userId,
         sessionId: session.id,
@@ -35,7 +40,7 @@ export const stripeCheckout = async ({ userId }: { userId: string }) => {
     return session.url!;
   } catch (error: unknown) {
     Logger.error({
-      message: "Failed to create Stripe checkout session",
+      message: "[stripe.server]: Failed to create Stripe checkout session",
       error: error instanceof Error ? error : new Error(String(error)),
       metadata: { userId },
     });
