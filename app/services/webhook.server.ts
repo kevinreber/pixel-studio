@@ -15,59 +15,10 @@ export const handleStripeEvent = async (
       metadata: { type, id, data: JSON.stringify(data) },
     });
 
-    const isTestEvent = id === "evt_00000000000000";
-    if (isTestEvent) {
-      Logger.info({ message: "[webhook.server]: Skipping test event" });
-      return;
-    }
-
     switch (type) {
       case CHECKOUT_SESSION_COMPLETED: {
         const session = data.object as Stripe.Checkout.Session;
-
-        Logger.info({
-          message: "[webhook.server]: Checkout Session Data",
-          metadata: {
-            sessionId: session.id,
-            metadata: session.metadata,
-            customerId: session.customer,
-            paymentStatus: session.payment_status,
-          },
-        });
-
-        if (!session.metadata?.userId) {
-          throw new Error("No userId found in session metadata");
-        }
-
-        const creditsToAdd = 100;
-        Logger.info({
-          message: "[webhook.server]: Updating user credits",
-          metadata: {
-            userId: session.metadata.userId,
-            creditsToAdd,
-          },
-        });
-
-        const userData = await prisma.user.update({
-          where: {
-            id: session.metadata.userId,
-          },
-          data: {
-            credits: {
-              increment: creditsToAdd,
-            },
-          },
-        });
-
-        Logger.info({
-          message: "[webhook.server]: Successfully updated user credits",
-          metadata: {
-            userId: userData.id,
-            newCreditBalance: userData.credits,
-          },
-        });
-
-        return userData;
+        return handleCheckoutSession(session);
       }
 
       default:
@@ -85,4 +36,55 @@ export const handleStripeEvent = async (
     });
     throw error;
   }
+};
+
+const handleCheckoutSession = async (session: Stripe.Checkout.Session) => {
+  Logger.info({
+    message: "[webhook.server]: Processing checkout session",
+    metadata: {
+      sessionId: session.id,
+      metadata: session.metadata,
+      customerId: session.customer,
+      paymentStatus: session.payment_status,
+    },
+  });
+
+  if (!session.metadata?.userId) {
+    throw new Error("No userId found in session metadata");
+  }
+
+  return await updateUserCredits(session.metadata.userId);
+};
+
+const updateUserCredits = async (userId: string) => {
+  const creditsToAdd = 100;
+
+  Logger.info({
+    message: "[webhook.server]: Updating user credits",
+    metadata: {
+      userId,
+      creditsToAdd,
+    },
+  });
+
+  const userData = await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      credits: {
+        increment: creditsToAdd,
+      },
+    },
+  });
+
+  Logger.info({
+    message: "[webhook.server]: Successfully updated user credits",
+    metadata: {
+      userId: userData.id,
+      newCreditBalance: userData.credits,
+    },
+  });
+
+  return userData;
 };

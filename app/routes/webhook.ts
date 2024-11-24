@@ -1,10 +1,5 @@
-import type {
-  ActionFunction,
-  LoaderFunctionArgs,
-  MetaFunction,
-} from "@remix-run/node";
+import type { ActionFunction, MetaFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { requireUserLogin } from "~/services";
 import { stripe } from "~/services/stripe.server";
 import { handleStripeEvent } from "~/services/webhook.server";
 import { Logger } from "~/utils/logger.server";
@@ -13,25 +8,18 @@ export const meta: MetaFunction = () => {
   return [{ title: "Stripe Webhook" }];
 };
 
-// Add this temporary debug route to verify your environment variables
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await requireUserLogin(request);
-  return json({
-    webhookSecretSet: !!process.env.STRIPE_WEB_HOOK_SECRET,
-    stripeKeySet: !!process.env.STRIPE_SECRET_KEY,
-    origin: process.env.ORIGIN,
-  });
-};
-
 // [credit @kiliman to get this webhook working](https://github.com/remix-run/remix/discussions/1978)
 // To have this webhook working locally, in another server we must run `stripe listen --forward-to localhost:3000/webhook` (yarn run stripe:listen)
 export const action: ActionFunction = async ({ request }) => {
+  console.log("Webhook endpoint hit!", new Date().toISOString());
+
   Logger.info({
     message: "[webhook.ts]: Received webhook request",
     metadata: {
       method: request.method,
       url: request.url,
       headers: Object.fromEntries(request.headers.entries()),
+      timestamp: new Date().toISOString(),
     },
   });
 
