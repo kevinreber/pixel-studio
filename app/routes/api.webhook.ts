@@ -22,7 +22,7 @@ export const action: ActionFunction = async ({ request }) => {
 
   try {
     Logger.info({
-      message: "[webhook.ts]: Processing webhook request",
+      message: "[api.webhook.ts]: Processing webhook request",
       metadata: {
         method: request.method,
         headers: Object.fromEntries(request.headers.entries()),
@@ -51,7 +51,7 @@ export const action: ActionFunction = async ({ request }) => {
     );
   } catch (error: unknown) {
     Logger.error({
-      message: "[webhook.ts]: Webhook error",
+      message: "[api.webhook.ts]: Webhook error",
       error: error instanceof Error ? error : new Error(String(error)),
     });
 
