@@ -3,7 +3,7 @@ import { json } from "@remix-run/node";
 import { Logger } from "~/utils/logger.server";
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2022-11-15",
+  apiVersion: "2024-11-20.acacia",
 });
 
 export const stripeCheckout = async ({ userId }: { userId: string }) => {
