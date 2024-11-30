@@ -39,6 +39,7 @@ const Image = ({
   alt: string;
   size?: number;
 }) => {
+  if (src === "") return null;
   return (
     <div
       className="relative overflow-hidden m-auto w-full h-full"

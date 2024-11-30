@@ -42,7 +42,8 @@ export const createNewImages = async (
   let setId = "";
 
   try {
-    if (AILanguageModelToUse === "dall-e") {
+    // handle DALL-E models
+    if (AILanguageModelToUse.includes("dall-e")) {
       const data = await createNewDallEImages(formData, userId);
 
       setId = data.setId || "";
