@@ -29,10 +29,16 @@ const MODEL_OPTIONS = [
     description: "The state-of-the-art in open-source image generation.",
   },
   {
+    name: "DALL-E 3",
+    value: "dall-e-3",
+    image: "/assets/model-thumbs/dalle3.jpg",
+    description: "State-of-the-art image generator from OpenAI's DALL-E 3.",
+  },
+  {
     name: "DALL-E 2",
-    value: "dall-e",
+    value: "dall-e-2",
     image: "/assets/model-thumbs/dalle2.jpg",
-    description: "State-of-the-art image generator from OpenAI.",
+    description: "State-of-the-art image generator from OpenAI's DALL-E 2.",
   },
   // {
   //   name: "Dreamshaper XL Lightning",
@@ -44,11 +50,6 @@ const MODEL_OPTIONS = [
   //   image: "/assets/model-thumbs/flux-dev-thumb-2.jpg",
   //   description:
   //     "The largest open-source text-to-image model to date, by Black Forest Labs.",
-  // },
-  // {
-  //   name: "DALL-E 3",
-  //   image: "/assets/model-thumbs/dalle3.jpg",
-  //   description: "State-of-the-art image generator from OpenAI.",
   // },
   // {
   //   name: "Ideogram 2.0",
@@ -236,6 +237,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const response = await createNewImages(validateFormData.data, user.id);
 
   if (response.setId) {
+    // delay to allow time for all images to be created
+    await new Promise((resolve) => setTimeout(resolve, 300));
     return redirect(`/sets/${response.setId}`);
   }
 
