@@ -42,7 +42,7 @@ export const MODEL_OPTIONS = [
     // value: "black-forest-labs/FLUX.1-schnell",
     image: "/assets/model-thumbs/flux-pro-1-1.jpg",
     description:
-      "The fastest open-source text-to-image model to date, by Black Forest Labs.",
+      "Professional grade image generation with excellent prompt following and visual quality, by Black Forest Labs.",
   },
   {
     name: "Flux Dev",
@@ -50,7 +50,7 @@ export const MODEL_OPTIONS = [
     // value: "black-forest-labs/FLUX.1-dev",
     image: "/assets/model-thumbs/flux-dev-thumb-2.jpg",
     description:
-      "The largest but slower open-source text-to-image model to date, by Black Forest Labs.",
+      "Development version offering cost-effective image generation while maintaining good quality, by Black Forest Labs.",
   },
   {
     name: "DALL-E 3",
