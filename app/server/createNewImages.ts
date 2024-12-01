@@ -1,3 +1,4 @@
+import { CreateImagesFormData } from "~/routes/create";
 import {
   createNewStableDiffusionImages,
   createNewDallEImages,
@@ -31,7 +32,7 @@ type FormDataPayload = {
  * This function determines which AI Image language model the user wants to use
  */
 export const createNewImages = async (
-  formData: FormDataPayload = DEFAULT_PAYLOAD,
+  formData: CreateImagesFormData = DEFAULT_PAYLOAD,
   userId: string
 ) => {
   const AILanguageModelToUse = formData.model;

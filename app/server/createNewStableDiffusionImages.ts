@@ -6,6 +6,7 @@ import {
 } from "~/server";
 import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
 import { createNewSet } from "./createNewSet";
+import { CreateImagesFormData } from "~/routes/create";
 
 const MOCK_IMAGE_ID = "stable-diffusion-xl-futuristic-bonsai-tree";
 const MOCK_SET_ID = "cm32igx0l0011gbosfbtw33ai";
@@ -51,14 +52,6 @@ const DEFAULT_PAYLOAD = {
   model: DEFAULT_AI_IMAGE_LANGUAGE_MODEL,
   stylePreset: DEFAULT_IMAGE_STYLE_PRESET,
   private: DEFAULT_IS_IMAGE_PRIVATE,
-};
-
-type FormDataPayload = {
-  prompt: string;
-  numberOfImages: number;
-  model: string;
-  stylePreset?: string;
-  private?: boolean;
 };
 
 interface GenerationResponse {
@@ -154,7 +147,7 @@ const createStableDiffusionImages = async ({
  *   3. Stores the image Blob from "Step 1" into our AWS S3 bucket
  */
 export const createNewStableDiffusionImages = async (
-  formData: FormDataPayload = DEFAULT_PAYLOAD,
+  formData: CreateImagesFormData = DEFAULT_PAYLOAD,
   userId: string
 ) => {
   console.log("Creating new Stable Diffusion images...");

@@ -186,6 +186,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export type CreatePageLoader = typeof loader;
+export type CreateImagesFormData = {
+  prompt: string;
+  numberOfImages: number;
+  model: string;
+  stylePreset?: string;
+  private?: boolean;
+};
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);

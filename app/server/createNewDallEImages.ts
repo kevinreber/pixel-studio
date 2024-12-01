@@ -7,6 +7,7 @@ import {
 } from "~/server";
 import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
 import OpenAI from "openai";
+import { CreateImagesFormData } from "~/routes/create";
 
 const DALL_E_2_MODEL = "dall-e-2";
 const DALL_E_3_MODEL = "dall-e-3";
@@ -61,14 +62,6 @@ const DEFAULT_PAYLOAD = {
   numberOfImages: DEFAULT_NUMBER_OF_IMAGES_CREATED,
   model: DEFAULT_AI_IMAGE_LANGUAGE_MODEL,
   private: DEFAULT_IS_IMAGE_PRIVATE,
-};
-
-type FormDataPayload = {
-  prompt: string;
-  numberOfImages: number;
-  model: string;
-  stylePreset?: string;
-  private?: boolean;
 };
 
 /**
@@ -136,7 +129,7 @@ const createDallEImages = async (
  *   3. Stores the image Blob from "Step 1" into our AWS S3 bucket
  */
 export const createNewDallEImages = async (
-  formData: FormDataPayload = DEFAULT_PAYLOAD,
+  formData: CreateImagesFormData = DEFAULT_PAYLOAD,
   userId: string
 ) => {
   console.log("Creating new DALL-E images...");
