@@ -1,4 +1,22 @@
 import { prisma } from "~/services/prisma.server";
+import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
+
+export type CreateNewImageResponse = ReturnType<typeof createNewImage>;
+export type FormattedImageData = ReturnType<typeof getFormattedImageData>;
+
+export const getFormattedImageData = (
+  imageData: Awaited<CreateNewImageResponse>
+) => {
+  const imageURL = getS3BucketURL(imageData.id);
+  const thumbnailURL = getS3BucketThumbnailURL(imageData.id);
+
+  const formattedImageData = {
+    ...imageData,
+    url: imageURL,
+    thumbnailURL,
+  };
+  return formattedImageData;
+};
 
 /**
  * @description
