@@ -16,6 +16,7 @@
     "@aws-sdk/client-s3": "^3.685.0",
     "@conform-to/react": "^1.1.5",
     "@conform-to/zod": "^1.1.5",
+    "@huggingface/inference": "^2.8.1",
     "@paralleldrive/cuid2": "^2.2.2",
     "@prisma/client": "^5.19.0",
     "@radix-ui/react-avatar": "^1.1.1",
@@ -57,8 +58,8 @@
     "stripe": "^17.4.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^3.23.8",
-    "winston": "^3.17.0"
+    "winston": "^3.17.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@playwright/test": "^1.46.1",

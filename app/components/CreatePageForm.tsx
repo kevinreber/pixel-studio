@@ -13,22 +13,20 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ChevronDown, Check, Loader2 } from "lucide-react";
-import { CreatePageLoader } from "~/routes/create";
+import {
+  CreatePageLoader,
+  STYLE_OPTIONS,
+  MODEL_OPTIONS,
+} from "~/routes/create";
 
 const MOBILE_WIDTH = 768;
 const MAX_TEXT_AREA_CHAR_COUNT = 500;
-const DEFAULT_SELECTED_MODEL = {
-  name: "Stable Diffusion 1.6",
-  value: "stable-diffusion-v1-6",
-  image: "/assets/model-thumbs/sd-1-5.jpg",
-  description: "The most popular first-generation stable diffusion model.",
-};
-
-const DEFAULT_SELECTED_STYLE = {
-  name: "Anime",
-  value: "anime",
-  image: "/assets/preset-text-styles/anime-v2.jpg",
-};
+const DEFAULT_SELECTED_MODEL = MODEL_OPTIONS.find(
+  (model) => model.value === "stable-diffusion-v1-6"
+);
+const DEFAULT_SELECTED_STYLE = STYLE_OPTIONS.find(
+  (style) => style.value === "none"
+);
 
 const Image = ({
   src,

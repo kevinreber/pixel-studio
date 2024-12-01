@@ -1,7 +1,10 @@
+import { CreateImagesFormData } from "~/routes/create";
 import {
   createNewStableDiffusionImages,
   createNewDallEImages,
   deleteSet,
+  createHuggingFaceImages,
+  createBlackForestImages,
 } from "~/server";
 import { invariantResponse } from "~/utils/invariantResponse";
 
@@ -18,12 +21,21 @@ const DEFAULT_PAYLOAD = {
   private: DEFAULT_IS_IMAGE_PRIVATE,
 };
 
-type FormDataPayload = {
-  prompt: string;
-  model: string;
-  stylePreset?: string;
-  numberOfImages: number;
-  // private?: boolean;
+const VALID_HUGGING_FACE_MODELS = [
+  "Lykon/NeverEnding-Dream",
+  "black-forest-labs/FLUX.1-dev",
+  "black-forest-labs/FLUX.1-schnell",
+  "RunDiffusion/Juggernaut-XL-v9",
+];
+
+const VALID_BLACK_FOREST_LABS_MODELS = ["flux-pro-1.1", "flux-pro", "flux-dev"];
+
+const isValidHuggingFaceModel = (model: string) => {
+  return VALID_HUGGING_FACE_MODELS.includes(model);
+};
+
+const isValidBlackForestLabsModel = (model: string) => {
+  return VALID_BLACK_FOREST_LABS_MODELS.includes(model);
 };
 
 /**
@@ -31,7 +43,7 @@ type FormDataPayload = {
  * This function determines which AI Image language model the user wants to use
  */
 export const createNewImages = async (
-  formData: FormDataPayload = DEFAULT_PAYLOAD,
+  formData: CreateImagesFormData = DEFAULT_PAYLOAD,
   userId: string
 ) => {
   const AILanguageModelToUse = formData.model;
@@ -54,6 +66,16 @@ export const createNewImages = async (
 
       setId = data.setId || "";
 
+      return data;
+    } else if (isValidBlackForestLabsModel(AILanguageModelToUse)) {
+      const data = await createBlackForestImages(formData, userId);
+
+      setId = data.setId || "";
+      return data;
+    } else if (isValidHuggingFaceModel(AILanguageModelToUse)) {
+      const data = await createHuggingFaceImages(formData, userId);
+
+      setId = data.setId || "";
       return data;
     }
 

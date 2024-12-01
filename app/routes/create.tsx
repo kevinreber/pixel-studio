@@ -15,7 +15,7 @@ export const meta: MetaFunction = () => {
   return [{ title: "Create AI Generated Images" }];
 };
 
-const MODEL_OPTIONS = [
+export const MODEL_OPTIONS = [
   {
     name: "Stable Diffusion 1.6",
     value: "stable-diffusion-v1-6",
@@ -29,6 +29,30 @@ const MODEL_OPTIONS = [
     description: "The state-of-the-art in open-source image generation.",
   },
   {
+    name: "Flux Schnell",
+    value: "flux-pro",
+    // value: "black-forest-labs/FLUX.1-schnell",
+    image: "/assets/model-thumbs/flux-schnell.jpg",
+    description:
+      "Fastest open-source text-to-image model to date, by Black Forest Labs.",
+  },
+  {
+    name: "Flux Pro 1.1",
+    value: "flux-pro-1.1",
+    // value: "black-forest-labs/FLUX.1-schnell",
+    image: "/assets/model-thumbs/flux-pro-1-1.jpg",
+    description:
+      "Professional grade image generation with excellent prompt following and visual quality, by Black Forest Labs.",
+  },
+  {
+    name: "Flux Dev",
+    value: "flux-dev",
+    // value: "black-forest-labs/FLUX.1-dev",
+    image: "/assets/model-thumbs/flux-dev-thumb-2.jpg",
+    description:
+      "Development version offering cost-effective image generation while maintaining good quality, by Black Forest Labs.",
+  },
+  {
     name: "DALL-E 3",
     value: "dall-e-3",
     image: "/assets/model-thumbs/dalle3.jpg",
@@ -40,16 +64,24 @@ const MODEL_OPTIONS = [
     image: "/assets/model-thumbs/dalle2.jpg",
     description: "State-of-the-art image generator from OpenAI's DALL-E 2.",
   },
+  // ! TODO: RunDiffusion/Juggernaut-XL-v9 is not accessible off Hugging Face for some reason
+  // {
+  //   name: "Juggernaut XL v9",
+  //   value: "RunDiffusion/Juggernaut-XL-v9",
+  //   image: "/assets/model-thumbs/juggernaut-v9-rundiffusion-lightning.jpg",
+  //   description:
+  //     "A model by RunDiffusion that is great at creating endless images.",
+  // },
+  // {
+  //   name: "NeverEnding Dream",
+  //   value: "Lykon/NeverEnding-Dream",
+  //   image: "/assets/model-thumbs/neverending-dream-1-2-2.jpg",
+  //   description: "A model by Lykon that is great at creating endless images.",
+  // },
   // {
   //   name: "Dreamshaper XL Lightning",
   //   image: "/assets/model-thumbs/ds-xl-lightning.jpg",
   //   description: "Dreamshaper XL, accelerated. High quality, fast and cheap.",
-  // },
-  // {
-  //   name: "Flux",
-  //   image: "/assets/model-thumbs/flux-dev-thumb-2.jpg",
-  //   description:
-  //     "The largest open-source text-to-image model to date, by Black Forest Labs.",
   // },
   // {
   //   name: "Ideogram 2.0",
@@ -62,9 +94,9 @@ const MODEL_OPTIONS = [
   //   description:
   //     "A model by Google DeepMind that is great at typography & prompt adherence.",
   // },
-];
+] as const;
 
-const STYLE_OPTIONS = [
+export const STYLE_OPTIONS = [
   {
     name: "3d Model",
     value: "3d-model",
@@ -128,7 +160,7 @@ const STYLE_OPTIONS = [
   //   name: "Tile Texture",
   //   image: "/assets/preset-text-styles/.jpg",
   // },
-];
+] as const;
 
 const MAX_PROMPT_CHARACTERS = 3500;
 const MIN_NUMBER_OF_IMAGES = 1;
@@ -186,6 +218,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export type CreatePageLoader = typeof loader;
+export type CreateImagesFormData = {
+  prompt: string;
+  numberOfImages: number;
+  model: string;
+  stylePreset?: string;
+  private?: boolean;
+};
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
@@ -234,15 +273,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     );
   }
 
-  const response = await createNewImages(validateFormData.data, user.id);
+  try {
+    const response = await createNewImages(validateFormData.data, user.id);
 
-  if (response.setId) {
-    // delay to allow time for all images to be created
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    return redirect(`/sets/${response.setId}`);
+    if (response.setId) {
+      // delay to allow time for all images to be created
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      return redirect(`/sets/${response.setId}`);
+    }
+  } catch (error) {
+    console.error(`Error creating new images: ${error}`);
   }
-
-  return json({ error: "Failed to create set" }, { status: 500 });
+  return json({ error: "Failed to create images" }, { status: 500 });
 };
 
 export default function Index() {
