@@ -22,3 +22,5 @@ export * from "./createComment";
 export * from "./deleteComment";
 export * from "./commentLikes";
 export * from "./getUserCollections";
+export * from "./createHuggingFaceImages";
+export * from "./createBlackForestImages";
