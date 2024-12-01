@@ -75,22 +75,21 @@ export const createHuggingFaceImages = async (
         setId,
       });
       Logger.info({
-        message: `[createHuggingFaceImages.ts]: Successfully stored Hugging Face Image Data #${
+        message: `[createHuggingFaceImages.ts]: Successfully stored Hugging Face Image data #${
           i + 1
         } in DB: ${imageData.id}`,
       });
 
       // Store Image blob in S3
-      const base64 = await createHuggingFaceImage(hf, formData);
-      await addBase64EncodedImageToAWS(base64, imageData.id);
+      const base64Image = await createHuggingFaceImage(hf, formData);
+      await addBase64EncodedImageToAWS(base64Image, imageData.id);
       Logger.info({
-        message: `[createHuggingFaceImages.ts]: Successfully stored Hugging Face Image Data #${
+        message: `[createHuggingFaceImages.ts]: Successfully stored Hugging Face Image data #${
           i + 1
         } in S3: ${imageData.id}`,
       });
 
       const formattedImageData = getFormattedImageData(imageData);
-
       formattedImagesData.push(formattedImageData);
     }
 
