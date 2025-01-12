@@ -39,6 +39,7 @@ type Set = {
   id: string;
   prompt: string;
   createdAt: string | Date;
+  totalImages: number;
   images: Array<{
     id: string;
     prompt: string;
@@ -62,6 +63,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
           prompt: true,
         },
       },
+      _count: {
+        select: {
+          images: true,
+        },
+      },
       user: {
         select: {
           username: true,
@@ -82,7 +88,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     formattedData.push({
       ...set,
-      // createdAt: set.createdAt.toISOString(),
+      totalImages: set._count.images,
       images: formattedImages,
     });
   }
@@ -145,12 +151,27 @@ export async function action({ request }: ActionFunctionArgs) {
 const ImagePreviewGrid = ({ images }: { images: Set["images"] }) => {
   if (images.length === 0) return null;
 
+  // Different grid layouts based on number of images
+  const gridClassName =
+    images.length === 1
+      ? "grid-cols-1" // Single image takes full space
+      : images.length <= 3
+      ? "grid-rows-1 grid-cols-2" // 2 images side by side, full height
+      : "grid-cols-2"; // 4 images in 2x2 grid
+
+  // Determine how many images to show
+  const imagesToShow = images.length === 1 ? 1 : images.length <= 3 ? 2 : 4;
+
   return (
-    <div className="grid grid-cols-2 gap-0.5 w-24 h-24 rounded-md overflow-hidden bg-muted">
-      {images.slice(0, 4).map((image) => (
+    <div
+      className={`grid ${gridClassName} gap-0.5 w-24 h-24 rounded-md overflow-hidden bg-muted`}
+    >
+      {images.slice(0, imagesToShow).map((image) => (
         <div
           key={image.id}
-          className="relative aspect-square overflow-hidden bg-muted"
+          className={`relative ${
+            images.length <= 3 && images.length > 1 ? "h-24" : "aspect-square"
+          } overflow-hidden bg-muted`}
         >
           <div
             className="w-full h-full bg-muted"
@@ -231,12 +252,12 @@ const SetRow = ({ set }: { set: Set }) => {
           </div>
         </div>
       </td>
-      <td className="p-4 text-right whitespace-nowrap">{set.images.length}</td>
+      <td className="p-4 text-right whitespace-nowrap">{set.totalImages}</td>
       <td className="p-4 whitespace-nowrap">
         {convertUtcDateToLocalDateString(set.createdAt)}
       </td>
       <td className="p-4 flex items-center justify-end">
-        <DeleteSetDialog setId={set.id} imagesCount={set.images.length} />
+        <DeleteSetDialog setId={set.id} imagesCount={set.totalImages} />
       </td>
     </TableRow>
   );
