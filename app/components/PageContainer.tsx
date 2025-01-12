@@ -22,7 +22,7 @@ const PageContainer = ({
 
   return (
     <div
-      className={`flex flex-col mx-auto w-11/12 mt-20 md:mt-6 ${className} ${navigationSidebarPadding}`}
+      className={`flex flex-col mx-auto w-11/12 mt-24 pt-4 pb-20 md:mt-6 ${className} ${navigationSidebarPadding}`}
       style={styles}
     >
       {children}

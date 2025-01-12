@@ -98,53 +98,48 @@ const NavigationSidebar = () => {
           </div>
         )}
       </aside>
-      <div
-        className="flex flex-col min-w-0 flex-1 overflow-hidden"
-        style={{
-          borderBottom: "rgb(38, 38, 38) 1px solid",
-        }}
-      >
-        <div className="md:hidden">
-          <div
-            className="fixed top-0 left-0 right-0 z-10 flex items-center justify-between bg-black py-4 px-5"
-            style={{
-              borderBottom: "rgb(38, 38, 38) 1px solid",
-            }}
-          >
-            <div>
-              <Link to="/" prefetch="intent" className="flex align-baseline">
-                <div className="w-8 mr-3">
-                  <PixelStudioIcon />
-                </div>
-                <h2 className="text-2xl m-0">Pixel Studio</h2>
-              </Link>
-            </div>
-            {isLoggedIn && (
-              <div className="flex items-center">
-                <UserAvatarButton />
+      {/* Mobile View **********************/}
+      {/* Mobile Top Navigation */}
+      <div className="md:hidden">
+        <div
+          className="fixed top-0 left-0 right-0 z-10 flex items-center justify-between bg-black py-4 px-5"
+          style={{
+            borderBottom: "rgb(38, 38, 38) 1px solid",
+          }}
+        >
+          <div>
+            <Link to="/" prefetch="intent" className="flex align-baseline">
+              <div className="w-8 mr-3">
+                <PixelStudioIcon />
               </div>
-            )}
+              <h2 className="text-2xl m-0">Pixel Studio</h2>
+            </Link>
           </div>
+          {isLoggedIn && (
+            <div className="flex items-center">
+              <UserAvatarButton />
+            </div>
+          )}
+        </div>
 
-          <div
-            className="fixed bottom-0 left-0 right-0 z-10 flex items-center justify-around bg-black py-4"
-            style={{
-              borderTop: "rgb(38, 38, 38) 1px solid",
-            }}
-          >
-            {navLinksToRender.map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                prefetch="intent"
-                className="text-white group flex items-center px-2 py-2 text-medium font-medium rounded-md"
-                // className="bg-gray-900 text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
-              >
-                <span>{link.icon}</span>
-              </Link>
-            ))}
-          </div>
-          {isLoggedIn && <UserAvatarButton />}
+        {/* Mobile Bottom Navigation */}
+        <div
+          className="fixed bottom-0 left-0 right-0 z-10 flex items-center justify-around bg-black py-4"
+          style={{
+            borderTop: "rgb(38, 38, 38) 1px solid",
+          }}
+        >
+          {navLinksToRender.map((link) => (
+            <Link
+              key={link.href}
+              to={link.href}
+              prefetch="intent"
+              className="text-white group flex items-center px-2 py-2 text-medium font-medium rounded-md"
+              // className="bg-gray-900 text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
+            >
+              <span>{link.icon}</span>
+            </Link>
+          ))}
         </div>
       </div>
     </>

@@ -262,8 +262,19 @@ const SetsTableSkeleton = () => {
 const SetsTable = ({ sets }: { sets: Array<Set> }) => {
   if (sets.length === 0) {
     return (
-      <div className="p-4 text-center text-muted-foreground">
-        No sets found. Create your first set to get started!
+      <div className="flex flex-col items-center justify-center">
+        <div className="p-4 text-center text-muted-foreground">
+          No image sets found. Create your first image set to get started!
+        </div>
+        <div className="p-4 text-center text-muted-foreground">
+          <Link
+            to="/create"
+            prefetch="intent"
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2"
+          >
+            Create New Image
+          </Link>
+        </div>
       </div>
     );
   }
@@ -294,16 +305,9 @@ export default function Index() {
 
   return (
     <PageContainer>
-      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-8">
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">My Sets</h1>
-          <Link
-            to="/create"
-            prefetch="intent"
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2"
-          >
-            Create New Set
-          </Link>
         </div>
 
         <Card className="mb-6">
@@ -334,16 +338,9 @@ export default function Index() {
 export function ErrorBoundary() {
   return (
     <PageContainer>
-      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-8 mb-4">
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12 mb-4">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">My Sets</h1>
-          <Link
-            to="/create"
-            prefetch="intent"
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2"
-          >
-            Create New Set
-          </Link>
         </div>
       </div>
       <GeneralErrorBoundary />
