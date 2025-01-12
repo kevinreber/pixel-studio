@@ -39,10 +39,12 @@ type Set = {
   id: string;
   prompt: string;
   createdAt: string | Date;
+  totalImages: number;
   images: Array<{
     id: string;
     prompt: string;
     thumbnailUrl: string;
+    model: string;
   }>;
   user: { username: string };
 };
@@ -60,6 +62,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
         select: {
           id: true,
           prompt: true,
+          model: true,
+        },
+      },
+      _count: {
+        select: {
+          images: true,
         },
       },
       user: {
@@ -77,12 +85,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
   for (const set of sets) {
     const formattedImages = set.images.map((image) => ({
       ...image,
+      model: image.model || "",
       thumbnailUrl: getS3BucketThumbnailURL(image.id),
     }));
 
     formattedData.push({
       ...set,
-      // createdAt: set.createdAt.toISOString(),
+      totalImages: set._count.images,
       images: formattedImages,
     });
   }
@@ -145,12 +154,27 @@ export async function action({ request }: ActionFunctionArgs) {
 const ImagePreviewGrid = ({ images }: { images: Set["images"] }) => {
   if (images.length === 0) return null;
 
+  // Different grid layouts based on number of images
+  const gridClassName =
+    images.length === 1
+      ? "grid-cols-1" // Single image takes full space
+      : images.length <= 3
+      ? "grid-rows-1 grid-cols-2" // 2 images side by side, full height
+      : "grid-cols-2"; // 4 images in 2x2 grid
+
+  // Determine how many images to show
+  const imagesToShow = images.length === 1 ? 1 : images.length <= 3 ? 2 : 4;
+
   return (
-    <div className="grid grid-cols-2 gap-0.5 w-24 h-24 rounded-md overflow-hidden bg-muted">
-      {images.slice(0, 4).map((image) => (
+    <div
+      className={`grid ${gridClassName} gap-0.5 w-24 h-24 rounded-md overflow-hidden bg-muted`}
+    >
+      {images.slice(0, imagesToShow).map((image) => (
         <div
           key={image.id}
-          className="relative aspect-square overflow-hidden bg-muted"
+          className={`relative ${
+            images.length <= 3 && images.length > 1 ? "h-24" : "aspect-square"
+          } overflow-hidden bg-muted`}
         >
           <div
             className="w-full h-full bg-muted"
@@ -214,8 +238,9 @@ const DeleteSetDialog = ({
 const SetRow = ({ set }: { set: Set }) => {
   return (
     <TableRow>
-      <td className="p-4">
-        <div className="flex items-center gap-4">
+      <td className="p-4 ">
+        <div className="flex">
+          {/* <div className="flex items-center gap-4"> */}
           <Link
             to={`/sets/${set.id}`}
             prefetch="intent"
@@ -223,20 +248,33 @@ const SetRow = ({ set }: { set: Set }) => {
           >
             <ImagePreviewGrid images={set.images} />
           </Link>
-          <div className="flex flex-1 line-clamp-2">
-            {set.prompt}
-            <span className="ml-2">
-              <CopyToClipboardButton stringToCopy={set.prompt} />
-            </span>
-          </div>
+        </div>
+        {/* <div className="whitespace-nowrap p-2 self-center">
+            {set.totalImages}
+          </div> */}
+        {/* </div> */}
+      </td>
+      <td className="p-4">
+        {/* <div className="whitespace-nowrap p-2 self-center"> */}
+        {set.totalImages}
+        {/* </div> */}
+      </td>
+      <td className="p-4">
+        <div className="flex flex-1 line-clamp-2">{set.images[0].model}</div>
+      </td>
+      <td className="p-4">
+        <div className="flex flex-1 line-clamp-2">
+          {set.prompt}
+          <span className="ml-2">
+            <CopyToClipboardButton stringToCopy={set.prompt} />
+          </span>
         </div>
       </td>
-      <td className="p-4 text-right whitespace-nowrap">{set.images.length}</td>
       <td className="p-4 whitespace-nowrap">
         {convertUtcDateToLocalDateString(set.createdAt)}
       </td>
       <td className="p-4 flex items-center justify-end">
-        <DeleteSetDialog setId={set.id} imagesCount={set.images.length} />
+        <DeleteSetDialog setId={set.id} imagesCount={set.totalImages} />
       </td>
     </TableRow>
   );
@@ -262,8 +300,19 @@ const SetsTableSkeleton = () => {
 const SetsTable = ({ sets }: { sets: Array<Set> }) => {
   if (sets.length === 0) {
     return (
-      <div className="p-4 text-center text-muted-foreground">
-        No sets found. Create your first set to get started!
+      <div className="flex flex-col items-center justify-center">
+        <div className="p-4 text-center text-muted-foreground">
+          No image sets found. Create your first image set to get started!
+        </div>
+        <div className="p-4 text-center text-muted-foreground">
+          <Link
+            to="/create"
+            prefetch="intent"
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2"
+          >
+            Create New Image
+          </Link>
+        </div>
       </div>
     );
   }
@@ -272,8 +321,10 @@ const SetsTable = ({ sets }: { sets: Array<Set> }) => {
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead>Preview</TableHead>
+          <TableHead>Images</TableHead>
+          <TableHead>Model</TableHead>
           <TableHead>Prompt</TableHead>
-          <TableHead className="text-right">Images</TableHead>
           <TableHead>Created</TableHead>
           <TableHead className="w-[100px] text-right">Actions</TableHead>
         </TableRow>
@@ -294,16 +345,9 @@ export default function Index() {
 
   return (
     <PageContainer>
-      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-8">
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">My Sets</h1>
-          <Link
-            to="/create"
-            prefetch="intent"
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2"
-          >
-            Create New Set
-          </Link>
         </div>
 
         <Card className="mb-6">
@@ -334,16 +378,9 @@ export default function Index() {
 export function ErrorBoundary() {
   return (
     <PageContainer>
-      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-8 mb-4">
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12 mb-4">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">My Sets</h1>
-          <Link
-            to="/create"
-            prefetch="intent"
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2"
-          >
-            Create New Set
-          </Link>
         </div>
       </div>
       <GeneralErrorBoundary />

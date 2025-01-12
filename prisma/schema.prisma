@@ -66,6 +66,8 @@ model User {
   commentLikes CommentLike[]
   collections  Collection[]
   roles        Role[]
+  // engagingUsers        UserEngagement[]           @relation("engagingUsers")
+  // engagedUsers         UserEngagement[]           @relation("engagedUsers")
 }
 
 model Password {
@@ -200,3 +202,22 @@ model CollectionHasImage {
   @@index([collectionId])
   @@index([imageId])
 }
+
+// ! TODO: Add this to the schema
+// Inspiration from: https://github.com/civitai/civitai/blob/main/prisma/schema.prisma
+// enum UserEngagementType {
+//   Follow
+//   Hide
+//   Block
+// }
+
+// model UserEngagement {
+//   userId       Int
+//   user         User               @relation("engagingUsers", fields: [userId], references: [id], onDelete: Cascade)
+//   targetUserId Int
+//   targetUser   User               @relation("engagedUsers", fields: [targetUserId], references: [id], onDelete: Cascade)
+//   type         UserEngagementType
+//   createdAt    DateTime           @default(now())
+
+//   @@id([userId, targetUserId])
+// }

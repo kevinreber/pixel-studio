@@ -7,31 +7,84 @@ import {
 import { addBase64EncodedImageToAWS } from "./addBase64EncodedImageToAWS";
 import { createNewSet } from "./createNewSet";
 import { deleteSet } from "./deleteSet";
-import { delay } from "~/utils/delay";
 import { convertImageUrlToBase64 } from "~/utils/convertImageUrlToBase64";
 import { Logger } from "~/utils/logger.server";
 import { CreateImagesFormData } from "~/routes/create";
 
 type BlackForestResponse = {
   id: string;
-  status: string;
+  status: "Ready" | "Failed" | "Processing" | "Pending";
   result?: {
-    sample: string;
+    sample: string; // URL to the generated image
+    prompt: string; // Original prompt used
+    seed: number; // Seed used for generation
+    start_time: number;
+    end_time: number;
+    duration: number;
   };
+  error?: string;
+};
+
+type BlackForestErrorResponse = {
+  error: string;
+  message: string;
+  status: number;
 };
 
 const DEFAULT_WIDTH = 1024;
 const DEFAULT_HEIGHT = 1024;
-const MAX_POLLING_ATTEMPTS = 60;
-const POLLING_INTERVAL = 500; // ms
+
+// Configuration constants for the API
+const CONFIG = {
+  // More conservative polling interval for beta API
+  POLLING_INTERVAL: 1000, // ms
+  // Maximum number of polling attempts before timing out
+  MAX_POLLING_ATTEMPTS: 120, // 2 minutes total
+  // Timeout for individual API requests
+  REQUEST_TIMEOUT: 45000, // 45 seconds
+} as const;
 
 /**
- * Create an image using Black Forest Labs API
+ * Wrapper function to add timeout functionality to fetch requests
+ * Automatically aborts requests that take too long
+ */
+const fetchWithTimeout = async (
+  url: string,
+  options: RequestInit,
+  timeout: number
+) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+};
+
+// Add API configuration
+const API_CONFIG = {
+  BASE_URL: process.env.BLACK_FOREST_LABS_API_URL,
+  ENDPOINTS: {
+    CREATE: (model: string) => `/v1/${model}`,
+    GET_RESULT: "/v1/get_result",
+  },
+} as const;
+
+/**
+ * Create an image using Black Forest Labs API (Beta)
  * @param formData - The form data payload
  * @returns The ID of the request
  *
- * @docs https://docs.bfl.ml/
- *
+ * @note This API is currently in beta and subject to change
+ * @see https://docs.bfl.ml/
  * @example
  * "1c8a8479-0bf8-47b7-a9e6-7a7de7c55e16"
  */
@@ -42,29 +95,63 @@ const createBlackForestImage = async (
     message: `[createBlackForestImages.ts]: Creating image using Black Forest Labs model: ${formData.model}`,
     metadata: { formData },
   });
-  const response = await fetch(
-    `${process.env.BLACK_FOREST_LABS_API_URL}/v1/${formData.model}`,
-    {
-      method: "POST",
-      headers: {
-        "x-key": process.env.BLACK_FOREST_LABS_API_KEY!,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        prompt: formData.prompt,
-        width: DEFAULT_WIDTH,
-        height: DEFAULT_HEIGHT,
-      }),
+  try {
+    if (!API_CONFIG.BASE_URL) {
+      throw new Error("BLACK_FOREST_LABS_API_URL is not configured");
     }
-  );
 
-  invariantResponse(
-    response.ok,
-    `Failed to generate image from Black Forest Labs: ${response.statusText}`
-  );
+    const url = new URL(
+      API_CONFIG.ENDPOINTS.CREATE(formData.model),
+      API_CONFIG.BASE_URL
+    ).toString();
 
-  const responseData = await response.json();
-  return responseData.id;
+    Logger.info({
+      message: `[createBlackForestImages.ts]: Creating image using Black Forest Labs model: ${formData.model}`,
+      metadata: { formData, url },
+    });
+
+    const response = await fetchWithTimeout(
+      url,
+      {
+        method: "POST",
+        headers: {
+          "x-key": process.env.BLACK_FOREST_LABS_API_KEY!,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: formData.prompt,
+          width: DEFAULT_WIDTH,
+          height: DEFAULT_HEIGHT,
+        }),
+      },
+      CONFIG.REQUEST_TIMEOUT
+    );
+
+    if (!response.ok) {
+      const errorData = (await response.json()) as BlackForestErrorResponse;
+      Logger.error({
+        message: `[createBlackForestImages.ts]: API Error from Black Forest Labs Beta`,
+        metadata: {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+          formData,
+        },
+      });
+      throw new Error(
+        `Beta API Error: ${errorData.message || response.statusText}`
+      );
+    }
+
+    const responseData = await response.json();
+    return responseData.id;
+  } catch (error) {
+    Logger.error({
+      message: `Failed to create Black Forest image`,
+      metadata: { error, formData },
+    });
+    throw error;
+  }
 };
 
 /**
@@ -111,7 +198,14 @@ const getBlackForestImageStatus = async (
   return resultResponse.json();
 };
 
-// Update the pollForBlackForestImageResult function
+/**
+ * Polls the API until an image is ready or fails
+ * Uses exponential backoff to reduce server load
+ *
+ * @param requestId - ID returned from initial image creation request
+ * @returns Base64 encoded image data
+ * @throws Error if polling times out or image generation fails
+ */
 const pollForBlackForestImageResult = async (
   requestId: string
 ): Promise<string> => {
@@ -120,77 +214,98 @@ const pollForBlackForestImageResult = async (
     metadata: { requestId },
   });
   let attempts = 0;
+  let delay: number = CONFIG.POLLING_INTERVAL;
 
-  while (attempts < MAX_POLLING_ATTEMPTS) {
+  while (attempts < CONFIG.MAX_POLLING_ATTEMPTS) {
     Logger.info({
       message: `[createBlackForestImages.ts]: Polling attempt #${
         attempts + 1
       } for result from Black Forest Labs: ${requestId}`,
       metadata: { requestId },
     });
-    const resultData = await getBlackForestImageStatus(requestId);
-    Logger.info({
-      message: `[createBlackForestImages.ts]: Get Black Forest Image result for requestId: ${requestId}`,
-      metadata: { requestId, resultData },
-    });
 
-    if (resultData.status === "Ready" && resultData.result) {
+    try {
+      const resultData = await getBlackForestImageStatus(requestId);
       Logger.info({
-        message: `[createBlackForestImages.ts]: Converting image URL to base64 for requestId: ${requestId}`,
-        metadata: { requestId },
-      });
-      // Convert the image URL to base64
-      const base64Image = await convertImageUrlToBase64(
-        resultData.result.sample
-      );
-      return base64Image;
-    } else if (resultData.status === "Failed") {
-      Logger.error({
-        message: `[createBlackForestImages.ts]: Image generation failed for requestId: ${requestId}`,
+        message: `[createBlackForestImages.ts]: Get Black Forest Image result for requestId: ${requestId}`,
         metadata: { requestId, resultData },
       });
-      throw new Error("Image generation failed");
-    }
 
-    await delay(POLLING_INTERVAL);
-    attempts++;
+      // Image is ready - convert URL to base64 and return
+      if (resultData.status === "Ready" && resultData.result) {
+        Logger.info({
+          message: `[createBlackForestImages.ts]: Converting image URL to base64 for requestId: ${requestId}`,
+          metadata: { requestId },
+        });
+        return await convertImageUrlToBase64(resultData.result.sample);
+      }
+
+      // Image generation failed
+      if (resultData.status === "Failed") {
+        Logger.error({
+          message: `[createBlackForestImages.ts]: Image generation failed for requestId: ${requestId}`,
+          metadata: { requestId, resultData },
+        });
+        throw new Error(
+          `Image generation failed: ${resultData.error || "Unknown error"}`
+        );
+      }
+
+      // Image still processing - wait with exponential backoff
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      // Increase delay for next attempt, but cap at 5 seconds
+      delay = Math.min(delay * 1.5, 5000);
+      attempts++;
+    } catch (error) {
+      Logger.error({
+        message: `[createBlackForestImages.ts]: Polling attempt ${
+          attempts + 1
+        } failed`,
+        metadata: { requestId, error },
+      });
+      throw error;
+    }
   }
 
-  throw new Error("Timeout waiting for image generation");
+  throw new Error(
+    `Timeout after ${CONFIG.MAX_POLLING_ATTEMPTS} polling attempts`
+  );
 };
 
-export const createBlackForestImages = async (
+/**
+ * Processes images sequentially to:
+ * 1. Minimize API load
+ * 2. Provide better error handling per image
+ * 3. Enable precise progress tracking
+ * 4. Be more conservative with beta API
+ *
+ * @param formData - User input data including prompt and number of images
+ * @param userId - ID of user requesting images
+ * @param setId - ID of the image set being created
+ * @returns Array of formatted image data objects
+ */
+const processBatch = async (
   formData: CreateImagesFormData,
-  userId: string
+  userId: string,
+  setId: string
 ) => {
-  Logger.info({
-    message: `[createBlackForestImages.ts]: Creating images using Black Forest Labs model: ${formData.model}`,
-    metadata: { formData },
-  });
-  let setId = "";
   const formattedImages: FormattedImageData[] = [];
-  try {
-    // Step 1: Create a new set
-    const set = await createNewSet({
-      prompt: formData.prompt,
-      userId,
-    });
 
-    setId = set.id;
-
-    for (let i = 0; i < formData.numberOfImages; i++) {
-      // Step 2: Submit the generation request
+  // Process one image at a time
+  for (let i = 0; i < formData.numberOfImages; i++) {
+    try {
+      // Step 1: Request image generation
       const requestId = await createBlackForestImage(formData);
       Logger.info({
-        message: `[createBlackForestImages.ts]: Successfully stored Black Forest Image data #${
+        message: `[createBlackForestImages.ts]: Successfully initiated image generation #${
           i + 1
         } for requestId: ${requestId}`,
       });
 
-      // Step 3: Poll for results and get base64 image
+      // Step 2: Poll until image is ready
       const base64Image = await pollForBlackForestImageResult(requestId);
 
-      // Step 4: Create a new image in DB
+      // Step 3: Store image metadata in database
       const imageData = await createNewImage({
         prompt: formData.prompt,
         userId,
@@ -200,31 +315,112 @@ export const createBlackForestImages = async (
         setId,
       });
       Logger.info({
-        message: `[createBlackForestImages.ts]: Successfully stored Black Forest Image Data in DB: ${imageData.id}`,
+        message: `[createBlackForestImages.ts]: Successfully stored image #${
+          i + 1
+        } in DB: ${imageData.id}`,
       });
 
-      // Step 5: Upload to S3
+      // Step 4: Store actual image in S3
       await addBase64EncodedImageToAWS(base64Image, imageData.id);
       Logger.info({
-        message: `[createBlackForestImages.ts]: Successfully stored Black Forest Image data #${
+        message: `[createBlackForestImages.ts]: Successfully stored image #${
           i + 1
         } in S3: ${imageData.id}`,
       });
 
-      // Step 6: Format image data
-      const formattedImageData = getFormattedImageData(imageData);
-      formattedImages.push(formattedImageData);
+      // Step 5: Format and add to results
+      formattedImages.push(getFormattedImageData(imageData));
+    } catch (error) {
+      Logger.error({
+        message: `[createBlackForestImages.ts]: Failed to process image #${
+          i + 1
+        }`,
+        metadata: { error },
+      });
+      // Continue with next image instead of failing entire batch
+      continue;
+    }
+  }
+
+  return formattedImages;
+};
+
+// Add validation helpers
+const validateCreateBlackForestImagesInput = (
+  formData: CreateImagesFormData
+) => {
+  if (!formData.prompt || formData.prompt.trim().length === 0) {
+    throw new Error("Prompt is required");
+  }
+
+  if (!formData.model) {
+    throw new Error("Model is required");
+  }
+
+  // Add reasonable limits
+  if (formData.numberOfImages <= 0 || formData.numberOfImages > 10) {
+    throw new Error("Number of images must be between 1 and 10");
+  }
+
+  // Add size validation
+  if (
+    DEFAULT_WIDTH < 512 ||
+    DEFAULT_WIDTH > 1024 ||
+    DEFAULT_HEIGHT < 512 ||
+    DEFAULT_HEIGHT > 1024
+  ) {
+    throw new Error("Image dimensions must be between 512 and 1024 pixels");
+  }
+};
+
+/**
+ * Main function to create images using Black Forest Labs API
+ * Handles the entire process from validation to cleanup
+ *
+ * @param formData - User input data
+ * @param userId - ID of requesting user
+ * @returns Object containing generated images and set ID
+ */
+export const createBlackForestImages = async (
+  formData: CreateImagesFormData,
+  userId: string
+) => {
+  // Validate all input before making any API calls
+  Logger.info({
+    message: `[createBlackForestImages.ts]: Creating images using Black Forest Labs model: ${formData.model}`,
+    metadata: { formData },
+  });
+  validateCreateBlackForestImagesInput(formData);
+  let setId = "";
+
+  try {
+    // Create a new set to group the images
+    const set = await createNewSet({
+      prompt: formData.prompt,
+      userId,
+    });
+    setId = set.id;
+
+    // Process all requested images in batches
+    const images = await processBatch(formData, userId, setId);
+    return { images, setId };
+  } catch (error) {
+    // If anything fails, log error and clean up
+    Logger.error({
+      message: `[createBlackForestImages.ts]: Error generating images from Black Forest Labs`,
+      metadata: { error, formData },
+    });
+
+    // Clean up the set if it was created
+    if (setId) {
+      await deleteSet({ setId }).catch((err) =>
+        Logger.error({
+          message: `[createBlackForestImages.ts]: Failed to delete set after error`,
+          metadata: { setId, err },
+        })
+      );
     }
 
-    return { images: formattedImages, setId };
-  } catch (error) {
-    Logger.error({
-      message: `[createBlackForestImages.ts]: Error generating image from Black Forest Labs`,
-      metadata: { error },
-    });
-    if (setId) {
-      await deleteSet({ setId });
-    }
     return { images: [], setId: "" };
   }
 };

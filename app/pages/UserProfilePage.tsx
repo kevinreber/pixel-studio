@@ -23,7 +23,7 @@ const UserDoesNotExist = () => {
     <PageContainer>
       <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
         <div className="pb-4">
-          <div className="flex flex-col md:flex-row gap-8 items-start md:items-center py-8 border-b border-zinc-200 dark:border-zinc-800">
+          <div className="flex flex-col md:flex-row gap-8 items-start md:items-center pb-8 border-b border-zinc-200 dark:border-zinc-800">
             <Avatar className="w-32 h-32">
               <AvatarFallback className="text-2xl">
                 <User className="h-12 w-12" />
@@ -88,7 +88,7 @@ const UserProfileAccessor = () => {
       {/* Sticky Header */}
       <div className="pb-4">
         {/* Profile Header */}
-        <div className="flex flex-col md:flex-row gap-8 items-start md:items-center py-8 border-b border-zinc-200 dark:border-zinc-800">
+        <div className="flex flex-col md:flex-row gap-8 items-start md:items-center pb-8 border-b border-zinc-200 dark:border-zinc-800">
           {/* Avatar */}
           {userData.image && (
             <Avatar className="w-32 h-32">
@@ -174,7 +174,7 @@ export default function UserProfilePage() {
         fallback={
           <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
             <div className="animate-pulse">
-              <div className="flex flex-col md:flex-row gap-8 items-start md:items-center py-8">
+              <div className="flex flex-col md:flex-row gap-8 items-start md:items-center pb-8">
                 <div className="w-32 h-32 rounded-full bg-gray-700/50" />
                 <div className="flex-1">
                   <div className="h-8 w-48 bg-gray-700/50 rounded mb-4" />
