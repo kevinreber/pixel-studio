@@ -202,15 +202,13 @@ const ExploreImageDetailsPageAccessor = () => {
                   >
                     <h4 className="font-semibold text-sm">Image Details</h4>
                     {imageData.setId && (
-                      <div className="space-y-1">
-                        <Link
-                          to={`/sets/${imageData.setId}`}
-                          className="text-blue-400 hover:text-blue-300 hover:underline inline-block py-1 px-2 rounded cursor-pointer"
-                          prefetch="intent"
-                        >
-                          View Set
-                        </Link>
-                      </div>
+                      <Link
+                        to={`/sets/${imageData.setId}`}
+                        className="text-sm text-blue-500 hover:text-blue-600 hover:underline"
+                        prefetch="intent"
+                      >
+                        View Set
+                      </Link>
                     )}
                     <div className="space-y-1">
                       <p className="text-xs">
