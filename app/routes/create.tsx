@@ -278,7 +278,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     if (response.setId) {
       // delay to allow time for all images to be created
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       return redirect(`/sets/${response.setId}`);
     }
   } catch (error) {
