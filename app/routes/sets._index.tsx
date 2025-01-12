@@ -44,6 +44,7 @@ type Set = {
     id: string;
     prompt: string;
     thumbnailUrl: string;
+    model: string;
   }>;
   user: { username: string };
 };
@@ -61,6 +62,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         select: {
           id: true,
           prompt: true,
+          model: true,
         },
       },
       _count: {
@@ -83,6 +85,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   for (const set of sets) {
     const formattedImages = set.images.map((image) => ({
       ...image,
+      model: image.model || "",
       thumbnailUrl: getS3BucketThumbnailURL(image.id),
     }));
 
@@ -235,8 +238,9 @@ const DeleteSetDialog = ({
 const SetRow = ({ set }: { set: Set }) => {
   return (
     <TableRow>
-      <td className="p-4">
-        <div className="flex items-center gap-4">
+      <td className="p-4 ">
+        <div className="flex">
+          {/* <div className="flex items-center gap-4"> */}
           <Link
             to={`/sets/${set.id}`}
             prefetch="intent"
@@ -244,15 +248,28 @@ const SetRow = ({ set }: { set: Set }) => {
           >
             <ImagePreviewGrid images={set.images} />
           </Link>
-          <div className="flex flex-1 line-clamp-2">
-            {set.prompt}
-            <span className="ml-2">
-              <CopyToClipboardButton stringToCopy={set.prompt} />
-            </span>
-          </div>
+        </div>
+        {/* <div className="whitespace-nowrap p-2 self-center">
+            {set.totalImages}
+          </div> */}
+        {/* </div> */}
+      </td>
+      <td className="p-4">
+        {/* <div className="whitespace-nowrap p-2 self-center"> */}
+        {set.totalImages}
+        {/* </div> */}
+      </td>
+      <td className="p-4">
+        <div className="flex flex-1 line-clamp-2">{set.images[0].model}</div>
+      </td>
+      <td className="p-4">
+        <div className="flex flex-1 line-clamp-2">
+          {set.prompt}
+          <span className="ml-2">
+            <CopyToClipboardButton stringToCopy={set.prompt} />
+          </span>
         </div>
       </td>
-      <td className="p-4 text-right whitespace-nowrap">{set.totalImages}</td>
       <td className="p-4 whitespace-nowrap">
         {convertUtcDateToLocalDateString(set.createdAt)}
       </td>
@@ -304,8 +321,10 @@ const SetsTable = ({ sets }: { sets: Array<Set> }) => {
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead>Preview</TableHead>
+          <TableHead>Images</TableHead>
+          <TableHead>Model</TableHead>
           <TableHead>Prompt</TableHead>
-          <TableHead className="text-right">Images</TableHead>
           <TableHead>Created</TableHead>
           <TableHead className="w-[100px] text-right">Actions</TableHead>
         </TableRow>
