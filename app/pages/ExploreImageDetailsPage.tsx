@@ -3,7 +3,12 @@ import { useLoggedInUser } from "~/hooks";
 import { Await, Link, useAsyncValue, useLoaderData } from "@remix-run/react";
 import { ExplorePageImageLoader } from "~/routes/explore.$imageId";
 import { convertUtcDateToLocalDateString, fallbackImageSource } from "~/client";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,10 +20,10 @@ import { ImageComment } from "~/components/ImageComment";
 import { AddImageToCollectionButton } from "~/components/AddImageToCollectionButton";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 interface ExploreImageDetailsPageProps {
   onClose: () => void;
@@ -109,9 +114,9 @@ const ExploreImageDetailsPageAccessor = () => {
   return (
     <>
       {/* Mobile header - hidden on desktop */}
-      <div className="md:hidden shrink-0 py-2 px-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-900 sticky top-0 z-10">
+      <div className="md:hidden py-5 px-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-900 sticky top-0 z-10">
         <div className="flex items-center gap-2">
-          <Avatar className="h-6 w-6">
+          <Avatar className="h-8 w-8">
             <AvatarImage
               src={imageUserData.image}
               alt={imageUserData.username}
@@ -184,29 +189,27 @@ const ExploreImageDetailsPageAccessor = () => {
                 <p className="text-xs text-zinc-500">
                   {convertUtcDateToLocalDateString(imageData.createdAt!)}
                 </p>
-                <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-                  <PopoverTrigger asChild>
+                <HoverCard>
+                  <HoverCardTrigger asChild>
                     <button className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
                       <Info className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
                     </button>
-                  </PopoverTrigger>
-                  <PopoverContent
+                  </HoverCardTrigger>
+                  <HoverCardContent
+                    className="w-80 p-3 space-y-2 bg-zinc-800 text-white border-zinc-700"
                     side="bottom"
                     align="end"
-                    className="max-w-[280px] p-3 space-y-2 z-[2000] w-screen sm:w-auto mx-4 sm:mx-0 bg-zinc-800"
                   >
-                    <p>Image Details</p>
+                    <h4 className="font-semibold text-sm">Image Details</h4>
                     {imageData.setId && (
                       <div className="space-y-1">
-                        <p className="text-xs">
-                          <Link
-                            to={`/sets/${imageData.setId}`}
-                            className="ml-1 text-blue-500 hover:text-blue-600 hover:underline"
-                            prefetch="intent"
-                          >
-                            View Set
-                          </Link>
-                        </p>
+                        <Link
+                          to={`/sets/${imageData.setId}`}
+                          className="text-blue-400 hover:text-blue-300 hover:underline inline-block py-1 px-2 rounded cursor-pointer"
+                          prefetch="intent"
+                        >
+                          View Set
+                        </Link>
                       </div>
                     )}
                     <div className="space-y-1">
@@ -230,12 +233,9 @@ const ExploreImageDetailsPageAccessor = () => {
                         <span className="font-semibold">Prompt:</span>{" "}
                         <span className="italic">{imageData.prompt}</span>
                       </p>
-                      {/* <CopyToClipboardButton
-                        stringToCopy={imageData.prompt || ""}
-                      /> */}
                     </div>
-                  </PopoverContent>
-                </Popover>
+                  </HoverCardContent>
+                </HoverCard>
               </div>
             </div>
           </div>
