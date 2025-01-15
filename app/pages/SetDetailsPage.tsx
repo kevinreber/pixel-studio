@@ -19,7 +19,10 @@ const SetDetailsAccessor = () => {
     images: [],
     prompt: "",
     createdAt: "",
-    user: {},
+    user: {
+      id: "",
+      username: "",
+    },
   };
 
   const {
@@ -28,6 +31,13 @@ const SetDetailsAccessor = () => {
     createdAt: setCreatedAt,
     user: setUser,
   } = setData;
+
+  const [formattedDate, setFormattedDate] = React.useState(setCreatedAt);
+  React.useEffect(() => {
+    if (setCreatedAt) {
+      setFormattedDate(convertUtcDateToLocalDateString(setCreatedAt));
+    }
+  }, [setCreatedAt]);
 
   return (
     <div className="flex flex-col justify-between w-full max-w-5xl m-auto">
@@ -40,7 +50,7 @@ const SetDetailsAccessor = () => {
         <div>
           <div className="font-semibold">Created At</div>
           <div className="text-sm text-zinc-300">
-            {convertUtcDateToLocalDateString(setCreatedAt)} by{" "}
+            {formattedDate} by{" "}
             <Link
               to={`/profile/${setUser.id}`}
               className="font-semibold text-blue-500"
