@@ -9,8 +9,15 @@ import SetDetailsPage from "~/pages/SetDetailsPage";
 import { getSet } from "~/server/getSet";
 import { requireUserLogin } from "~/services";
 
-export const meta: MetaFunction = () => {
-  return [{ title: "Set Details Page" }];
+export const meta: MetaFunction<typeof loader> = ({ data }) => {
+  if (!data) {
+    return [{ title: "Set Details Page" }];
+  }
+  const setData = data.data[0];
+  return [
+    { title: `Set Details - ${setData.prompt.substring(0, 50)}...` },
+    { description: setData.prompt },
+  ];
 };
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
