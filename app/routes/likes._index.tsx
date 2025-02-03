@@ -18,10 +18,7 @@ import { Loader2 } from "lucide-react";
 import { ImageDetail } from "~/server/getImage";
 import ImageModal from "~/components/ImageModal";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   getLikedImages,
   GetLikedImagesAPIResponse,
@@ -161,7 +158,7 @@ export default function LikedImages() {
       {/* <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12"> */}
       <div className="flex flex-col justify-between w-full max-w-5xl m-auto">
         {/* <div className="flex justify-between items-center mb-6"> */}
-        <h1 className="text-2xl font-bold">Liked Images</h1>
+        <h1 className="text-2xl font-bold mb-3">Liked Images</h1>
         {/* </div> */}
 
         <React.Suspense fallback={<LoadingSkeleton />}>
