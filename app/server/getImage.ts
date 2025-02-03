@@ -39,6 +39,11 @@ export interface ImageData {
   setId: string | null;
 }
 
+export interface FormattedImageData extends ImageData {
+  url: string;
+  thumbnailURL: string;
+}
+
 export interface GetImageDataAPIResponse extends ImageData {
   url: string;
   thumbnailURL: string;
@@ -104,3 +109,5 @@ export const getImage = async (
 
   return formattedImage;
 };
+
+export type ImageDetail = Awaited<ReturnType<typeof getImage>>;
