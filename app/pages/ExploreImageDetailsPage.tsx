@@ -400,7 +400,7 @@ const ExploreImageDetailsPage = ({ onClose }: ExploreImageDetailsPageProps) => {
         >
           <Dialog open={true} onOpenChange={onClose}>
             <DialogContent
-              className="w-full md:max-w-[90%] md:h-[90vh] h-[100vh] p-0 gap-0 dark:bg-zinc-900 overflow-hidden z-[100] [&>button]:absolute [&>button]:right-4 [&>button]:top-4 [&>button]:z-10 [&>button_span]:hidden"
+              className="w-full md:max-w-[90%] md:h-[90vh] h-[100%] p-0 gap-0 dark:bg-zinc-900 overflow-hidden z-[100] [&>button]:absolute [&>button]:right-4 [&>button]:top-4 [&>button]:z-10 [&>button_span]:hidden"
               onInteractOutside={(e) => e.preventDefault()}
             >
               <VisuallyHidden asChild>
