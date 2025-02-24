@@ -10,9 +10,10 @@ import { getSet } from "~/server/getSet";
 import { requireUserLogin } from "~/services";
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
-  if (!data) {
-    return [{ title: "Set Details Page" }];
-  }
+  // if (!data) {
+  return [{ title: "Set Details Page" }];
+  // }
+  // ! TODO: Fix this
   const setData = data.data[0];
   return [
     { title: `Set Details - ${setData.prompt.substring(0, 50)}...` },
