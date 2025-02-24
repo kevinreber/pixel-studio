@@ -33,7 +33,15 @@ import {
 } from "@/components/ui/dialog";
 import { getS3BucketThumbnailURL } from "~/utils/s3Utils";
 import { convertUtcDateToLocalDateString } from "~/client";
-import { Loader2, Trash2 } from "lucide-react";
+import {
+  Bot,
+  Bot,
+  Clock,
+  Images,
+  Loader2,
+  NotepadText,
+  Trash2,
+} from "lucide-react";
 
 type Set = {
   id: string;
@@ -167,13 +175,13 @@ const ImagePreviewGrid = ({ images }: { images: Set["images"] }) => {
 
   return (
     <div
-      className={`grid ${gridClassName} gap-0.5 w-24 h-24 rounded-md overflow-hidden bg-muted`}
+      className={`grid ${gridClassName} gap-0.5 w-32 h-32 rounded-md overflow-hidden bg-muted`}
     >
       {images.slice(0, imagesToShow).map((image) => (
         <div
           key={image.id}
           className={`relative ${
-            images.length <= 3 && images.length > 1 ? "h-24" : "aspect-square"
+            images.length <= 3 && images.length > 1 ? "h-32" : "aspect-square"
           } overflow-hidden bg-muted`}
         >
           <div
@@ -238,9 +246,8 @@ const DeleteSetDialog = ({
 const SetRow = ({ set }: { set: Set }) => {
   return (
     <TableRow>
-      <td className="p-4 ">
+      <td className="p-4 w-[160px]">
         <div className="flex">
-          {/* <div className="flex items-center gap-4"> */}
           <Link
             to={`/sets/${set.id}`}
             prefetch="intent"
@@ -249,29 +256,38 @@ const SetRow = ({ set }: { set: Set }) => {
             <ImagePreviewGrid images={set.images} />
           </Link>
         </div>
-        {/* <div className="whitespace-nowrap p-2 self-center">
-            {set.totalImages}
-          </div> */}
-        {/* </div> */}
       </td>
-      <td className="p-4">
-        {/* <div className="whitespace-nowrap p-2 self-center"> */}
-        {set.totalImages}
-        {/* </div> */}
-      </td>
-      <td className="p-4">
-        <div className="flex flex-1 line-clamp-2">{set.images[0].model}</div>
-      </td>
-      <td className="p-4">
-        <div className="flex flex-1 line-clamp-2">
-          {set.prompt}
-          <span className="ml-2">
-            <CopyToClipboardButton stringToCopy={set.prompt} />
-          </span>
+      <td className="p-4 max-w-52">
+        <div className="flex flex-col items-start gap-1">
+          <div className="text-sm flex items-center gap-1">
+            <Bot className="w-4 h-4 opacity-90" />
+            <span className="text-muted-foreground">{set.images[0].model}</span>
+          </div>
+          <div className="w-full overflow-hidden flex items-center gap-1">
+            <NotepadText className="w-4 h-4 flex-shrink-0 opacity-90" />
+            <div className="flex items-center gap-2 min-w-0">
+              <p
+                className="truncate text-sm text-muted-foreground"
+                title={set.prompt}
+              >
+                {set.prompt}
+              </p>
+              <CopyToClipboardButton stringToCopy={set.prompt} />
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <Images className="w-4 h-4 opacity-90" />
+            <p className="text-sm text-muted-foreground">
+              {set.totalImages} total image(s)
+            </p>
+          </div>
+          <div className="text-sm flex items-center gap-1">
+            <Clock className="w-4 h-4 opacity-90" />
+            <span className="text-muted-foreground">
+              {convertUtcDateToLocalDateString(set.createdAt)}
+            </span>
+          </div>
         </div>
-      </td>
-      <td className="p-4 whitespace-nowrap">
-        {convertUtcDateToLocalDateString(set.createdAt)}
       </td>
       <td className="p-4 flex items-center justify-end">
         <DeleteSetDialog setId={set.id} imagesCount={set.totalImages} />
@@ -321,11 +337,8 @@ const SetsTable = ({ sets }: { sets: Array<Set> }) => {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Preview</TableHead>
-          <TableHead>Images</TableHead>
-          <TableHead>Model</TableHead>
-          <TableHead>Prompt</TableHead>
-          <TableHead>Created</TableHead>
+          <TableHead className="w-[160px]">Preview</TableHead>
+          <TableHead>Details</TableHead>
           <TableHead className="w-[100px] text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
