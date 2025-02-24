@@ -375,6 +375,42 @@ const ExploreImageDetailsPageAccessor = () => {
 
 const ExploreImageDetailsPage = ({ onClose }: ExploreImageDetailsPageProps) => {
   const loaderData = useLoaderData<ExplorePageImageLoader>();
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // 768px is our md breakpoint
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  if (isMobile) {
+    return (
+      <React.Suspense
+        fallback={
+          <div className="fixed inset-0 z-[100] flex items-center justify-center">
+            <Loader2 className="h-12 w-12 animate-spin text-zinc-500" />
+          </div>
+        }
+      >
+        <Await
+          resolve={loaderData.data}
+          errorElement={
+            <div className="p-4">
+              <p className="text-red-500">Error loading image details</p>
+            </div>
+          }
+        >
+          <div className="min-h-screen bg-white dark:bg-zinc-900">
+            <ExploreImageDetailsPageAccessor />
+          </div>
+        </Await>
+      </React.Suspense>
+    );
+  }
 
   return (
     <>
@@ -400,7 +436,7 @@ const ExploreImageDetailsPage = ({ onClose }: ExploreImageDetailsPageProps) => {
         >
           <Dialog open={true} onOpenChange={onClose}>
             <DialogContent
-              className="w-full md:max-w-[90%] md:h-[90vh] h-[100%] p-0 gap-0 dark:bg-zinc-900 overflow-hidden z-[100] [&>button]:absolute [&>button]:right-4 [&>button]:top-4 [&>button]:z-10 [&>button_span]:hidden"
+              className="w-full md:max-w-[90%] md:h-[90vh] p-0 gap-0 dark:bg-zinc-900 overflow-hidden z-[100] [&>button]:absolute [&>button]:right-4 [&>button]:top-4 [&>button]:z-10 [&>button_span]:hidden"
               onInteractOutside={(e) => e.preventDefault()}
             >
               <VisuallyHidden asChild>
