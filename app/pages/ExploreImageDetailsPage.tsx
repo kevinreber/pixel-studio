@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageCircle, Info, Loader2 } from "lucide-react";
+import { MessageCircle, Info, Loader2, X } from "lucide-react";
 import { CopyToClipboardButton } from "~/components";
 import { LikeImageButton } from "~/components/LikeImageButton";
 import { CommentForm } from "~/components/CommentForm";
@@ -90,7 +90,9 @@ interface ExploreImageDetailsPageProps {
 export type AsyncImageData = Awaited<ExplorePageImageLoader["data"]>;
 export type ImageUserData = NonNullable<AsyncImageData["user"]>;
 
-const ExploreImageDetailsPageAccessor = () => {
+const ExploreImageDetailsPageAccessor = ({
+  onClose,
+}: ExploreImageDetailsPageProps) => {
   const imageData = useAsyncValue() as AsyncImageData;
   const imageUserData = imageData.user as ImageUserData;
   const userData = useLoggedInUser();
@@ -132,10 +134,18 @@ const ExploreImageDetailsPageAccessor = () => {
           >
             {imageUserData?.username}
           </Link>
-          {/* TODO: Maybe add tooltip or something here for user to see image data? */}
+        </div>
+        <div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+          >
+            <X className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
+          </button>
         </div>
       </div>
 
+      {/* Mobile layout structure */}
       <div className="flex md:flex-row flex-col h-full">
         {/* Image section - Mobile optimized, desktop unchanged */}
         <div className="md:flex-1 md:bg-black">
@@ -145,7 +155,7 @@ const ExploreImageDetailsPageAccessor = () => {
               decoding="async"
               src={imageData.url}
               alt={imageData.prompt || "Generated Image"}
-              className="w-full h-auto object-contain md:max-h-[90vh] md:w-auto"
+              className="w-full md:h-auto md:max-h-[90vh] md:w-auto aspect-square md:aspect-auto object-contain bg-black"
               onError={(e) => {
                 e.currentTarget.src = fallbackImageSource;
               }}
@@ -154,7 +164,7 @@ const ExploreImageDetailsPageAccessor = () => {
         </div>
 
         {/* Details section */}
-        <div className="md:w-[420px] w-full flex flex-col md:h-[90vh] h-[calc(100vh-100vw)] border-l border-zinc-200 dark:border-zinc-800">
+        <div className="md:w-[420px] w-full flex flex-col md:h-[90vh] h-[calc(100vh-100vw-73px)] border-l border-zinc-200 dark:border-zinc-800">
           {/* Desktop header - hidden on mobile */}
           <div className="hidden md:block shrink-0 p-4 border-b border-zinc-200 dark:border-zinc-800">
             <div className="flex items-center justify-between">
@@ -179,7 +189,7 @@ const ExploreImageDetailsPageAccessor = () => {
             </div>
           </div>
 
-          {/* Action buttons - Mobile only */}
+          {/* Action buttons - Mobile only - Fixed */}
           <div className="shrink-0 p-4 border-b border-zinc-200 dark:border-zinc-800 md:hidden">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -240,8 +250,8 @@ const ExploreImageDetailsPageAccessor = () => {
 
           {/* Tabs Section - Desktop only */}
           <div className="hidden md:flex md:flex-col flex-1 overflow-y-auto">
-            <Tabs defaultValue="comments" className="flex flex-col flex-1">
-              <TabsList className="shrink-0 grid w-full grid-cols-2 p-1">
+            <Tabs defaultValue="comments" className="flex-1 flex flex-col mt-2">
+              <TabsList className="grid w-full grid-cols-2 p-1">
                 <TabsTrigger
                   value="comments"
                   className="flex items-center gap-2"
@@ -326,9 +336,9 @@ const ExploreImageDetailsPageAccessor = () => {
             </Tabs>
           </div>
 
-          {/* Comments section - Improved mobile scrolling */}
+          {/* Comments section - Mobile only - Scrollable */}
           <div className="flex-1 overflow-y-auto min-h-0 md:hidden">
-            <div className="p-4 space-y-4 pb-32 md:pb-4 mb-8">
+            <div className="p-4 space-y-4">
               {imageData.comments && imageData.comments.length > 0 ? (
                 imageData.comments.map((comment) => (
                   <ImageComment
@@ -348,17 +358,8 @@ const ExploreImageDetailsPageAccessor = () => {
             </div>
           </div>
 
-          {/* Action buttons - Desktop only */}
-          <div className="shrink-0 p-4 border-b border-zinc-200 dark:border-zinc-800 hidden md:block">
-            <div className="flex items-center justify-between">
-              <LikeImageButton imageData={imageData} />
-              <p className="text-xs text-zinc-500">
-                {convertUtcDateToLocalDateString(imageData.createdAt!)}
-              </p>
-            </div>
-          </div>
-          {/* Comment input section */}
-          <div className="shrink-0 border-t border-zinc-200 dark:border-zinc-800 p-4 md:relative fixed bottom-0 left-0 right-0 bg-white dark:bg-zinc-900">
+          {/* Comment input section - Fixed */}
+          <div className="shrink-0 border-t border-zinc-200 dark:border-zinc-800 p-4 bg-white dark:bg-zinc-900">
             {isUserLoggedIn ? (
               <CommentForm imageId={imageData.id as string} />
             ) : (
@@ -375,6 +376,42 @@ const ExploreImageDetailsPageAccessor = () => {
 
 const ExploreImageDetailsPage = ({ onClose }: ExploreImageDetailsPageProps) => {
   const loaderData = useLoaderData<ExplorePageImageLoader>();
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // 768px is our md breakpoint
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  if (isMobile) {
+    return (
+      <React.Suspense
+        fallback={
+          <div className="fixed inset-0 z-[100] flex items-center justify-center">
+            <Loader2 className="h-12 w-12 animate-spin text-zinc-500" />
+          </div>
+        }
+      >
+        <Await
+          resolve={loaderData.data}
+          errorElement={
+            <div className="p-4">
+              <p className="text-red-500">Error loading image details</p>
+            </div>
+          }
+        >
+          <div className="min-h-screen z-[500] relative dark:bg-zinc-900">
+            <ExploreImageDetailsPageAccessor onClose={onClose} />
+          </div>
+        </Await>
+      </React.Suspense>
+    );
+  }
 
   return (
     <>
@@ -400,13 +437,13 @@ const ExploreImageDetailsPage = ({ onClose }: ExploreImageDetailsPageProps) => {
         >
           <Dialog open={true} onOpenChange={onClose}>
             <DialogContent
-              className="w-full md:max-w-[90%] md:h-[90vh] h-[100vh] p-0 gap-0 dark:bg-zinc-900 overflow-hidden z-[100] [&>button]:absolute [&>button]:right-4 [&>button]:top-4 [&>button]:z-10 [&>button_span]:hidden"
+              className="w-full md:max-w-[90%] md:h-[90vh] p-0 gap-0 dark:bg-zinc-900 overflow-hidden z-[100] [&>button]:absolute [&>button]:right-4 [&>button]:top-4 [&>button]:z-10 [&>button_span]:hidden"
               onInteractOutside={(e) => e.preventDefault()}
             >
               <VisuallyHidden asChild>
                 <DialogTitle>Image Details</DialogTitle>
               </VisuallyHidden>
-              <ExploreImageDetailsPageAccessor />
+              <ExploreImageDetailsPageAccessor onClose={onClose} />
             </DialogContent>
           </Dialog>
         </Await>
