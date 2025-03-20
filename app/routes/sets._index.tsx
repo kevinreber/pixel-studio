@@ -1,6 +1,6 @@
 import React from "react";
 import {
-  json,
+  data,
   type LoaderFunctionArgs,
   type ActionFunctionArgs,
 } from "@remix-run/node";
@@ -55,7 +55,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const setId = formData.get("setId") as string;
 
   if (!setId) {
-    return json({ error: "Set ID is required" }, { status: 400 });
+    return data({ error: "Set ID is required" }, { status: 400 });
   }
 
   try {
@@ -66,7 +66,7 @@ export async function action({ request }: ActionFunctionArgs) {
     });
 
     if (!set) {
-      return json({ error: "Set not found" }, { status: 404 });
+      return data({ error: "Set not found" }, { status: 404 });
     }
 
     if (set.userId !== user.id) {
@@ -74,7 +74,7 @@ export async function action({ request }: ActionFunctionArgs) {
         message: "Unauthorized attempt to delete set",
         metadata: { userId: user.id, setId },
       });
-      return json(
+      return data(
         { error: "You don't have permission to delete this set" },
         { status: 403 }
       );
@@ -90,14 +90,14 @@ export async function action({ request }: ActionFunctionArgs) {
       metadata: { userId: user.id, setId },
     });
 
-    return json({ success: true });
+    return data({ success: true });
   } catch (error) {
     Logger.error({
       message: "Error deleting set",
       error: error instanceof Error ? error : new Error(String(error)),
       metadata: { userId: user.id, setId },
     });
-    return json({ error: "Failed to delete set" }, { status: 500 });
+    return data({ error: "Failed to delete set" }, { status: 500 });
   }
 }
 
