@@ -56,7 +56,7 @@ const ImageGrid = ({ images }: { images: ImageTagType[] }) => {
 };
 
 const ExplorePageAccessor = () => {
-  const asyncData = useAsyncValue() as ExplorePageLoader;
+  const asyncData = useAsyncValue() as Awaited<ReturnType<ExplorePageLoader>>;
   const images = asyncData.images as unknown as ImageTagType[];
   const navigation = useNavigation();
   const [searchParams] = useSearchParams();
@@ -105,10 +105,8 @@ const ExplorePageAccessor = () => {
   );
 };
 
-type ExplorePageLoaderData = Awaited<ExplorePageLoader>;
-
 const ExplorePage = () => {
-  const loaderData = useLoaderData() as ExplorePageLoaderData;
+  const loaderData = useLoaderData<ExplorePageLoader>();
   const navigation = useNavigation();
   const isNavigating = navigation.state !== "idle";
 
