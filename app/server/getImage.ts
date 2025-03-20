@@ -1,24 +1,19 @@
 import { prisma } from "~/services/prisma.server";
 import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
 
+interface ImageUser {
+  id: string;
+  image: string | null;
+  username: string;
+}
 interface ImageComment {
   id: string;
   message: string;
   createdAt: Date;
   updatedAt: Date;
   parentId: string | null;
-  user: {
-    id: string;
-    username: string;
-    image: string;
-  };
+  user: ImageUser;
   likes: Array<{ userId: string }>;
-}
-
-interface ImageUser {
-  id: string;
-  image: string;
-  username: string;
 }
 
 interface ImageLike {
@@ -101,7 +96,7 @@ export const getImage = async (
   if (!image) return null;
 
   // Append Images source URL since we cannot use `env` variables in our UI
-  const formattedImage: GetImageDataAPIResponse = {
+  const formattedImage = {
     ...image,
     url: getS3BucketURL(imageId),
     thumbnailURL: getS3BucketThumbnailURL(imageId),
