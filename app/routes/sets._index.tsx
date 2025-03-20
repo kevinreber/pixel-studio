@@ -4,7 +4,14 @@ import {
   type LoaderFunctionArgs,
   type ActionFunctionArgs,
 } from "@remix-run/node";
-import { useLoaderData, useNavigation, Form, Link } from "@remix-run/react";
+import {
+  useLoaderData,
+  useNavigation,
+  Form,
+  Link,
+  Await,
+  useAsyncValue,
+} from "@remix-run/react";
 import {
   PageContainer,
   GeneralErrorBoundary,
@@ -31,34 +38,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getS3BucketThumbnailURL } from "~/utils/s3Utils";
 import { convertUtcDateToLocalDateString } from "~/client";
-import {
-  Bot,
-  Bot,
-  Clock,
-  Images,
-  Loader2,
-  NotepadText,
-  Trash2,
-} from "lucide-react";
-
-type Set = {
-  id: string;
-  prompt: string;
-  createdAt: string | Date;
-  totalImages: number;
-  images: Array<{
-    id: string;
-    prompt: string;
-    thumbnailUrl: string;
-    model: string;
-  }>;
-  user: { username: string };
-};
+import { Bot, Clock, Images, NotepadText, Trash2 } from "lucide-react";
+import { getUserSets, type Set } from "~/server/getUserSets";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
+  const sets = getUserSets(user.id);
 
   const sets = await prisma.set.findMany({
     where: {
