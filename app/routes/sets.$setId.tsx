@@ -31,9 +31,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
   const setDataPromise = getSet({ setId });
 
-  return defer({
-    data: setDataPromise,
-  });
+  return { data: setDataPromise };
 };
 
 export type SetPageLoader = typeof loader;
