@@ -13,8 +13,9 @@ import { convertUtcDateToLocalDateString } from "~/client";
 import { Loader2 } from "lucide-react";
 
 const SetDetailsAccessor = () => {
-  const asyncValue = useAsyncValue() as Awaited<SetPageLoader["data"]>;
-
+  const asyncValue = useAsyncValue() as Awaited<
+    Awaited<ReturnType<SetPageLoader>>["data"]
+  >;
   const setData = asyncValue ?? {
     images: [],
     prompt: "",
@@ -32,7 +33,12 @@ const SetDetailsAccessor = () => {
     user: setUser,
   } = setData;
 
-  const [formattedDate, setFormattedDate] = React.useState(setCreatedAt);
+  const [formattedDate, setFormattedDate] = React.useState(
+    typeof setCreatedAt === "string"
+      ? setCreatedAt
+      : convertUtcDateToLocalDateString(setCreatedAt)
+  );
+
   React.useEffect(() => {
     if (setCreatedAt) {
       setFormattedDate(convertUtcDateToLocalDateString(setCreatedAt));
@@ -48,7 +54,7 @@ const SetDetailsAccessor = () => {
           <div className="text-sm italic text-zinc-300">{setPrompt}</div>
         </div>
         <div>
-          <div className="font-semibold">Created At</div>
+          <div className="font-semibold">Created On</div>
           <div className="text-sm text-zinc-300">
             {formattedDate} by{" "}
             <Link

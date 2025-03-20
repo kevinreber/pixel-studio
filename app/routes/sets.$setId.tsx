@@ -1,6 +1,5 @@
 import {
   type LoaderFunctionArgs,
-  defer,
   MetaFunction,
   redirect,
 } from "@remix-run/node";
@@ -9,16 +8,21 @@ import SetDetailsPage from "~/pages/SetDetailsPage";
 import { getSet } from "~/server/getSet";
 import { requireUserLogin } from "~/services";
 
-export const meta: MetaFunction<typeof loader> = ({ data }) => {
-  // if (!data) {
+export const meta: MetaFunction<SetPageLoader> = ({ data }) => {
+  // ! TODO: In Remix we currently cannot get deferred data in meta tags.
+  // if (!data || !data.data) {
   return [{ title: "Set Details Page" }];
   // }
-  // ! TODO: Fix this
-  const setData = data.data[0];
-  return [
-    { title: `Set Details - ${setData.prompt.substring(0, 50)}...` },
-    { description: setData.prompt },
-  ];
+  // const setData = await data.data;
+  // return [
+  //   {
+  //     title: `Set Details Page for ${setData.prompt.substring(0, 25)}...`,
+  //   },
+  //   {
+  //     name: "description",
+  //     content: `Set Details for ${setData.id} - ${setData.prompt}`,
+  //   },
+  // ];
 };
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -31,9 +35,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
   const setDataPromise = getSet({ setId });
 
-  return defer({
-    data: setDataPromise,
-  });
+  return { data: setDataPromise };
 };
 
 export type SetPageLoader = typeof loader;

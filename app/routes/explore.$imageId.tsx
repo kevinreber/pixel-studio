@@ -1,9 +1,4 @@
-import {
-  type LoaderFunctionArgs,
-  defer,
-  type SerializeFrom,
-  MetaFunction,
-} from "@remix-run/node";
+import { type LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { useNavigate } from "@remix-run/react";
 import { getImage } from "~/server";
 import { invariantResponse } from "~/utils";
@@ -65,16 +60,16 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     hasImage: collection.images.length > 0,
   }));
 
-  return defer({
+  return {
     data: {
       ...image,
       collections: collectionsWithSaveStatus,
       savedToCollection: collectionsWithSaveStatus.some((c) => c.hasImage),
     },
-  });
+  };
 };
 
-export type ExplorePageImageLoader = SerializeFrom<typeof loader>;
+export type ExplorePageImageLoader = typeof loader;
 
 export default function Index() {
   const navigate = useNavigate();

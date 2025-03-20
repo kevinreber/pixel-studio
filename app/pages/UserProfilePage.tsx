@@ -76,7 +76,7 @@ const UserDoesNotExist = () => {
 
 const UserProfileAccessor = () => {
   const resolvedData = useAsyncValue() as Awaited<
-    UserProfilePageLoader["userDataPromise"]
+    Awaited<ReturnType<UserProfilePageLoader>>["userData"]
   >;
   const userData = resolvedData.user || {};
   const userImages = resolvedData.images || [];
@@ -191,7 +191,7 @@ export default function UserProfilePage() {
         }
       >
         <Await
-          resolve={data.userDataPromise}
+          resolve={data.userData}
           errorElement={
             <ErrorList
               errors={["There was an error loading the user profile"]}

@@ -1,9 +1,4 @@
-import {
-  type LoaderFunctionArgs,
-  MetaFunction,
-  defer,
-  type SerializeFrom,
-} from "@remix-run/node";
+import { type LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import ExplorePage from "pages/ExplorePage";
 import { getImages } from "server/getImages";
 import { PageContainer, GeneralErrorBoundary } from "~/components";
@@ -21,14 +16,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const imagesPromise = getImages(searchTerm, currentPage);
 
-  return defer({
+  return {
     images: imagesPromise,
     searchTerm,
     currentPage,
-  });
+  };
 };
 
-export type ExplorePageLoader = SerializeFrom<typeof loader>;
+export type ExplorePageLoader = typeof loader;
 
 export default function Index() {
   return <ExplorePage />;

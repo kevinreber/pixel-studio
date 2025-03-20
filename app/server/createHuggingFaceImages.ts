@@ -3,7 +3,7 @@ import { createNewSet } from "./createNewSet";
 import { addBase64EncodedImageToAWS } from "./addBase64EncodedImageToAWS";
 import {
   createNewImage,
-  FormattedImageData,
+  type FormattedCreateImageData,
   getFormattedImageData,
 } from "./createNewImage";
 import { deleteSet } from "./deleteSet";
@@ -53,7 +53,7 @@ export const createHuggingFaceImages = async (
   Logger.info({
     message: `[createHuggingFaceImages.ts]: Creating ${formData.numberOfImages} images using Hugging Face: ${formData.model}`,
   });
-  const formattedImagesData: FormattedImageData[] = [];
+  const formattedImagesData: FormattedCreateImageData[] = [];
   let setId = "";
 
   try {

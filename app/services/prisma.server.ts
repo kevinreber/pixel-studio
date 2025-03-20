@@ -59,7 +59,19 @@ const prisma = singleton("prisma", () => {
     const dur = chalk[color](`${e.duration}ms`);
     console.info(`prisma:query - ${dur} - ${e.query}`);
   });
-  client.$connect();
+
+  // Add connection error handling
+  client.$on("error", (e) => {
+    console.error("Prisma Client error:", e);
+    client.$disconnect();
+  });
+
+  // Properly handle connection
+  client.$connect().catch((e) => {
+    console.error("Failed to connect to database:", e);
+    process.exit(1);
+  });
+
   return client;
 });
 

@@ -1,10 +1,17 @@
 import React from "react";
 import {
-  json,
+  data,
   type LoaderFunctionArgs,
   type ActionFunctionArgs,
 } from "@remix-run/node";
-import { useLoaderData, useNavigation, Form, Link } from "@remix-run/react";
+import {
+  useLoaderData,
+  useNavigation,
+  Form,
+  Link,
+  Await,
+  useAsyncValue,
+} from "@remix-run/react";
 import {
   PageContainer,
   GeneralErrorBoundary,
@@ -31,80 +38,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getS3BucketThumbnailURL } from "~/utils/s3Utils";
 import { convertUtcDateToLocalDateString } from "~/client";
-import {
-  Bot,
-  Bot,
-  Clock,
-  Images,
-  Loader2,
-  NotepadText,
-  Trash2,
-} from "lucide-react";
-
-type Set = {
-  id: string;
-  prompt: string;
-  createdAt: string | Date;
-  totalImages: number;
-  images: Array<{
-    id: string;
-    prompt: string;
-    thumbnailUrl: string;
-    model: string;
-  }>;
-  user: { username: string };
-};
+import { Bot, Clock, Images, NotepadText, Trash2 } from "lucide-react";
+import { getUserSets, type Set } from "~/server/getUserSets";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
+  const sets = getUserSets(user.id);
 
-  const sets = await prisma.set.findMany({
-    where: {
-      userId: user.id,
-    },
-    include: {
-      images: {
-        take: 4,
-        select: {
-          id: true,
-          prompt: true,
-          model: true,
-        },
-      },
-      _count: {
-        select: {
-          images: true,
-        },
-      },
-      user: {
-        select: {
-          username: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-
-  const formattedData: Array<Set> = [];
-  for (const set of sets) {
-    const formattedImages = set.images.map((image) => ({
-      ...image,
-      model: image.model || "",
-      thumbnailUrl: getS3BucketThumbnailURL(image.id),
-    }));
-
-    formattedData.push({
-      ...set,
-      totalImages: set._count.images,
-      images: formattedImages,
-    });
-  }
-
-  return json({ sets: formattedData });
+  return { sets };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -113,7 +55,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const setId = formData.get("setId") as string;
 
   if (!setId) {
-    return json({ error: "Set ID is required" }, { status: 400 });
+    return data({ error: "Set ID is required" }, { status: 400 });
   }
 
   try {
@@ -124,7 +66,7 @@ export async function action({ request }: ActionFunctionArgs) {
     });
 
     if (!set) {
-      return json({ error: "Set not found" }, { status: 404 });
+      return data({ error: "Set not found" }, { status: 404 });
     }
 
     if (set.userId !== user.id) {
@@ -132,7 +74,7 @@ export async function action({ request }: ActionFunctionArgs) {
         message: "Unauthorized attempt to delete set",
         metadata: { userId: user.id, setId },
       });
-      return json(
+      return data(
         { error: "You don't have permission to delete this set" },
         { status: 403 }
       );
@@ -148,14 +90,14 @@ export async function action({ request }: ActionFunctionArgs) {
       metadata: { userId: user.id, setId },
     });
 
-    return json({ success: true });
+    return data({ success: true });
   } catch (error) {
     Logger.error({
       message: "Error deleting set",
       error: error instanceof Error ? error : new Error(String(error)),
       metadata: { userId: user.id, setId },
     });
-    return json({ error: "Failed to delete set" }, { status: 500 });
+    return data({ error: "Failed to delete set" }, { status: 500 });
   }
 }
 
@@ -313,7 +255,9 @@ const SetsTableSkeleton = () => {
   );
 };
 
-const SetsTable = ({ sets }: { sets: Array<Set> }) => {
+const SetsTable = () => {
+  const sets = useAsyncValue() as Awaited<ReturnType<typeof getUserSets>>;
+
   if (sets.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center">
@@ -352,7 +296,7 @@ const SetsTable = ({ sets }: { sets: Array<Set> }) => {
 };
 
 export default function Index() {
-  const { sets } = useLoaderData<typeof loader>();
+  const loaderData = useLoaderData<typeof loader>();
   const navigation = useNavigation();
   const isLoading = navigation.state !== "idle";
 
@@ -366,20 +310,20 @@ export default function Index() {
         <Card className="mb-6">
           <CardContent className="p-0">
             <div className="relative min-h-[400px]">
-              {isLoading ? (
-                <SetsTableSkeleton />
-              ) : (
-                <div className="relative">
-                  {isLoading && (
-                    <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Loader2 className="h-8 w-8 animate-spin" />
-                      </div>
+              <React.Suspense fallback={<SetsTableSkeleton />}>
+                <Await
+                  resolve={loaderData.sets}
+                  errorElement={
+                    <div className="flex flex-col items-center justify-center">
+                      <h1>Error loading sets</h1>
                     </div>
-                  )}
-                  <SetsTable sets={sets} />
-                </div>
-              )}
+                  }
+                >
+                  <div className="relative">
+                    {isLoading ? <SetsTableSkeleton /> : <SetsTable />}
+                  </div>
+                </Await>
+              </React.Suspense>
             </div>
           </CardContent>
         </Card>
