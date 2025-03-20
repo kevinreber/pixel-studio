@@ -9,7 +9,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MessageCircle, Info, Loader2, X } from "lucide-react";
@@ -87,7 +86,9 @@ interface ExploreImageDetailsPageProps {
 //   );
 // };
 
-export type AsyncImageData = Awaited<ExplorePageImageLoader["data"]>;
+export type AsyncImageData = Awaited<
+  Awaited<ReturnType<ExplorePageImageLoader>>["data"]
+>;
 export type ImageUserData = NonNullable<AsyncImageData["user"]>;
 
 const ExploreImageDetailsPageAccessor = ({

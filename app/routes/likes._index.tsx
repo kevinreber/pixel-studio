@@ -1,6 +1,5 @@
 import React from "react";
-import type { LoaderFunctionArgs, SerializeFrom } from "@remix-run/node";
-import { defer } from "@remix-run/node";
+import type { LoaderFunctionArgs } from "@remix-run/node";
 import {
   Await,
   useAsyncValue,
@@ -19,19 +18,16 @@ import { ImageDetail } from "~/server/getImage";
 import ImageModal from "~/components/ImageModal";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import {
-  getLikedImages,
-  GetLikedImagesAPIResponse,
-} from "~/server/getLikedImages";
+import { getLikedImages } from "~/server/getLikedImages";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
   const images = getLikedImages(user.id);
 
-  return defer({ images });
+  return { images };
 }
 
-export type LikedImagesLoaderData = SerializeFrom<typeof loader>;
+export type LikedImagesLoaderData = typeof loader;
 
 const LoadingSkeleton = () => {
   return (
@@ -79,7 +75,9 @@ const ImageCard = ({
 };
 
 const LikePageAccessor = () => {
-  const asyncData = useAsyncValue() as GetLikedImagesAPIResponse;
+  const asyncData = useAsyncValue() as Awaited<
+    Awaited<ReturnType<LikedImagesLoaderData>>["images"]
+  >;
   const images = asyncData;
 
   const [selectedImageIndex, setSelectedImageIndex] = React.useState<
@@ -155,12 +153,8 @@ export default function LikedImages() {
 
   return (
     <PageContainer>
-      {/* <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12"> */}
       <div className="flex flex-col justify-between w-full max-w-5xl m-auto">
-        {/* <div className="flex justify-between items-center mb-6"> */}
         <h1 className="text-2xl font-bold mb-3">Liked Images</h1>
-        {/* </div> */}
-
         <React.Suspense fallback={<LoadingSkeleton />}>
           <Await
             resolve={loaderData.images}
