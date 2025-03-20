@@ -1,7 +1,7 @@
 import { invariantResponse } from "~/utils";
 import {
   createNewImage,
-  FormattedImageData,
+  type FormattedCreateImageData,
   getFormattedImageData,
 } from "./createNewImage";
 import { addBase64EncodedImageToAWS } from "./addBase64EncodedImageToAWS";
@@ -289,7 +289,7 @@ const processBatch = async (
   userId: string,
   setId: string
 ) => {
-  const formattedImages: FormattedImageData[] = [];
+  const formattedImages: FormattedCreateImageData[] = [];
 
   // Process one image at a time
   for (let i = 0; i < formData.numberOfImages; i++) {
