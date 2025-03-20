@@ -46,51 +46,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
   const sets = getUserSets(user.id);
 
-  const sets = await prisma.set.findMany({
-    where: {
-      userId: user.id,
-    },
-    include: {
-      images: {
-        take: 4,
-        select: {
-          id: true,
-          prompt: true,
-          model: true,
-        },
-      },
-      _count: {
-        select: {
-          images: true,
-        },
-      },
-      user: {
-        select: {
-          username: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-
-  const formattedData: Array<Set> = [];
-  for (const set of sets) {
-    const formattedImages = set.images.map((image) => ({
-      ...image,
-      model: image.model || "",
-      thumbnailUrl: getS3BucketThumbnailURL(image.id),
-    }));
-
-    formattedData.push({
-      ...set,
-      totalImages: set._count.images,
-      images: formattedImages,
-    });
-  }
-
-  return json({ sets: formattedData });
+  return { sets };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -299,7 +255,9 @@ const SetsTableSkeleton = () => {
   );
 };
 
-const SetsTable = ({ sets }: { sets: Array<Set> }) => {
+const SetsTable = () => {
+  const sets = useAsyncValue() as Awaited<ReturnType<typeof getUserSets>>;
+
   if (sets.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center">
@@ -338,7 +296,7 @@ const SetsTable = ({ sets }: { sets: Array<Set> }) => {
 };
 
 export default function Index() {
-  const { sets } = useLoaderData<typeof loader>();
+  const loaderData = useLoaderData<typeof loader>();
   const navigation = useNavigation();
   const isLoading = navigation.state !== "idle";
 
@@ -352,20 +310,20 @@ export default function Index() {
         <Card className="mb-6">
           <CardContent className="p-0">
             <div className="relative min-h-[400px]">
-              {isLoading ? (
-                <SetsTableSkeleton />
-              ) : (
-                <div className="relative">
-                  {isLoading && (
-                    <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Loader2 className="h-8 w-8 animate-spin" />
-                      </div>
+              <React.Suspense fallback={<SetsTableSkeleton />}>
+                <Await
+                  resolve={loaderData.sets}
+                  errorElement={
+                    <div className="flex flex-col items-center justify-center">
+                      <h1>Error loading sets</h1>
                     </div>
-                  )}
-                  <SetsTable sets={sets} />
-                </div>
-              )}
+                  }
+                >
+                  <div className="relative">
+                    {isLoading ? <SetsTableSkeleton /> : <SetsTable />}
+                  </div>
+                </Await>
+              </React.Suspense>
             </div>
           </CardContent>
         </Card>
