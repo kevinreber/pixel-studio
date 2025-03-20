@@ -1,9 +1,4 @@
-import {
-  type LoaderFunctionArgs,
-  MetaFunction,
-  defer,
-  SerializeFrom,
-} from "@remix-run/node";
+import { type LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import UserProfilePage from "~/pages/UserProfilePage";
 import { getUserDataByUserId } from "~/server";
 import { loader as UserLoaderData } from "../root";
@@ -40,14 +35,14 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const pageSize = Number(searchParams.get("page_size")) || 250;
 
   // Get initial user data
-  const data = getUserDataByUserId(userId, currentPage, pageSize);
+  const userDataPromise = getUserDataByUserId(userId, currentPage, pageSize);
 
-  return defer({
-    userDataPromise: data,
-  });
+  return {
+    userData: userDataPromise,
+  };
 };
 
-export type UserProfilePageLoader = SerializeFrom<typeof loader>;
+export type UserProfilePageLoader = typeof loader;
 
 export default function Index() {
   return <UserProfilePage />;
