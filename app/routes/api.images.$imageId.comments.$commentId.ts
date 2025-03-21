@@ -2,15 +2,18 @@ import { ActionFunctionArgs, json } from "@remix-run/node";
 import { requireUserLogin } from "~/services";
 import { invariantResponse } from "~/utils";
 import { deleteComment } from "~/server/deleteComment";
+import { invalidateCache } from "~/utils/cache.server";
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
-  const commentId = params.commentId;
+  const { imageId, commentId } = params;
   invariantResponse(commentId, "Comment ID is required");
+  invariantResponse(imageId, "Image ID is required");
 
   try {
     if (request.method === "DELETE") {
       await deleteComment({ commentId, userId: user.id });
+      await invalidateCache(`image-details:${imageId}`);
       return json({ success: true });
     }
 
