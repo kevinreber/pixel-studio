@@ -49,6 +49,8 @@ model Session {
 
 model User {
   id           String        @id @default(cuid())
+  archived_google_id String?
+  new_supabase_id String?
   name         String?
   username     String       @unique
   email        String       @unique
