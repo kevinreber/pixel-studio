@@ -67,7 +67,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
       csrfToken,
       honeyProps,
       domainUrl: process.env.ORIGIN || "",
-      supabaseBaseUrl: process.env.DATABASE_BASE_URL || "",
     },
     {
       headers: combineHeaders(
@@ -153,7 +152,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const loaderData = useLoaderData<typeof loader>();
-  console.log("loaderData in root:", loaderData.supabaseBaseUrl);
 
   return (
     <HoneypotProvider {...loaderData.honeyProps}>
