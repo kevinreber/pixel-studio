@@ -109,7 +109,7 @@ const LandingPage = () => {
           <div className="overflow-hidden">
             <div className="mx-auto max-w-7xl px-6 pb-32 pt-36 sm:pt-60 lg:px-8 lg:pt-32 h-screen">
               <div className="mx-auto max-w-2xl gap-x-14 lg:mx-0 lg:flex lg:max-w-none lg:items-center">
-                <div className="w-full max-w-xl lg:shrink-0 xl:max-w-2xl">
+                <div className="w-full max-w-xl lg:shrink-0 xl:max-w-2xl relative z-10">
                   <h1 className="text-4xl font-bold tracking-tight text-gray-200 sm:text-4xl">
                     Amplify your creativity effortlessly.
                   </h1>
@@ -130,13 +130,13 @@ const LandingPage = () => {
                     <Link
                       to="/explore"
                       prefetch="intent"
-                      className="rounded-md px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm  focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 border border-gray-500 hover:bg-gray-800 hover:text-gray-200"
+                      className="rounded-md px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 border border-gray-500 hover:bg-gray-800 hover:text-gray-200"
                     >
                       Explore
                     </Link>
                   </div>
                 </div>
-                <div className="mt-14 flex justify-end gap-8 sm:-mt-44 sm:justify-start sm:pl-20 lg:mt-0 lg:pl-0">
+                <div className="mt-14 flex justify-end gap-8 sm:-mt-44 sm:justify-start sm:pl-20 lg:mt-0 lg:pl-0 relative z-0">
                   <div className="ml-auto w-44 flex-none space-y-8 pt-32 sm:ml-0 sm:pt-80 lg:order-last lg:pt-36 xl:order-none xl:pt-80">
                     <div className="relative">
                       <img
