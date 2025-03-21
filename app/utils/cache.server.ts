@@ -78,18 +78,14 @@ export async function getCachedDataWithRevalidate<T>(
 ): Promise<T> {
   const cached = await cacheGet<T>(key);
 
-  // Return cached data immediately if available
+  // If we have cached data, return it immediately
   if (cached) {
     console.log("Returning cached data for key:", key);
-    // Revalidate cache in background
-    fetchFn()
-      .then((freshData) => cacheSet(key, freshData, ttlSeconds))
-      .catch(console.error);
-
     return cached;
   }
 
-  // If no cache, fetch and cache
+  // Only fetch fresh data if cache is empty
+  console.log("No cache found, fetching fresh data for key:", key);
   const freshData = await fetchFn();
   await cacheSet(key, freshData, ttlSeconds);
   return freshData;
