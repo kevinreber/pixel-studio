@@ -33,7 +33,7 @@ import {
 } from "./services";
 import "./tailwind.css";
 import "./globals.css";
-
+import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 export async function loader({ request }: LoaderFunctionArgs) {
   const [csrfToken, csrfCookieHeader] = await csrf.commitToken(request);
   const honeyProps = honeypot.getInputProps();
@@ -54,7 +54,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
   let userData;
   const sessionAuth = await getGoogleSessionAuth(request);
   if (sessionAuth) {
-    userData = await getLoggedInUserGoogleSSOData(sessionAuth);
+    const cacheKey = `user-login:${sessionAuth.id}`;
+    userData = await getCachedDataWithRevalidate(cacheKey, () =>
+      getLoggedInUserGoogleSSOData(sessionAuth)
+    );
   }
 
   // console.log("userData in root loader:", userData);

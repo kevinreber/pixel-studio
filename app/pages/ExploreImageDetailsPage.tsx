@@ -276,6 +276,7 @@ const ExploreImageDetailsPageAccessor = ({
                       imageData.comments.map((comment) => (
                         <ImageComment
                           key={comment.id}
+                          imageId={imageData.id as string}
                           id={comment.id}
                           message={comment.message}
                           createdAt={comment.createdAt}
@@ -337,6 +338,16 @@ const ExploreImageDetailsPageAccessor = ({
             </Tabs>
           </div>
 
+          {/* Action buttons - Desktop only */}
+          <div className="shrink-0 p-4 border-b border-zinc-200 dark:border-zinc-800 hidden md:block">
+            <div className="flex items-center justify-between">
+              <LikeImageButton imageData={imageData} />
+              <p className="text-xs text-zinc-500">
+                {convertUtcDateToLocalDateString(imageData.createdAt!)}
+              </p>
+            </div>
+          </div>
+
           {/* Comments section - Mobile only - Scrollable */}
           <div className="flex-1 overflow-y-auto min-h-0 md:hidden">
             <div className="p-4 space-y-4">
@@ -345,6 +356,7 @@ const ExploreImageDetailsPageAccessor = ({
                   <ImageComment
                     key={comment.id}
                     id={comment.id}
+                    imageId={imageData.id as string}
                     message={comment.message}
                     createdAt={comment.createdAt}
                     user={comment.user}

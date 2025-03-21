@@ -41,10 +41,14 @@ import {
 import { convertUtcDateToLocalDateString } from "~/client";
 import { Bot, Clock, Images, NotepadText, Trash2 } from "lucide-react";
 import { getUserSets, type Set } from "~/server/getUserSets";
+import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
-  const sets = getUserSets(user.id);
+  const cacheKey = `sets:user:${user.id}`;
+  const sets = getCachedDataWithRevalidate(cacheKey, () =>
+    getUserSets(user.id)
+  );
 
   return { sets };
 }

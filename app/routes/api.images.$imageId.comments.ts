@@ -3,6 +3,7 @@ import { requireUserLogin } from "~/services";
 import { createComment } from "~/server/createComment";
 import { CommentSchema, CommentResponseSchema } from "~/schemas/comment";
 import { z } from "zod";
+import { invalidateCache } from "~/utils/cache.server";
 
 export const action = async ({
   request,
@@ -20,6 +21,8 @@ export const action = async ({
     });
 
     if (request.method === "POST") {
+      // Invalidate the image details cache
+      await invalidateCache(`image-details:${imageId}`);
       const comment = await createComment({
         message: validatedData.comment,
         imageId: validatedData.imageId,

@@ -4,6 +4,7 @@ import { getUserDataByUserId } from "~/server";
 import { loader as UserLoaderData } from "../root";
 import { invariantResponse } from "~/utils/invariantResponse";
 import { PageContainer, GeneralErrorBoundary } from "~/components";
+import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 
 export const meta: MetaFunction<
   typeof loader,
@@ -32,10 +33,13 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
   const searchParams = new URL(request.url).searchParams;
   const currentPage = Math.max(Number(searchParams.get("page") || 1), 1);
+  // Get most recent 250 images
   const pageSize = Number(searchParams.get("page_size")) || 250;
 
-  // Get initial user data
-  const userDataPromise = getUserDataByUserId(userId, currentPage, pageSize);
+  const cacheKey = `user-profile:${userId}:${currentPage}:${pageSize}`;
+  const userDataPromise = getCachedDataWithRevalidate(cacheKey, () =>
+    getUserDataByUserId(userId, currentPage, pageSize)
+  );
 
   return {
     userData: userDataPromise,

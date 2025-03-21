@@ -19,10 +19,14 @@ import ImageModal from "~/components/ImageModal";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { getLikedImages } from "~/server/getLikedImages";
+import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
-  const images = getLikedImages(user.id);
+  const cacheKey = `liked-images:user:${user.id}`;
+  const images = getCachedDataWithRevalidate(cacheKey, () =>
+    getLikedImages(user.id)
+  );
 
   return { images };
 }

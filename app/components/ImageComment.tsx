@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Trash2 } from "lucide-react";
+import { Heart, Trash2 } from "lucide-react";
 import { Link, useFetcher } from "@remix-run/react";
 import { useLoggedInUser } from "~/hooks";
 import React from "react";
@@ -19,6 +19,7 @@ interface CommentLike {
 
 interface ImageCommentProps {
   id: string;
+  imageId: string;
   message: string;
   createdAt: Date | string;
   user: CommentUser;
@@ -27,6 +28,7 @@ interface ImageCommentProps {
 
 export const ImageComment = ({
   id,
+  imageId,
   message,
   createdAt,
   user,
@@ -57,7 +59,7 @@ export const ImageComment = ({
       { commentId: id },
       {
         method: isLiked ? "DELETE" : "POST",
-        action: `/api/comments/${id}/like`,
+        action: `/api/images/${imageId}/comments/${id}/like`,
       }
     );
   };
@@ -70,7 +72,7 @@ export const ImageComment = ({
       { commentId: id },
       {
         method: "DELETE",
-        action: `/api/comments/${id}`,
+        action: `/api/images/${imageId}/comments/${id}`,
       }
     );
   };
@@ -78,10 +80,19 @@ export const ImageComment = ({
   React.useEffect(() => {
     if (fetcher.data?.error) {
       toast.error(fetcher.data.error);
-      setIsLiked((prev) => !prev);
-      setLikeCount((prev) => (isLiked ? prev - 1 : prev + 1));
+
+      if (isDeleting) {
+        setIsDeleting(false);
+      } else {
+        setIsLiked((prev) => !prev);
+        setLikeCount((prev) => (isLiked ? prev - 1 : prev + 1));
+      }
+    } else if (fetcher.data?.success) {
+      if (isDeleting) {
+        toast.success("Comment deleted");
+      }
     }
-  }, [fetcher.data, isLiked]);
+  }, [fetcher.data, isDeleting, isLiked]);
 
   return (
     <div className={cn("flex gap-3 group", isDeleting && "opacity-50")}>
