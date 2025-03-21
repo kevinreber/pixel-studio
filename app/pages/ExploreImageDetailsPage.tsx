@@ -276,6 +276,7 @@ const ExploreImageDetailsPageAccessor = ({
                       imageData.comments.map((comment) => (
                         <ImageComment
                           key={comment.id}
+                          imageId={imageData.id as string}
                           id={comment.id}
                           message={comment.message}
                           createdAt={comment.createdAt}
@@ -355,6 +356,7 @@ const ExploreImageDetailsPageAccessor = ({
                   <ImageComment
                     key={comment.id}
                     id={comment.id}
+                    imageId={imageData.id as string}
                     message={comment.message}
                     createdAt={comment.createdAt}
                     user={comment.user}

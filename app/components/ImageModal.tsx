@@ -192,6 +192,7 @@ const ImageModal = ({ imageData }: { imageData: ImageDetail }) => {
                         <ImageComment
                           key={comment.id}
                           id={comment.id}
+                          imageId={imageData.id}
                           message={comment.message}
                           createdAt={comment.createdAt}
                           user={comment.user}
@@ -260,6 +261,7 @@ const ImageModal = ({ imageData }: { imageData: ImageDetail }) => {
                   <ImageComment
                     key={comment.id}
                     id={comment.id}
+                    imageId={imageData.id}
                     message={comment.message}
                     createdAt={comment.createdAt}
                     user={comment.user}

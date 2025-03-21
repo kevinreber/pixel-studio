@@ -19,6 +19,7 @@ interface CommentLike {
 
 interface ImageCommentProps {
   id: string;
+  imageId: string;
   message: string;
   createdAt: Date | string;
   user: CommentUser;
@@ -27,6 +28,7 @@ interface ImageCommentProps {
 
 export const ImageComment = ({
   id,
+  imageId,
   message,
   createdAt,
   user,
