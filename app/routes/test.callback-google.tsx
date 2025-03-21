@@ -7,6 +7,7 @@ import {
   getAuthState,
 } from "~/services/supabase.server";
 import type { AuthState } from "~/services/supabase.server";
+import { handleAuthCallback } from "~/services/auth.server";
 
 type LoaderData = AuthState & {
   code: string | null;
@@ -54,12 +55,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const authState = await getAuthState({ request });
 
   if (authState.user || authState.session) {
+    // return json(
+    //   {
+    //     ...authState,
+    //     code: null,
+    //     refreshed: true,
+    //   },
+    //   { headers }
+    // );
+    // Sync with our User table
+    const user = await handleAuthCallback(authState.user);
     return json(
-      {
-        ...authState,
-        code: null,
-        refreshed: true,
-      },
+      { ...authState, user, code: null, refreshed: true },
       { headers }
     );
   }

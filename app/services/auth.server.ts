@@ -4,6 +4,8 @@ import { GoogleStrategy } from "remix-auth-google";
 import { getSessionCookie, sessionStorage } from "~/services/session.server";
 import { redirect } from "@remix-run/node";
 import bcrypt from "bcryptjs";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { prisma } from "~/services/prisma.server";
 
 export const AUTH_KEY = "_auth";
 // ? Placeholder for GOOGLE_SESSION_KEY
@@ -190,4 +192,45 @@ export async function getUserGoogleSessionId(request: Request) {
   const googleSessionAuth = await getGoogleSessionAuth(request);
   if (!googleSessionAuth) return null;
   return googleSessionAuth.id;
+}
+
+export async function handleAuthCallback(supabaseUser: SupabaseUser | null) {
+  if (!supabaseUser) return null;
+
+  // Look for existing user by ID (which is the same as Supabase ID)
+  const existingUser = await prisma.user.findUnique({
+    where: { id: supabaseUser.id },
+  });
+
+  if (existingUser) {
+    return existingUser;
+  }
+
+  // Look for user by email as fallback
+  const userByEmail = await prisma.user.findUnique({
+    where: { email: supabaseUser.email! },
+  });
+
+  if (userByEmail) {
+    // This case should be rare/impossible if migration was done correctly
+    console.warn(`Found user by email but not ID: ${supabaseUser.email}`);
+    return userByEmail;
+  }
+
+  const username =
+    supabaseUser.user_metadata.username ??
+    generateUsernameFromEmail(supabaseUser.email!);
+
+  // Create new user with same ID as Supabase
+  return await prisma.user.create({
+    data: {
+      id: supabaseUser.id, // Use same ID from Supabase
+      email: supabaseUser.email!,
+      username,
+    },
+  });
+}
+
+function generateUsernameFromEmail(email: string): string {
+  return email.split("@")[0];
 }
