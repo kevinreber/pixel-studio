@@ -7,6 +7,7 @@ export async function getCachedData<T>(
   fetchFn: () => Promise<T>,
   ttlSeconds: number = DEFAULT_CACHE_TTL
 ): Promise<T> {
+  console.log("Getting cached data for key:", key);
   try {
     // Try to get data from cache first
     const cached = await safeRedisOperation(() => redis.get(key));
@@ -39,6 +40,7 @@ export async function invalidateCache(key: string) {
 
 // Add some utility functions for common cache operations
 export async function cacheGet<T>(key: string): Promise<T> {
+  console.log("Getting cache for key:", key);
   const value = await safeRedisOperation(() => redis.get(key));
   if (!value) return null as T;
 
@@ -56,6 +58,7 @@ export async function cacheSet(
   value: unknown,
   ttlSeconds = DEFAULT_CACHE_TTL
 ) {
+  console.log("Setting cache for key:", key);
   const stringValue = typeof value === "string" ? value : JSON.stringify(value);
 
   return safeRedisOperation(() =>
@@ -64,5 +67,30 @@ export async function cacheSet(
 }
 
 export async function cacheDelete(key: string) {
+  console.log("Deleting cache for key:", key);
   return safeRedisOperation(() => redis.del(key));
+}
+
+export async function getCachedDataWithRevalidate<T>(
+  key: string,
+  fetchFn: () => Promise<T>,
+  ttlSeconds: number = DEFAULT_CACHE_TTL
+): Promise<T> {
+  const cached = await cacheGet<T>(key);
+
+  // Return cached data immediately if available
+  if (cached) {
+    console.log("Returning cached data for key:", key);
+    // Revalidate cache in background
+    fetchFn()
+      .then((freshData) => cacheSet(key, freshData, ttlSeconds))
+      .catch(console.error);
+
+    return cached;
+  }
+
+  // If no cache, fetch and cache
+  const freshData = await fetchFn();
+  await cacheSet(key, freshData, ttlSeconds);
+  return freshData;
 }
