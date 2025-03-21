@@ -5,6 +5,7 @@ import { loader as UserLoaderData } from "../root";
 import { invariantResponse } from "~/utils/invariantResponse";
 import { PageContainer, GeneralErrorBoundary } from "~/components";
 import { getCachedDataWithRevalidate } from "~/utils/cache.server";
+
 export const meta: MetaFunction<
   typeof loader,
   { root: typeof UserLoaderData }
