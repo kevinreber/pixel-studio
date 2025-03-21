@@ -5,11 +5,23 @@ import {
 } from "@supabase/ssr";
 import type { Session, User } from "@supabase/supabase-js";
 
-export const getSupabaseEnv = () => ({
-  DATABASE_BASE_URL: process.env.DATABASE_BASE_URL!,
-  DATABASE_URL: process.env.DATABASE_URL!,
-  DATABASE_ANON_KEY: process.env.DATABASE_ANON_KEY!,
-});
+export const getSupabaseEnv = () => {
+  const DATABASE_BASE_URL = process.env.DATABASE_BASE_URL;
+  const DATABASE_URL = process.env.DATABASE_URL;
+  const DATABASE_ANON_KEY = process.env.DATABASE_ANON_KEY;
+
+  if (!DATABASE_BASE_URL || !DATABASE_ANON_KEY) {
+    throw new Error(
+      "Missing Supabase environment variables. Check DATABASE_BASE_URL and DATABASE_ANON_KEY"
+    );
+  }
+
+  return {
+    DATABASE_BASE_URL,
+    DATABASE_URL: DATABASE_URL || DATABASE_BASE_URL,
+    DATABASE_ANON_KEY,
+  };
+};
 
 export function getSupabaseWithHeaders({
   request,
