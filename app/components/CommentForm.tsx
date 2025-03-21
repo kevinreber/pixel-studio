@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { CommentSchema, type CommentResponse } from "~/schemas/comment";
+import { z } from "zod";
 
 export const CommentForm = ({ imageId }: { imageId: string }) => {
   const fetcher = useFetcher<CommentResponse>();
@@ -42,7 +43,7 @@ export const CommentForm = ({ imageId }: { imageId: string }) => {
         { ...validatedData },
         {
           method: "POST",
-          action: `/api/images/${imageId}/comment`,
+          action: `/api/images/${imageId}/comments`,
         }
       );
 
