@@ -4,8 +4,9 @@ import { getImage } from "~/server";
 import { invariantResponse } from "~/utils";
 import ExploreImageDetailsPage from "~/pages/ExploreImageDetailsPage";
 import { GeneralErrorBoundary, PageContainer } from "~/components";
-import { prisma } from "~/services/prisma.server";
 import { requireUserLogin } from "~/services";
+import { getImageCollection } from "~/server/getImageCollection";
+import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Explore AI Generated Images" }];
@@ -23,33 +24,22 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     // User is not logged in, which is fine
   }
 
+  const imageDetailsCacheKey = `image-details:${imageId}`;
+  const imagePromise = getCachedDataWithRevalidate(imageDetailsCacheKey, () =>
+    getImage(imageId)
+  );
+
+  // TODO: Verify if we need to cache this after we create Collections Page
+  const collectionsCacheKey = `user-collections:${user?.id}`;
+  const collectionsPromise = getCachedDataWithRevalidate(
+    collectionsCacheKey,
+    () => getImageCollection(imageId, user)
+  );
+
   // Get image data and collection info in parallel
   const [image, collections] = await Promise.all([
-    getImage(imageId),
-    user && user.id
-      ? prisma.collection.findMany({
-          where: {
-            userId: user.id,
-          },
-          select: {
-            id: true,
-            title: true,
-            _count: {
-              select: {
-                images: true,
-              },
-            },
-            images: {
-              where: {
-                imageId: imageId,
-              },
-              select: {
-                id: true,
-              },
-            },
-          },
-        })
-      : Promise.resolve([]),
+    imagePromise,
+    collectionsPromise,
   ]);
 
   // Transform the data to include collection info
