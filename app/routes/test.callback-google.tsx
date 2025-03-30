@@ -5,13 +5,17 @@ import { PageContainer } from "~/components";
 import {
   getSupabaseWithHeaders,
   getAuthState,
+  signOutOfSupabase,
 } from "~/services/supabase.server";
 import type { AuthState } from "~/services/supabase.server";
 import { createNewUserWithSupabaseData } from "~/server/createNewUser";
+import { User, UserResponse } from "@supabase/supabase-js";
 
 type LoaderData = AuthState & {
   code: string | null;
   refreshed: boolean;
+  supabaseUser: UserResponse;
+  dbUser: User | null;
 };
 
 type ActionData = {
@@ -42,6 +46,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         {
           session: null,
           user: null,
+          supabaseUser: null,
           error: error instanceof Error ? error.message : String(error),
           code,
           refreshed: false,
@@ -54,6 +59,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   // No code means we're either already authenticated or redirected back after code exchange
   const authState = await getAuthState({ request });
+  // This is the recommended way to get the user from supabase
+  const supabaseUser = await supabase.auth.getUser();
 
   if (authState.user || authState.session) {
     let dbUser;
@@ -70,6 +77,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       {
         session: authState.session,
         user: authState.user,
+        supabaseUser,
         code: null,
         refreshed: true,
         dbUser,
@@ -83,20 +91,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-  const { supabase, headers } = getSupabaseWithHeaders({
-    request,
-    useBase: true,
-  });
-
   try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    const { headers } = await signOutOfSupabase({ request, useBase: true });
 
     return redirect("/test/login-google", { headers });
-  } catch (error) {
+  } catch (error: any) {
     return json(
       { error: error instanceof Error ? error.message : String(error) },
-      { headers }
+      { headers: error.headers ?? new Headers() }
     );
   }
 }
@@ -146,6 +148,13 @@ export default function AuthCallbackGoogle() {
             <h2 className="text-lg font-semibold mb-2">User Data</h2>
             <pre className="bg-gray-700 p-4 rounded text-wrap">
               {JSON.stringify(loaderData.user, null, 2)}
+            </pre>
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold mb-2">Supabase User</h2>
+            <pre className="bg-gray-700 p-4 rounded text-wrap">
+              {JSON.stringify(loaderData.supabaseUser, null, 2)}
             </pre>
           </div>
 

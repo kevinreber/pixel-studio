@@ -148,3 +148,33 @@ export async function getAuthState({
     };
   }
 }
+
+export const signOutOfSupabase = async ({
+  request,
+  useBase = false,
+}: {
+  request: Request;
+  useBase?: boolean;
+}) => {
+  const { supabase, headers } = getSupabaseWithHeaders({
+    request,
+    useBase,
+  });
+  try {
+    const supabaseUser = await supabase.auth.getUser();
+    const userId = supabaseUser.data.user?.id;
+    console.log(`Signing out user ${userId}`);
+
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+
+    console.log(`Successfully signed out user ${userId}`);
+    return { headers };
+  } catch (error) {
+    console.error("Sign out error:", error);
+    return {
+      headers: headers,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+};
