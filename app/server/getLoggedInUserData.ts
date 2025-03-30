@@ -1,6 +1,10 @@
 import { prisma } from "~/services";
-import { createNewUserWithGoogleSSOData } from "./createNewUser";
+import {
+  createNewUserWithGoogleSSOData,
+  createNewUserWithSupabaseData,
+} from "./createNewUser";
 import { UserGoogleData } from "~/types";
+import type { User } from "@supabase/supabase-js";
 
 /**
  * @description
@@ -9,23 +13,9 @@ import { UserGoogleData } from "~/types";
  * @param userGoogleData - The user's Google session auth data.
  * @returns The logged-in user's data.
  */
-export const getLoggedInUserData = async (userGoogleData: UserGoogleData) => {
-  // TODO: Will add other handlers that are not Google SSO later...
-  return getLoggedInUserGoogleSSOData(userGoogleData);
-};
-
-/**
- * @description
- * This function retrieves the logged-in user's data from the database.
- * If the user does not exist, it creates a new user in the database.
- * @param userGoogleData - The user's Google session auth data.
- * @returns The logged-in user's data.
- */
-export const getLoggedInUserGoogleSSOData = async (
-  userGoogleData: UserGoogleData
-) => {
-  const userId = userGoogleData.id;
-  const userData = await prisma.user.findUnique({
+export const getLoggedInUserData = async (userData: User | UserGoogleData) => {
+  const userId = userData.id;
+  const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
       id: true,
@@ -64,9 +54,14 @@ export const getLoggedInUserGoogleSSOData = async (
     },
   });
 
-  if (!userData || !userData.id) {
-    return createNewUserWithGoogleSSOData(userGoogleData);
+  if (!user || !user.id) {
+    if (userData.provider && userData.provider === "google") {
+      console.log("Creating new user with Google SSO data");
+      return createNewUserWithGoogleSSOData(userData as UserGoogleData);
+    }
+    console.log("Creating new user with Supabase data");
+    return createNewUserWithSupabaseData(userData as User, "google");
   }
 
-  return userData;
+  return user;
 };

@@ -2,10 +2,6 @@ import { prisma } from "~/services";
 import { UserGoogleData } from "~/types";
 import type { User } from "@supabase/supabase-js";
 
-const generateUsernameFromEmail = (email: string): string => {
-  return email.split("@")[0];
-};
-
 export const createNewUser = async (
   userData: UserGoogleData | Record<string, unknown>
 ) => {
@@ -27,20 +23,25 @@ export const createNewUserWithGoogleSSOData = async (
   if (!userGoogleData.id) {
     throw new Error("User ID not found");
   }
-  const { name, email, picture } = userGoogleData._json;
+  try {
+    const { name, email, picture } = userGoogleData._json;
 
-  const userData = await prisma.user.create({
-    data: {
-      id: userGoogleData.id,
-      name,
-      username: userGoogleData.displayName,
-      email,
-      image: picture,
-      roles: { connect: { name: "user" } },
-    },
-  });
+    const userData = await prisma.user.create({
+      data: {
+        id: userGoogleData.id,
+        name,
+        username: userGoogleData.displayName,
+        email,
+        image: picture,
+        roles: { connect: { name: "user" } },
+      },
+    });
 
-  return userData;
+    return userData;
+  } catch (error) {
+    console.error("Error in createNewUserWithGoogleSSOData:", error);
+    throw new Error(error instanceof Error ? error.message : String(error));
+  }
 };
 
 /**
@@ -54,64 +55,57 @@ export const createNewUserWithGoogleSSOData = async (
  * @returns The user data.
  */
 export const createNewUserWithSupabaseData = async (
-  userSupabaseData: User,
-  provider = "google"
+  user: User,
+  provider: string
 ) => {
-  if (!userSupabaseData.id) {
-    throw new Error("User ID not found");
-  }
-  if (!provider) {
-    throw new Error("Invalid provider");
-  }
+  try {
+    if (!user.id) {
+      throw new Error("User ID not found");
+    }
+    if (!provider) {
+      throw new Error("Invalid provider");
+    }
+    // Check if the user already exists in the database
+    const existingUser = await prisma.user.findUnique({
+      where: { id: user.id },
+    });
 
-  // Check if the user already exists in the database
-  const existingUser = await prisma.user.findUnique({
-    where: {
-      id: userSupabaseData.id,
-    },
-  });
+    if (existingUser) {
+      console.log(`User already exists in the database: ${user.id}`);
+      return existingUser;
+    }
 
-  if (existingUser) {
-    console.log(`User already exists in the database: ${userSupabaseData.id}`);
-    return existingUser;
-  }
+    // Look for user by email as fallback
+    const userByEmail = await prisma.user.findUnique({
+      where: { email: user.email! },
+    });
 
-  // Look for user by email as fallback
-  const userByEmail = await prisma.user.findUnique({
-    where: { email: userSupabaseData.email! },
-  });
+    if (userByEmail) {
+      // This case should be rare/impossible if migration was done correctly
+      console.warn(`Found user by email but not ID: ${user.email}`);
+      return userByEmail;
+    }
+    console.log(`Creating new user with Supabase auth data: ${user.id}`);
 
-  if (userByEmail) {
-    // This case should be rare/impossible if migration was done correctly
-    console.warn(`Found user by email but not ID: ${userSupabaseData.email}`);
-    return userByEmail;
-  }
-
-  console.log(
-    `Creating new user with Supabase auth data: ${userSupabaseData.id}`
-  );
-  const new_supabase_id = userSupabaseData.id;
-  const name = userSupabaseData.user_metadata.name;
-  const email = userSupabaseData.email || userSupabaseData.user_metadata.email;
-  const image = userSupabaseData.user_metadata.picture;
-  const archived_google_id = userSupabaseData.user_metadata.provider_id;
-
-  const username =
-    userSupabaseData.user_metadata.full_name ??
-    generateUsernameFromEmail(userSupabaseData.email!);
-
-  const userData = await prisma.user.create({
-    data: {
-      id: new_supabase_id,
-      name,
-      username,
-      email,
-      image,
-      archived_google_id,
-      new_supabase_id,
+    const userData = {
+      id: user.id,
+      name:
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.email?.split("@")[0],
+      username: user.user_metadata?.username || user.email?.split("@")[0],
+      email: user.email || user.user_metadata?.email,
+      image: user.user_metadata?.avatar_url || user.user_metadata?.picture,
+      archived_google_id: user.user_metadata?.provider_id,
+      new_supabase_id: user.id,
       roles: { connect: { name: "user" } },
-    },
-  });
+    };
 
-  return userData;
+    return await prisma.user.create({
+      data: userData,
+    });
+  } catch (error) {
+    console.error("Error in createNewUserWithSupabaseData:", error);
+    throw error;
+  }
 };

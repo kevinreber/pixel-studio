@@ -22,7 +22,7 @@ import { AuthenticityTokenProvider } from "remix-utils/csrf/react";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
 import { honeypot } from "utils/honeypot.server";
 // import { getToast, type Toast } from "utils/toast.server";
-import { getLoggedInUserGoogleSSOData } from "./server";
+import { getLoggedInUserData } from "./server";
 import { GeneralErrorBoundary } from "./components/GeneralErrorBoundary";
 import {
   // sessionStorage,
@@ -56,7 +56,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   if (sessionAuth) {
     const cacheKey = `user-login:${sessionAuth.id}`;
     userData = await getCachedDataWithRevalidate(cacheKey, () =>
-      getLoggedInUserGoogleSSOData(sessionAuth)
+      getLoggedInUserData(sessionAuth)
     );
   }
 
@@ -64,12 +64,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   return json(
     {
-      userData,
+      userData: userData ?? null,
       // toast,
       ENV: getEnv(),
       csrfToken,
       honeyProps,
-      domainUrl: process.env.ORIGIN || "",
     },
     {
       headers: combineHeaders(
@@ -135,8 +134,8 @@ function Document({
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  // const loaderData = useRouteLoaderData<typeof loader>("root");
-  // console.log(loaderData);
+  const loaderData = useLoaderData<typeof loader>();
+  console.log(loaderData);
   const location = useLocation();
   const isHome = location.pathname === "/";
 
