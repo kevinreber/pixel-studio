@@ -7,7 +7,7 @@ import {
   getAuthState,
 } from "~/services/supabase.server";
 import type { AuthState } from "~/services/supabase.server";
-import { handleAuthCallback } from "~/services/auth.server";
+import { createNewUserWithSupabaseData } from "~/server/createNewUser";
 
 type LoaderData = AuthState & {
   code: string | null;
@@ -45,6 +45,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
           error: error instanceof Error ? error.message : String(error),
           code,
           refreshed: false,
+          dbUser: null,
         },
         { headers }
       );
@@ -55,18 +56,24 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const authState = await getAuthState({ request });
 
   if (authState.user || authState.session) {
-    // return json(
-    //   {
-    //     ...authState,
-    //     code: null,
-    //     refreshed: true,
-    //   },
-    //   { headers }
-    // );
-    // Sync with our User table
-    const user = await handleAuthCallback(authState.user);
+    let dbUser;
+    if (authState.user) {
+      // Make sure we have a user in our database
+      dbUser = await createNewUserWithSupabaseData(
+        authState.user,
+        authState.user.app_metadata.provider
+      );
+    }
+
+    // const user = await handleAuthCallback(authState.user);
     return json(
-      { ...authState, user, code: null, refreshed: true },
+      {
+        session: authState.session,
+        user: authState.user,
+        code: null,
+        refreshed: true,
+        dbUser,
+      },
       { headers }
     );
   }
@@ -139,6 +146,13 @@ export default function AuthCallbackGoogle() {
             <h2 className="text-lg font-semibold mb-2">User Data</h2>
             <pre className="bg-gray-700 p-4 rounded text-wrap">
               {JSON.stringify(loaderData.user, null, 2)}
+            </pre>
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold mb-2">DB User</h2>
+            <pre className="bg-gray-700 p-4 rounded text-wrap">
+              {JSON.stringify(loaderData.dbUser, null, 2)}
             </pre>
           </div>
 
