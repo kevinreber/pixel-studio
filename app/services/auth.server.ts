@@ -6,7 +6,7 @@ import { redirect } from "@remix-run/node";
 import bcrypt from "bcryptjs";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { prisma } from "~/services/prisma.server";
-
+import { getSupabaseWithHeaders } from "~/services/supabase.server";
 export const AUTH_KEY = "_auth";
 // ? Placeholder for GOOGLE_SESSION_KEY
 // export const GOOGLE_SESSION_KEY = "_google_auth";
@@ -126,8 +126,23 @@ interface GoogleUserJson {
 export const requireUserLogin = async (
   request: Request,
   { redirectTo }: { redirectTo?: string | null } = {}
-): Promise<UserProfile> => {
+): Promise<UserProfile | SupabaseUser> => {
   try {
+    // First check supabase auth
+    const { supabase } = getSupabaseWithHeaders({
+      request,
+      useBase: true,
+    });
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (session) {
+      return session.user;
+    } else {
+      console.log("No supabase session found, checking auth state...");
+    }
+
     const authUser = (await authenticator.isAuthenticated(
       request
     )) as UserProfile;
@@ -186,12 +201,6 @@ export async function getGoogleSessionAuth(request: Request) {
   const sessionAuth = cookieSession.get(AUTH_KEY);
   if (!sessionAuth) return null;
   return sessionAuth;
-}
-
-export async function getUserGoogleSessionId(request: Request) {
-  const googleSessionAuth = await getGoogleSessionAuth(request);
-  if (!googleSessionAuth) return null;
-  return googleSessionAuth.id;
 }
 
 export async function handleAuthCallback(supabaseUser: SupabaseUser | null) {
