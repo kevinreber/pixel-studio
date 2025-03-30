@@ -10,7 +10,7 @@ const LogOutButton = ({
   const submit = useSubmit();
 
   const handleLogout = () => {
-    submit(null, { method: "POST", action: "/auth/logout" });
+    submit(null, { method: "POST", action: "/auth/v2/logout" });
   };
 
   return (
