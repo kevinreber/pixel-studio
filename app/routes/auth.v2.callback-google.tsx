@@ -56,22 +56,32 @@ export async function loader({ request }: LoaderFunctionArgs) {
   console.log("Auth state:", authState);
   if (authState.user || authState.session) {
     console.log("User or session found, creating new user...");
-    if (authState.user) {
-      console.log("User found, creating new user...");
+    const user = authState.user || authState.session?.user;
+
+    if (user) {
+      console.log("User data:", JSON.stringify(user, null, 2));
       await createNewUserWithSupabaseData(
-        authState.user,
-        authState.user.app_metadata.provider
+        user,
+        user.app_metadata?.provider || "google"
       );
     }
+
     const cookieSession = await getSessionCookie(request);
     console.log("Cookie session:", cookieSession);
-    const userId = authState.user?.id ?? authState.session?.user.id;
+    const userId = user?.id;
     console.log("User ID:", userId);
+
+    if (!userId) {
+      throw new Error("No user ID found in session");
+    }
+
     cookieSession.set(USER_ID_KEY, userId);
-    cookieSession.set(AUTH_KEY, authState.user);
+    cookieSession.set(AUTH_KEY, user);
     console.log("Setting user ID in cookie session...");
+
     return redirect("/explore", {
       headers: {
+        ...headers,
         "Set-Cookie": await commitSession(cookieSession),
       },
     });

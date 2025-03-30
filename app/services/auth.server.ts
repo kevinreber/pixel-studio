@@ -1,12 +1,20 @@
 import { Authenticator } from "remix-auth";
 // import { GoogleStrategy, SocialsProvider } from "remix-auth-socials";
 import { GoogleStrategy } from "remix-auth-google";
-import { getSessionCookie, sessionStorage } from "~/services/session.server";
+import {
+  commitSession,
+  getSessionCookie,
+  sessionStorage,
+} from "~/services/session.server";
 import { redirect } from "@remix-run/node";
 import bcrypt from "bcryptjs";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { prisma } from "~/services/prisma.server";
-import { getSupabaseWithHeaders } from "~/services/supabase.server";
+import {
+  getAuthState,
+  getSupabaseWithHeaders,
+  signOutOfSupabase,
+} from "~/services/supabase.server";
 export const AUTH_KEY = "_auth";
 // ? Placeholder for GOOGLE_SESSION_KEY
 // export const GOOGLE_SESSION_KEY = "_google_auth";
@@ -41,35 +49,7 @@ authenticator.use(
   )
 );
 
-export const getSessionExpirationDate = () =>
-  new Date(Date.now() + SESSION_EXPIRATION_TIME);
-
-export async function getPasswordHash(password: string) {
-  const hash = await bcrypt.hash(password, 10);
-  return hash;
-}
-
-// ! TODO: This is using sessionIDs
-// export async function getUserId(request: Request) {
-//   const cookieSession = await getSessionCookie(request);
-//   const sessionId = cookieSession.get(USER_ID_KEY);
-//   if (!sessionId) return null;
-//   const session = await prisma.session.findUnique({
-//     select: { user: { select: { id: true } } },
-//     where: { id: sessionId, expirationDate: { gt: new Date() } },
-//   });
-//   if (!session?.user) {
-//     // throw await logout({ request });
-//     throw redirect("/login");
-//   }
-//   return session.user.id;
-// }
-
 export async function requireAnonymous(request: Request) {
-  // const userId = await getUserId(request);
-  // if (userId) {
-  //   throw redirect("/explore");
-  // }
   const authUser = await authenticator.isAuthenticated(request);
   if (authUser) {
     throw redirect("/explore");
@@ -139,32 +119,54 @@ export const requireUserLogin = async (
 
     if (session) {
       return session.user;
-    } else {
-      console.log("No supabase session found, checking auth state...");
     }
+    throw new Error("No supabase session found");
+    // console.log("No supabase session found, checking auth state...");
+    //   await signOutOfSupabase({ request, useBase: true });
+    //   const cookieSession = await getSessionCookie(request);
+    //   cookieSession.unset(USER_ID_KEY);
+    //   cookieSession.unset(AUTH_KEY);
 
-    const authUser = (await authenticator.isAuthenticated(
-      request
-    )) as UserProfile;
+    //   throw redirect("/login", {
+    //     headers: {
+    //       "Set-Cookie": await commitSession(cookieSession),
+    //     },
+    //   });
+    // }
 
-    if (!authUser) {
-      const requestUrl = new URL(request.url);
-      redirectTo =
-        redirectTo === null
-          ? null
-          : redirectTo ?? `${requestUrl.pathname}${requestUrl.search}`;
-      const loginParams = redirectTo
-        ? new URLSearchParams({ redirectTo })
-        : null;
-      const loginRedirect = ["/login", loginParams?.toString()]
-        .filter(Boolean)
-        .join("?");
-      throw redirect(loginRedirect);
-    }
+    // const authUser = (await authenticator.isAuthenticated(
+    //   request
+    // )) as UserProfile;
 
-    return authUser;
+    // if (!authUser) {
+    //   const requestUrl = new URL(request.url);
+    //   redirectTo =
+    //     redirectTo === null
+    //       ? null
+    //       : redirectTo ?? `${requestUrl.pathname}${requestUrl.search}`;
+    //   const loginParams = redirectTo
+    //     ? new URLSearchParams({ redirectTo })
+    //     : null;
+    //   const loginRedirect = ["/login", loginParams?.toString()]
+    //     .filter(Boolean)
+    //     .join("?");
+    //   throw redirect(loginRedirect);
+    // }
+
+    // return authUser;
   } catch (error) {
     console.error("Authentication error:", error);
+    await signOutOfSupabase({ request, useBase: true });
+    const cookieSession = await getSessionCookie(request);
+    cookieSession.unset(USER_ID_KEY);
+    cookieSession.unset(AUTH_KEY);
+
+    throw redirect("/login", {
+      headers: {
+        "Set-Cookie": await commitSession(cookieSession),
+      },
+    });
+    // }
     throw redirect("/login");
   }
 };
@@ -199,7 +201,10 @@ export const requireUserLogin = async (
 export async function getGoogleSessionAuth(request: Request) {
   const cookieSession = await getSessionCookie(request);
   const sessionAuth = cookieSession.get(AUTH_KEY);
-  if (!sessionAuth) return null;
+  if (!sessionAuth) {
+    const authUser = await getUserFromAuth(request);
+    return authUser ?? null;
+  }
   return sessionAuth;
 }
 
@@ -243,3 +248,21 @@ export async function handleAuthCallback(supabaseUser: SupabaseUser | null) {
 function generateUsernameFromEmail(email: string): string {
   return email.split("@")[0];
 }
+
+/**
+ * @description
+ * This function checks if a user exists in the auth database
+ * @param request
+ * @returns user object if user exists, null otherwise
+ */
+export const getUserFromAuth = async (request: Request) => {
+  try {
+    const authState = await getAuthState({ request });
+    if (!authState.user) {
+      return null;
+    }
+    return authState.user;
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : String(error));
+  }
+};
