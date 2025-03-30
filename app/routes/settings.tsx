@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLoggedInUser } from "~/hooks";
+import { invalidateCache } from "~/utils/cache.server";
 
 const UsernameSchema = z
   .string()
@@ -66,6 +67,9 @@ export async function action({ request }: ActionFunctionArgs) {
       where: { id: user.id },
       data: { username },
     });
+    // Need to invalidate the cache for the user
+    const cacheKey = `user-login:${user.id}`;
+    await invalidateCache(cacheKey);
 
     return json({ success: true, user: updatedUser });
   } catch (error) {

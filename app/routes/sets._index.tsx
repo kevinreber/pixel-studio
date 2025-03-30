@@ -269,13 +269,14 @@ const SetsTable = () => {
           No image sets found. Create your first image set to get started!
         </div>
         <div className="p-4 text-center text-muted-foreground">
-          <Link
-            to="/create"
-            prefetch="intent"
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2"
+          <Button
+            className="mt-4 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            asChild
           >
-            Create New Image
-          </Link>
+            <Link to="/create" prefetch="intent">
+              Create Your First Image
+            </Link>
+          </Button>
         </div>
       </div>
     );

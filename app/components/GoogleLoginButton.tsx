@@ -3,7 +3,8 @@ import { Form, useSearchParams } from "@remix-run/react";
 import { Button } from "@/components/ui/button";
 
 // const GOGLE_ACTION_STRING = `/api/auth/${SocialsProvider.GOOGLE}`;
-const GOGLE_ACTION_STRING = `/auth/google`;
+// const GOGLE_ACTION_STRING = `/auth/google`;
+const GOGLE_ACTION_STRING = `/auth/v2/google`;
 
 const GoogleLoginButton = () => {
   const [searchParams] = useSearchParams();
