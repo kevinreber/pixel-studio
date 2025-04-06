@@ -1,3 +1,4 @@
+import { Logger } from "~/utils/logger.server";
 import { redis, safeRedisOperation } from "~/services/redis.server";
 
 const DEFAULT_CACHE_TTL = 3600; // 1 hour
@@ -7,7 +8,12 @@ export async function getCachedData<T>(
   fetchFn: () => Promise<T>,
   ttlSeconds: number = DEFAULT_CACHE_TTL
 ): Promise<T> {
-  console.log("Getting cached data for key:", key);
+  Logger.info({
+    message: `Getting cached data for key: ${key}`,
+    metadata: {
+      key,
+    },
+  });
   try {
     // Try to get data from cache first
     const cached = await safeRedisOperation(() => redis.get(key));
@@ -26,21 +32,37 @@ export async function getCachedData<T>(
     return freshData;
   } catch (error) {
     // If Redis fails, fallback to direct fetch
-    console.error(
-      "Cache operation failed, falling back to direct fetch:",
-      error
-    );
+
+    Logger.error({
+      message: "Cache operation failed, falling back to direct fetch:",
+      error: error instanceof Error ? error : new Error(String(error)),
+      metadata: {
+        key,
+      },
+    });
+
     return await fetchFn();
   }
 }
 
 export async function invalidateCache(key: string) {
   await safeRedisOperation(() => redis.del(key));
+  Logger.info({
+    message: `Invalidated cache for key: ${key}`,
+    metadata: {
+      key,
+    },
+  });
 }
 
 // Add some utility functions for common cache operations
 export async function cacheGet<T>(key: string): Promise<T> {
-  console.log("Getting cache for key:", key);
+  Logger.info({
+    message: `Getting cache for key: ${key}`,
+    metadata: {
+      key,
+    },
+  });
   const value = await safeRedisOperation(() => redis.get(key));
   if (!value) return null as T;
 
@@ -58,7 +80,12 @@ export async function cacheSet(
   value: unknown,
   ttlSeconds = DEFAULT_CACHE_TTL
 ) {
-  console.log("Setting cache for key:", key);
+  Logger.info({
+    message: `Setting cache for key: ${key}`,
+    metadata: {
+      key,
+    },
+  });
   const stringValue = typeof value === "string" ? value : JSON.stringify(value);
 
   return safeRedisOperation(() =>
@@ -67,7 +94,12 @@ export async function cacheSet(
 }
 
 export async function cacheDelete(key: string) {
-  console.log("Deleting cache for key:", key);
+  Logger.info({
+    message: `Deleting cache for key: ${key}`,
+    metadata: {
+      key,
+    },
+  });
   return safeRedisOperation(() => redis.del(key));
 }
 
@@ -80,12 +112,22 @@ export async function getCachedDataWithRevalidate<T>(
 
   // If we have cached data, return it immediately
   if (cached) {
-    console.log("Returning cached data for key:", key);
+    Logger.info({
+      message: `Returning cached data for key: ${key}`,
+      metadata: {
+        key,
+      },
+    });
     return cached;
   }
 
   // Only fetch fresh data if cache is empty
-  console.log("No cache found, fetching fresh data for key:", key);
+  Logger.info({
+    message: `No cache found, fetching fresh data for key: ${key}`,
+    metadata: {
+      key,
+    },
+  });
   const freshData = await fetchFn();
   await cacheSet(key, freshData, ttlSeconds);
   return freshData;
