@@ -117,7 +117,7 @@ async function runCleanup(dryRun = true) {
 }
 
 // Run the cleanup
-runCleanup(false) // Set to false to perform actual updates
+runCleanup(true) // Set to false to perform actual updates
   .then(() => process.exit(0))
   .catch(() => process.exit(1));
 
