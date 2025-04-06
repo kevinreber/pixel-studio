@@ -11,9 +11,9 @@ import { convertImageUrlToBase64 } from "~/utils/convertImageUrlToBase64";
 import { Logger } from "~/utils/logger.server";
 import { CreateImagesFormData } from "~/routes/create";
 
-type BlackForestResponse = {
+interface BlackForestResponse {
   id: string;
-  status: "Ready" | "Failed" | "Processing" | "Pending";
+  status: "Ready" | "Failed" | "Processing" | "Pending" | "Request Moderated";
   result?: {
     sample: string; // URL to the generated image
     prompt: string; // Original prompt used
@@ -23,7 +23,10 @@ type BlackForestResponse = {
     duration: number;
   };
   error?: string;
-};
+  details?: {
+    "Moderation Reasons"?: string[];
+  };
+}
 
 type BlackForestErrorResponse = {
   error: string;
@@ -238,6 +241,20 @@ const pollForBlackForestImageResult = async (
           metadata: { requestId },
         });
         return await convertImageUrlToBase64(resultData.result.sample);
+      }
+
+      // Handle moderation rejection
+      if (resultData.status === "Request Moderated") {
+        Logger.error({
+          message: `[createBlackForestImages.ts]: Request was moderated for requestId: ${requestId}`,
+          metadata: { requestId, resultData },
+        });
+        const reasons =
+          resultData.details?.["Moderation Reasons"]?.join(", ") ||
+          "Unknown reason";
+        throw new Error(
+          `Your request was flagged by our content moderation system (${reasons})`
+        );
       }
 
       // Image generation failed
