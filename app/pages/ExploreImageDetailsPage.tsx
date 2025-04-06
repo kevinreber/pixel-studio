@@ -282,15 +282,18 @@ const ExploreImageDetailsPageAccessor = ({
           {/* Tabs Section - Desktop only */}
           <div className="hidden md:flex md:flex-col flex-1 overflow-y-auto">
             <Tabs defaultValue="comments" className="flex-1 flex flex-col mt-2">
-              <TabsList className="grid w-full grid-cols-2 p-1">
+              <TabsList className="grid w-full grid-cols-2 p-1 bg-zinc-900">
                 <TabsTrigger
                   value="comments"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 data-[state=active]:bg-zinc-800 py-2 transition-colors"
                 >
                   <MessageCircle className="h-4 w-4" />
                   Comments
                 </TabsTrigger>
-                <TabsTrigger value="info" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="info"
+                  className="flex items-center gap-2 data-[state=active]:bg-zinc-800 py-2 transition-colors"
+                >
                   <Info className="h-4 w-4" />
                   Info
                 </TabsTrigger>
