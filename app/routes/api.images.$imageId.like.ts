@@ -9,8 +9,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   const imageId = params.imageId;
   invariantResponse(imageId, "Image ID is required");
   invariantResponse(user, "User is required");
-  const cacheKey = `liked-images:user:${user.id}`;
-  await cacheDelete(cacheKey);
+  const likedImagesCacheKey = `liked-images:user:${user.id}`;
+  await cacheDelete(likedImagesCacheKey);
+  const imageDetailsCacheKey = `image-details:${imageId}`;
+  await cacheDelete(imageDetailsCacheKey);
 
   if (request.method === "POST") {
     await createImageLike({ imageId, userId: user.id });

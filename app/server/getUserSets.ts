@@ -15,10 +15,24 @@ export type Set = {
   user: { username: string };
 };
 
-export const getUserSets = async (userId: string) => {
+export interface GetUserSetsOptions {
+  prompt?: string;
+  model?: string;
+}
+
+export const getUserSets = async (
+  userId: string,
+  options: GetUserSetsOptions = {}
+) => {
+  const { prompt, model } = options;
+
   const sets = await prisma.set.findMany({
     where: {
       userId,
+      prompt: prompt ? { contains: prompt, mode: "insensitive" } : undefined,
+      images: model
+        ? { some: { model: { contains: model, mode: "insensitive" } } }
+        : undefined,
     },
     include: {
       images: {

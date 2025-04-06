@@ -166,7 +166,7 @@ async function runMigration(dryRun = true) {
 }
 
 // Run the migration directly
-runMigration(false) // Set to false to perform actual migration
+runMigration(true) // Set to false to perform actual migration
   .then(() => process.exit(0))
   .catch(() => process.exit(1));
 

@@ -11,7 +11,18 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageCircle, Info, Loader2, X } from "lucide-react";
+import {
+  MessageCircle,
+  Info,
+  Loader2,
+  X,
+  Cpu,
+  Clock,
+  Images,
+  NotepadText,
+  Trash2,
+  Palette,
+} from "lucide-react";
 import { CopyToClipboardButton } from "~/components";
 import { LikeImageButton } from "~/components/LikeImageButton";
 import { CommentForm } from "~/components/CommentForm";
@@ -212,25 +223,41 @@ const ExploreImageDetailsPageAccessor = ({
                     align="end"
                   >
                     <h4 className="font-semibold text-sm">Image Details</h4>
-                    {imageData.setId && (
-                      <Link
-                        to={`/sets/${imageData.setId}`}
-                        className="text-sm text-blue-500 hover:text-blue-600 hover:underline"
-                        prefetch="intent"
-                      >
-                        View Set
-                      </Link>
-                    )}
                     <div className="space-y-1">
-                      <p className="text-xs">
-                        <span className="font-semibold">Model:</span>{" "}
+                      <p className="text-xs flex items-center gap-2">
+                        <span className="font-semibold flex items-center gap-1">
+                          <Images className="w-4 h-4" />
+                          Set:
+                        </span>{" "}
+                        {imageData.setId ? (
+                          <Link
+                            to={`/sets/${imageData.setId}`}
+                            className="text-sm text-blue-500 hover:text-blue-600 hover:underline"
+                            prefetch="intent"
+                          >
+                            View Set
+                          </Link>
+                        ) : (
+                          <p className="text-xs text-zinc-500">No set</p>
+                        )}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs flex items-center gap-2">
+                        <span className="font-semibold flex items-center gap-1">
+                          <Cpu className="w-4 h-4" />
+                          Model:
+                        </span>{" "}
                         <span className="italic">{imageData.model}</span>
                       </p>
                     </div>
                     {imageData.stylePreset && (
                       <div className="space-y-1">
-                        <p className="text-xs">
-                          <span className="font-semibold">Style:</span>{" "}
+                        <p className="text-xs flex items-center gap-2">
+                          <span className="font-semibold flex items-center gap-1">
+                            <Palette className="w-4 h-4" />
+                            Style:
+                          </span>{" "}
                           <span className="italic">
                             {imageData.stylePreset}
                           </span>
@@ -239,7 +266,10 @@ const ExploreImageDetailsPageAccessor = ({
                     )}
                     <div className="space-y-1">
                       <p className="text-xs">
-                        <span className="font-semibold">Prompt:</span>{" "}
+                        <span className="font-semibold flex items-center gap-2">
+                          <NotepadText className="w-4 h-4" />
+                          Prompt:
+                        </span>{" "}
                         <span className="italic">{imageData.prompt}</span>
                       </p>
                     </div>
@@ -252,15 +282,18 @@ const ExploreImageDetailsPageAccessor = ({
           {/* Tabs Section - Desktop only */}
           <div className="hidden md:flex md:flex-col flex-1 overflow-y-auto">
             <Tabs defaultValue="comments" className="flex-1 flex flex-col mt-2">
-              <TabsList className="grid w-full grid-cols-2 p-1">
+              <TabsList className="grid w-full grid-cols-2 p-1 bg-zinc-900">
                 <TabsTrigger
                   value="comments"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 data-[state=active]:bg-zinc-800 py-2 transition-colors"
                 >
                   <MessageCircle className="h-4 w-4" />
                   Comments
                 </TabsTrigger>
-                <TabsTrigger value="info" className="flex items-center gap-2">
+                <TabsTrigger
+                  value="info"
+                  className="flex items-center gap-2 data-[state=active]:bg-zinc-800 py-2 transition-colors"
+                >
                   <Info className="h-4 w-4" />
                   Info
                 </TabsTrigger>
@@ -296,7 +329,10 @@ const ExploreImageDetailsPageAccessor = ({
                   <div className="p-4 space-y-4">
                     {imageData.setId && (
                       <div className="space-y-1">
-                        <h4 className="font-semibold">Set</h4>
+                        <h4 className="font-semibold flex items-center gap-2">
+                          <Images className="w-4 h-4" />
+                          Set
+                        </h4>
                         <Link
                           to={`/sets/${imageData.setId}`}
                           className="text-sm text-blue-500 hover:text-blue-600 hover:underline"
@@ -308,12 +344,18 @@ const ExploreImageDetailsPageAccessor = ({
                     )}
 
                     <div className="space-y-1">
-                      <h4 className="font-semibold">Engine Model</h4>
+                      <h4 className="font-semibold flex items-center gap-2">
+                        <Cpu className="w-4 h-4" />
+                        Engine Model
+                      </h4>
                       <p className="italic text-sm">{imageData.model}</p>
                     </div>
 
                     <div className="space-y-1">
-                      <h4 className="font-semibold">Style Preset</h4>
+                      <h4 className="font-semibold flex items-center gap-2">
+                        <Palette className="w-4 h-4" />
+                        Style Preset
+                      </h4>
                       {imageData.stylePreset ? (
                         <p className="italic text-sm">
                           {imageData.stylePreset}
@@ -324,7 +366,10 @@ const ExploreImageDetailsPageAccessor = ({
                     </div>
 
                     <div className="space-y-1">
-                      <h4 className="font-semibold">Prompt</h4>
+                      <h4 className="font-semibold flex items-center gap-2">
+                        <NotepadText className="w-4 h-4" />
+                        Prompt
+                      </h4>
                       <div className="flex items-start gap-2">
                         <p className="italic text-sm">{imageData.prompt}</p>
                         {/* <CopyToClipboardButton
