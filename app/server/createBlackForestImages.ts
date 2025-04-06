@@ -10,6 +10,7 @@ import { deleteSet } from "./deleteSet";
 import { convertImageUrlToBase64 } from "~/utils/convertImageUrlToBase64";
 import { Logger } from "~/utils/logger.server";
 import { CreateImagesFormData } from "~/routes/create";
+import { prisma } from "~/services/prisma.server";
 
 interface BlackForestResponse {
   id: string;
@@ -409,6 +410,7 @@ export const createBlackForestImages = async (
   });
   validateCreateBlackForestImagesInput(formData);
   let setId = "";
+  let createdImages: string[] = [];
 
   try {
     // Create a new set to group the images
@@ -420,6 +422,10 @@ export const createBlackForestImages = async (
 
     // Process all requested images in batches
     const images = await processBatch(formData, userId, setId);
+
+    // Keep track of successfully created images
+    createdImages = images.map((img) => img.id);
+
     return { images, setId };
   } catch (error) {
     // If anything fails, log error and clean up
@@ -428,16 +434,40 @@ export const createBlackForestImages = async (
       metadata: { error, formData },
     });
 
-    // Clean up the set if it was created
-    if (setId) {
-      await deleteSet({ setId }).catch((err) =>
-        Logger.error({
-          message: `[createBlackForestImages.ts]: Failed to delete set after error`,
-          metadata: { setId, err },
-        })
-      );
+    // Clean up any partially created resources
+    try {
+      // Delete any images that were created
+      if (createdImages.length > 0) {
+        await Promise.all(
+          createdImages.map(async (imageId) => {
+            try {
+              await prisma.image.delete({ where: { id: imageId } });
+            } catch (deleteError) {
+              Logger.error({
+                message: `Failed to delete image during cleanup`,
+                metadata: { imageId, error: deleteError },
+              });
+            }
+          })
+        );
+      }
+
+      // Clean up the set if it was created
+      if (setId) {
+        await deleteSet({ setId }).catch((err) =>
+          Logger.error({
+            message: `[createBlackForestImages.ts]: Failed to delete set after error`,
+            metadata: { setId, err },
+          })
+        );
+      }
+    } catch (cleanupError) {
+      Logger.error({
+        message: "Error during cleanup after failed image generation",
+        metadata: { cleanupError },
+      });
     }
 
-    return { images: [], setId: "" };
+    throw new Error(`Failed to create images from Black Forest Labs: ${error}`);
   }
 };

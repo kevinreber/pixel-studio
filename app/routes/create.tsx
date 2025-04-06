@@ -292,23 +292,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       });
     }
 
-    // If we have a setId, redirect to the set page after a small delay
-    if (result.setId) {
-      // delay to allow time for all images to be created
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      return redirect(`/sets/${result.setId}`);
+    // Validate that we have both images and a setId
+    if (!result.setId || !result.images?.length) {
+      throw new Error("Failed to create images - incomplete response");
     }
 
-    // Fallback response if no setId but also no error
-    return json({
-      success: true,
-      images: result.images,
-      setId: result.setId,
-    });
+    // If we have a setId, redirect to the set page after a small delay
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    return redirect(`/sets/${result.setId}`);
   } catch (error) {
     console.error(`Error creating new images: ${error}`);
 
-    // Return a user-friendly error message
     return json(
       {
         success: false,
