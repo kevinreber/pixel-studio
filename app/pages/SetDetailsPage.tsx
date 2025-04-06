@@ -10,7 +10,14 @@ import { PageContainer, ErrorList, ImageCard } from "~/components";
 import { SetPageLoader } from "~/routes/sets.$setId";
 import { Skeleton } from "@/components/ui/skeleton";
 import { convertUtcDateToLocalDateString } from "~/client";
-import { Loader2 } from "lucide-react";
+import {
+  Loader2,
+  MessageSquare,
+  Cpu,
+  Palette,
+  Calendar,
+  Images,
+} from "lucide-react";
 
 const SetDetailsAccessor = () => {
   const asyncValue = useAsyncValue() as Awaited<
@@ -32,7 +39,8 @@ const SetDetailsAccessor = () => {
     createdAt: setCreatedAt,
     user: setUser,
   } = setData;
-
+  const model = setImages[0].model || "";
+  const style = setImages[0].style || "";
   const [formattedDate, setFormattedDate] = React.useState(
     typeof setCreatedAt === "string"
       ? setCreatedAt
@@ -50,11 +58,33 @@ const SetDetailsAccessor = () => {
       <h1 className="text-2xl font-semibold mb-4">Set Details</h1>
       <div className="w-full flex flex-col gap-4">
         <div>
-          <div className="font-semibold">Prompt</div>
+          <div className="text-xl flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" />
+            Prompt
+          </div>
           <div className="text-sm italic text-zinc-300">{setPrompt}</div>
         </div>
         <div>
-          <div className="font-semibold">Created On</div>
+          <div className="text-xl flex items-center gap-2">
+            <Cpu className="w-4 h-4" />
+            Model
+          </div>
+          <div className="text-sm text-zinc-300">{model}</div>
+        </div>
+        {style && (
+          <div>
+            <div className="text-xl flex items-center gap-2">
+              <Palette className="w-4 h-4" />
+              Style
+            </div>
+            <div className="text-sm text-zinc-300">{style}</div>
+          </div>
+        )}
+        <div>
+          <div className="text-xl flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            Created On
+          </div>
           <div className="text-sm text-zinc-300">
             {formattedDate} by{" "}
             <Link
@@ -67,7 +97,10 @@ const SetDetailsAccessor = () => {
           </div>
         </div>
         <div>
-          <div className="font-semibold mb-2">Images</div>
+          <div className="text-xl mb-2 flex items-center gap-2">
+            <Images className="w-4 h-4" />
+            Images
+          </div>
           <ul className="grid grid-cols-2 md:grid-cols-3 gap-1 md:gap-4 lg:gap-6">
             {setImages.map((image) => (
               <li key={image.id} className="hover:!opacity-60">

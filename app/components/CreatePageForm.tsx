@@ -1,5 +1,10 @@
 import React from "react";
-import { Form, useLoaderData, useNavigation } from "@remix-run/react";
+import {
+  Form,
+  useLoaderData,
+  useNavigation,
+  useActionData,
+} from "@remix-run/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -17,7 +22,10 @@ import {
   CreatePageLoader,
   STYLE_OPTIONS,
   MODEL_OPTIONS,
+  // CreatePageActionData,
 } from "~/routes/create";
+import { toast } from "sonner";
+import type { ActionData } from "~/routes/create";
 
 const MOBILE_WIDTH = 768;
 const MAX_TEXT_AREA_CHAR_COUNT = 500;
@@ -117,6 +125,7 @@ const CreatePageForm = () => {
   const loaderData = useLoaderData<CreatePageLoader>();
   const styleOptions = loaderData.styleOptions || [];
   const modelOptions = loaderData.modelOptions || [];
+  const actionData = useActionData<ActionData>();
 
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
@@ -142,6 +151,37 @@ const CreatePageForm = () => {
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  React.useEffect(() => {
+    if (actionData) {
+      console.log("actionData", actionData);
+    }
+    // Show error toast if we get an error from the action
+    if (actionData?.error) {
+      let errorMessage = actionData.error;
+
+      // Handle both string errors and validation errors
+      if (typeof errorMessage === "object") {
+        // Handle Zod validation errors
+        const firstError = Object.values(errorMessage)[0]?.[0];
+        errorMessage = firstError || "Validation error";
+      }
+
+      // Try to parse the error if it's a JSON string
+      if (typeof errorMessage === "string") {
+        try {
+          const parsedError = JSON.parse(errorMessage);
+          errorMessage = parsedError.message;
+        } catch (error) {
+          console.error("Error parsing error message", error);
+        }
+      }
+
+      toast.error("Error", {
+        description: errorMessage || actionData.message || "Please try again",
+      });
+    }
+  }, [actionData]);
 
   const handleModelClick = () => {
     if (isMobile) {

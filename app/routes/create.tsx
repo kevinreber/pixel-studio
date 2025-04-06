@@ -249,6 +249,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (!validateFormData.success) {
     return json(
       {
+        success: false,
         message: "Error invalid form data",
         error: validateFormData.error.flatten(),
       },
@@ -266,26 +267,66 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     return json(
       {
+        success: false,
         message: "Error updating user credits",
-        error: error instanceof Error ? error.message : "Unknown error",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Not enough credits available",
       },
       { status: 500 }
     );
   }
 
   try {
-    const response = await createNewImages(validateFormData.data, user.id);
+    const result = await createNewImages(validateFormData.data, user.id);
 
-    if (response.setId) {
-      // delay to allow time for all images to be created
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      return redirect(`/sets/${response.setId}`);
+    // If there's an error from any AI provider, show it in the toast
+    if ("error" in result) {
+      return json({
+        success: false,
+        message: "Image generation failed",
+        error: result.error,
+        images: [],
+        setId: "",
+      });
     }
+
+    // Validate that we have both images and a setId
+    if (!result.setId || !result.images?.length) {
+      throw new Error("Failed to create images - incomplete response");
+    }
+
+    // If we have a setId, redirect to the set page after a small delay
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    return redirect(`/sets/${result.setId}`);
   } catch (error) {
     console.error(`Error creating new images: ${error}`);
+
+    return json(
+      {
+        success: false,
+        message: "Failed to create images",
+        error:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred. Please try again.",
+      },
+      { status: 500 }
+    );
   }
-  return json({ error: "Failed to create images" }, { status: 500 });
 };
+
+// Add type for action data
+export type ActionData = {
+  success: boolean;
+  message?: string;
+  error?: string | { [key: string]: string[] };
+  images?: any[];
+  setId?: string;
+};
+
+export type CreatePageActionData = typeof action;
 
 export default function Index() {
   return <CreatePage />;

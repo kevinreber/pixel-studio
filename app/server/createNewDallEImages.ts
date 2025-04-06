@@ -8,6 +8,7 @@ import {
 import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
 import OpenAI from "openai";
 import { CreateImagesFormData } from "~/routes/create";
+import { Logger } from "~/utils/logger.server";
 
 const DALL_E_2_MODEL = "dall-e-2";
 const DALL_E_3_MODEL = "dall-e-3";
@@ -15,7 +16,9 @@ const MOCK_IMAGE_ID = "cliid9qad0001r2q9pscacuj0";
 const MOCK_SET_ID = "cm32igx0l0011gbosfbtw33ai";
 
 export const getDallEMockDataResponse = (numberOfImages = 1) => {
-  console.log("⚠️ Warning – Using DALL-E Mock Data *************************");
+  Logger.warn({
+    message: "⚠️ Warning – Using DALL-E Mock Data *************************",
+  });
   const imageURL = getS3BucketURL(MOCK_IMAGE_ID);
   const thumbnailURL = getS3BucketThumbnailURL(MOCK_IMAGE_ID);
 
@@ -73,7 +76,14 @@ const createDallEImages = async (
   numberOfImages = DEFAULT_NUMBER_OF_IMAGES_CREATED,
   model: string
 ) => {
-  console.log("Creating DALL-E images...");
+  Logger.info({
+    message: "Creating DALL-E images...",
+    metadata: {
+      prompt,
+      numberOfImages,
+      model,
+    },
+  });
   const numberOfImagesToGenerate = Math.round(numberOfImages);
   const base64EncodedImages: (string | undefined)[] = [];
   const payload = {
@@ -85,9 +95,12 @@ const createDallEImages = async (
 
   try {
     const openai = getOpenAIClient();
-    console.log(
-      `Number of ${model} images to generate: ${numberOfImagesToGenerate}`
-    );
+    Logger.info({
+      message: `Number of ${model} images to generate: ${numberOfImagesToGenerate}`,
+      metadata: {
+        numberOfImagesToGenerate,
+      },
+    });
     if (model === DALL_E_3_MODEL) {
       // Dall-E 3 can only generate one image at a time, so we need to loop through the number of images to generate
       for (let i = 0; i < numberOfImagesToGenerate; i++) {
@@ -97,7 +110,12 @@ const createDallEImages = async (
         });
         const encodedImage = response.data[0].b64_json;
         if (encodedImage) {
-          console.log(`Successfully created ${model} image ${i + 1}`);
+          Logger.info({
+            message: `Successfully created ${model} image ${i + 1}`,
+            metadata: {
+              encodedImage,
+            },
+          });
           base64EncodedImages.push(encodedImage);
         }
       }
@@ -111,12 +129,18 @@ const createDallEImages = async (
       base64EncodedImages.push(...allEncodedImages);
     }
 
-    console.log(
-      `Number of successfully created ${model} images: ${base64EncodedImages.length}`
-    );
+    Logger.info({
+      message: `Number of successfully created ${model} images: ${base64EncodedImages.length}`,
+      metadata: {
+        base64EncodedImagesLength: base64EncodedImages.length,
+      },
+    });
     return base64EncodedImages;
   } catch (error) {
-    console.error(error);
+    Logger.error({
+      message: "Error creating DALL-E images",
+      error: error as Error,
+    });
     throw error;
   }
 };
@@ -192,7 +216,21 @@ export const createNewDallEImages = async (
     // 'https://ai-icon-generator.s3.us-east-2.amazonaws.com/clgueu0pg0001r2fbyg3do2ra'
     return { images: formattedImagesData, setId };
   } catch (error) {
-    console.error(error);
+    Logger.error({
+      message: "Error creating new DALL-E images",
+      error: error as Error,
+    });
+
+    // Handle OpenAI specific errors
+    if (error instanceof Error && "code" in error) {
+      const openAIError = error as { code: string; message: string };
+      if (openAIError.code === "billing_hard_limit_reached") {
+        throw new Error(
+          "OpenAI billing limit reached. Please try again later."
+        );
+      }
+    }
+
     // Delete the Set if error occurs and Set was created
     if (setId) {
       await deleteSet({ setId });
