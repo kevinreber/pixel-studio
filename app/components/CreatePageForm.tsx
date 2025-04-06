@@ -22,9 +22,10 @@ import {
   CreatePageLoader,
   STYLE_OPTIONS,
   MODEL_OPTIONS,
-  CreatePageActionData,
+  // CreatePageActionData,
 } from "~/routes/create";
 import { toast } from "sonner";
+import type { ActionData } from "~/routes/create";
 
 const MOBILE_WIDTH = 768;
 const MAX_TEXT_AREA_CHAR_COUNT = 500;
@@ -124,7 +125,7 @@ const CreatePageForm = () => {
   const loaderData = useLoaderData<CreatePageLoader>();
   const styleOptions = loaderData.styleOptions || [];
   const modelOptions = loaderData.modelOptions || [];
-  const actionData = useActionData<CreatePageActionData>();
+  const actionData = useActionData<ActionData>();
 
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
@@ -159,12 +160,21 @@ const CreatePageForm = () => {
     if (actionData?.error) {
       let errorMessage = actionData.error;
 
+      // Handle both string errors and validation errors
+      if (typeof errorMessage === "object") {
+        // Handle Zod validation errors
+        const firstError = Object.values(errorMessage)[0]?.[0];
+        errorMessage = firstError || "Validation error";
+      }
+
       // Try to parse the error if it's a JSON string
-      try {
-        const parsedError = JSON.parse(errorMessage);
-        errorMessage = parsedError.message;
-      } catch (error) {
-        console.error("Error parsing error message", error);
+      if (typeof errorMessage === "string") {
+        try {
+          const parsedError = JSON.parse(errorMessage);
+          errorMessage = parsedError.message;
+        } catch (error) {
+          console.error("Error parsing error message", error);
+        }
       }
 
       toast.error("Error", {
