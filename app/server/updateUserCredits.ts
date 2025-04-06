@@ -14,7 +14,7 @@ export const updateUserCredits = async (
   numberOfCreditsToDecrement = 1
 ) => {
   Logger.info({
-    message: `updating user credits for: ${userId}`,
+    message: `Updating user credits by ${numberOfCreditsToDecrement} for ${userId}`,
     metadata: {
       userId,
       numberOfCreditsToDecrement,
@@ -36,7 +36,15 @@ export const updateUserCredits = async (
   });
 
   Logger.info({
-    message: `updated user credits for: ${userId}`,
+    message: `Number of rows updated: ${userData.count}`,
+    metadata: {
+      userId,
+      userData,
+      numberOfCreditsToDecrement,
+    },
+  });
+  Logger.info({
+    message: `Successfully updated user credits by ${numberOfCreditsToDecrement} for: ${userId}`,
     metadata: {
       userId,
       numberOfCreditsToDecrement,
