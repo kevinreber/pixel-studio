@@ -11,6 +11,7 @@ import {
   Link,
   Await,
   useAsyncValue,
+  useSearchParams,
 } from "@remix-run/react";
 import {
   PageContainer,
@@ -39,15 +40,49 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { convertUtcDateToLocalDateString } from "~/client";
-import { Bot, Clock, Images, NotepadText, Trash2 } from "lucide-react";
+import { Cpu, Clock, Images, NotepadText, Trash2 } from "lucide-react";
 import { getUserSets, type Set } from "~/server/getUserSets";
 import { getCachedDataWithRevalidate } from "~/utils/cache.server";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+// import { MODEL_OPTIONS } from "./create";
+
+// We have some older models so making the model options a bit more flexible
+const MODEL_OPTIONS_SUBSTRING = [
+  {
+    name: "Stable Diffusion",
+    value: "stable-diffusion",
+  },
+  {
+    name: "DALL-E",
+    value: "dall-e",
+  },
+  {
+    name: "Flux",
+    value: "flux",
+  },
+];
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
-  const cacheKey = `sets:user:${user.id}`;
+  const url = new URL(request.url);
+
+  // Get filter params
+  const prompt = url.searchParams.get("prompt") || undefined;
+  const model = url.searchParams.get("model") || undefined;
+
+  const cacheKey = `sets:user:${user.id}:${prompt}:${model}`;
   const sets = getCachedDataWithRevalidate(cacheKey, () =>
-    getUserSets(user.id)
+    getUserSets(user.id, {
+      prompt,
+      model,
+    })
   );
 
   return { sets };
@@ -206,7 +241,7 @@ const SetRow = ({ set }: { set: Set }) => {
       <td className="p-4 max-w-52">
         <div className="flex flex-col items-start gap-1">
           <div className="text-sm flex items-center gap-1">
-            <Bot className="w-4 h-4 opacity-90" />
+            <Cpu className="w-4 h-4 opacity-90" />
             <span className="text-muted-foreground">{set.images[0].model}</span>
           </div>
           <div className="w-full overflow-hidden flex items-center gap-1">
@@ -300,6 +335,103 @@ const SetsTable = () => {
   );
 };
 
+const SetFilters = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigation = useNavigation();
+  const isLoading = navigation.state !== "idle";
+
+  // Local state for form values
+  const [formValues, setFormValues] = React.useState({
+    prompt: searchParams.get("prompt") || "",
+    model: searchParams.get("model") || undefined,
+  });
+
+  const handleInputChange = (
+    key: keyof typeof formValues,
+    value: string | undefined
+  ) => {
+    setFormValues((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newSearchParams = new URLSearchParams();
+
+    if (formValues.prompt) {
+      newSearchParams.set("prompt", formValues.prompt);
+    }
+    if (formValues.model) {
+      newSearchParams.set("model", formValues.model);
+    }
+
+    setSearchParams(newSearchParams);
+  };
+
+  const handleReset = () => {
+    setFormValues({
+      prompt: "",
+      model: undefined,
+    });
+    setSearchParams(new URLSearchParams());
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="mb-6">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-1 gap-3">
+          <Input
+            placeholder="Filter by prompt..."
+            value={formValues.prompt}
+            onChange={(e) => handleInputChange("prompt", e.target.value)}
+            className="flex-1"
+            disabled={isLoading}
+          />
+
+          <Select
+            value={formValues.model}
+            onValueChange={(value) => handleInputChange("model", value)}
+            disabled={isLoading}
+          >
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Select Model" />
+            </SelectTrigger>
+            <SelectContent>
+              {MODEL_OPTIONS_SUBSTRING.map((model) => (
+                <SelectItem key={model.value} value={model.value}>
+                  {model.name}
+                </SelectItem>
+              ))}
+              {/* <SelectItem value="dall-e">DALL-E</SelectItem> */}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            type="submit"
+            disabled={isLoading}
+            variant="outline"
+            className="h-10 px-4 flex-1 sm:flex-none"
+          >
+            Apply Filters
+          </Button>
+          <Button
+            type="button"
+            onClick={handleReset}
+            disabled={isLoading}
+            className="h-10 px-4 flex-1 sm:flex-none"
+          >
+            Reset
+          </Button>
+        </div>
+      </div>
+    </form>
+  );
+};
+
 export default function Index() {
   const loaderData = useLoaderData<typeof loader>();
   const navigation = useNavigation();
@@ -311,6 +443,8 @@ export default function Index() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">My Sets</h1>
         </div>
+
+        <SetFilters />
 
         <Card className="mb-6">
           <CardContent className="p-0">

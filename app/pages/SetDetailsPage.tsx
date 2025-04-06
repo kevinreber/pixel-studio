@@ -12,11 +12,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { convertUtcDateToLocalDateString } from "~/client";
 import {
   Loader2,
-  MessageSquare,
   Cpu,
   Palette,
-  Calendar,
   Images,
+  NotepadText,
+  Clock,
 } from "lucide-react";
 
 const SetDetailsAccessor = () => {
@@ -59,7 +59,7 @@ const SetDetailsAccessor = () => {
       <div className="w-full flex flex-col gap-4">
         <div>
           <div className="text-xl flex items-center gap-2">
-            <MessageSquare className="w-4 h-4" />
+            <NotepadText className="w-4 h-4" />
             Prompt
           </div>
           <div className="text-sm italic text-zinc-300">{setPrompt}</div>
@@ -82,7 +82,7 @@ const SetDetailsAccessor = () => {
         )}
         <div>
           <div className="text-xl flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
+            <Clock className="w-4 h-4" />
             Created On
           </div>
           <div className="text-sm text-zinc-300">
