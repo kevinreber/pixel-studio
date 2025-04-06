@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import { prisma } from "./prisma.server";
 import { Logger } from "~/utils/logger.server";
+import { invalidateCache } from "~/utils/cache.server";
 
 const CHECKOUT_SESSION_COMPLETED = "checkout.session.completed";
 
@@ -77,6 +78,8 @@ const updateUserCredits = async (userId: string) => {
       },
     },
   });
+  const cacheKey = `user-login:${userId}`;
+  await invalidateCache(cacheKey);
 
   Logger.info({
     message: "[webhook.server]: Successfully updated user credits",

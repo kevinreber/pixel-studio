@@ -7,6 +7,7 @@ import {
 import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
 import { createNewSet } from "./createNewSet";
 import { CreateImagesFormData } from "~/routes/create";
+import { Logger } from "~/utils/logger.server";
 
 const MOCK_IMAGE_ID = "stable-diffusion-xl-futuristic-bonsai-tree";
 const MOCK_SET_ID = "cm32igx0l0011gbosfbtw33ai";
@@ -80,9 +81,9 @@ const createStableDiffusionImages = async ({
   model: string;
   stylePreset?: string;
 }) => {
-  console.log(
-    `Attempting to generate ${numberOfImages} Stable Diffusion images with ${model} model and style preset: ${stylePreset}`
-  );
+  Logger.info({
+    message: `Attempting to generate ${numberOfImages} Stable Diffusion images with ${model} model and style preset: ${stylePreset}`,
+  });
 
   const promptMessage = prompt;
   const numberOfImagesToGenerate = Math.round(numberOfImages);
@@ -123,18 +124,31 @@ const createStableDiffusionImages = async ({
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error("Stability AI Error:", errorData);
+      Logger.error({
+        message: "Stability AI Error",
+        metadata: {
+          errorData,
+        },
+      });
       throw new Error(
         `API Error: ${response.status} - ${JSON.stringify(errorData)}`
       );
     }
 
     const responseJSON = (await response.json()) as GenerationResponse;
-    console.log("Successful response:", responseJSON);
+    Logger.info({
+      message: "Successful response",
+      metadata: {
+        responseJSON,
+      },
+    });
 
     return responseJSON;
   } catch (error) {
-    console.error(error);
+    Logger.error({
+      message: "Error creating image using language model",
+      error: error as Error,
+    });
     throw new Error(`Error creating image using language model: ${model}`);
   }
 };
@@ -150,7 +164,12 @@ export const createNewStableDiffusionImages = async (
   formData: CreateImagesFormData = DEFAULT_PAYLOAD,
   userId: string
 ) => {
-  console.log("Creating new Stable Diffusion images...");
+  Logger.info({
+    message: "Creating new Stable Diffusion images...",
+    metadata: {
+      userId,
+    },
+  });
   const {
     prompt,
     numberOfImages,
@@ -194,13 +213,21 @@ export const createNewStableDiffusionImages = async (
             isImagePrivate,
             setId,
           });
-          console.log(`Successfully stored Image Data in DB: ${imageData.id}`);
+          Logger.info({
+            message: `Successfully stored Image Data in DB: ${imageData.id}`,
+            metadata: {
+              imageDataId: imageData.id,
+            },
+          });
 
           // Store Image blob in S3
           await addBase64EncodedImageToAWS(image.base64, imageData.id);
-          console.log(
-            `Successfully stored S3 Data for Image ID: ${imageData.id}`
-          );
+          Logger.info({
+            message: `Successfully stored S3 Data for Image ID: ${imageData.id}`,
+            metadata: {
+              imageDataId: imageData.id,
+            },
+          });
 
           const imageURL = getS3BucketURL(imageData.id);
           const thumbnailURL = getS3BucketThumbnailURL(imageData.id);
@@ -219,7 +246,10 @@ export const createNewStableDiffusionImages = async (
     // 'https://ai-icon-generator.s3.us-east-2.amazonaws.com/clgueu0pg0001r2fbyg3do2ra'
     return { images: formattedImagesData, setId };
   } catch (error) {
-    console.error(error);
+    Logger.error({
+      message: "Error creating new Stable Diffusion images",
+      error: error as Error,
+    });
     // Delete the Set if error occurs and Set was created
     if (setId) {
       await deleteSet({ setId });
