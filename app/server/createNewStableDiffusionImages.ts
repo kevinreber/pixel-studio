@@ -63,6 +63,12 @@ interface GenerationResponse {
   }>;
 }
 
+interface StabilityAIError {
+  id: string;
+  name: string;
+  message: string;
+}
+
 /**
  * @description
  * This function makes a request to Stability AI's – Stable Diffusion API to fetch images generated using the prompt
@@ -123,16 +129,22 @@ const createStableDiffusionImages = async ({
     );
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorDataText = await response.text();
       Logger.error({
         message: "Stability AI Error",
         metadata: {
-          errorData,
+          errorDataText,
         },
       });
-      throw new Error(
-        `API Error: ${response.status} - ${JSON.stringify(errorData)}`
-      );
+
+      // Parse the error response
+      try {
+        const errorData = JSON.parse(errorDataText) as StabilityAIError;
+        throw new Error(errorData.message);
+      } catch {
+        // If we can't parse the error JSON, throw the raw text
+        throw new Error(errorDataText);
+      }
     }
 
     const responseJSON = (await response.json()) as GenerationResponse;
@@ -149,7 +161,8 @@ const createStableDiffusionImages = async ({
       message: "Error creating image using language model",
       error: error as Error,
     });
-    throw new Error(`Error creating image using language model: ${model}`);
+    // Just throw the error message directly
+    throw error;
   }
 };
 
@@ -179,7 +192,7 @@ export const createNewStableDiffusionImages = async (
   } = formData;
   let setId = "";
   try {
-    if (process.env.USE_MOCK_DALLE === "true") {
+    if (process.env.USE_MOCK_DALLE === "tru") {
       const mockData = getStableDiffusionMockDataResponse(numberOfImages);
       await setTimeout(THREE_SECONDS_IN_MS);
 
@@ -255,6 +268,22 @@ export const createNewStableDiffusionImages = async (
       await deleteSet({ setId });
     }
 
-    return { images: [], setId: "" };
+    // Try to parse the error message if it's a JSON string
+    let errorMessage = (error as Error).message;
+    try {
+      const parsedError = JSON.parse(errorMessage) as StabilityAIError;
+      errorMessage = parsedError.message;
+    } catch (error) {
+      Logger.error({
+        message: "Error parsing error message",
+        error: error as Error,
+      });
+    }
+
+    return {
+      images: [],
+      setId: "",
+      error: errorMessage,
+    };
   }
 };

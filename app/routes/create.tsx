@@ -226,6 +226,8 @@ export type CreateImagesFormData = {
   private?: boolean;
 };
 
+export type CreatePageActionData = typeof action;
+
 export const action = async ({ request }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
   const formData = await request.formData();
@@ -249,6 +251,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (!validateFormData.success) {
     return json(
       {
+        success: false,
         message: "Error invalid form data",
         error: validateFormData.error.flatten(),
       },
@@ -266,25 +269,55 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     return json(
       {
+        success: false,
         message: "Error updating user credits",
-        error: error instanceof Error ? error.message : "Unknown error",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Not enough credits available",
       },
       { status: 500 }
     );
   }
 
   try {
-    const response = await createNewImages(validateFormData.data, user.id);
+    const result = await createNewImages(validateFormData.data, user.id);
 
-    if (response.setId) {
+    // If there's an error from Stability AI, show it in the toast
+    if (result.error) {
+      return json({
+        success: false,
+        message: "Image generation failed",
+        error: result.error,
+        images: [],
+        setId: "",
+      });
+    }
+
+    // If we have a setId, redirect to the set page after a small delay
+    if (result.setId) {
       // delay to allow time for all images to be created
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      return redirect(`/sets/${response.setId}`);
+      return redirect(`/sets/${result.setId}`);
     }
+
+    // Fallback response if no setId but also no error
+    return json({
+      success: true,
+      images: result.images,
+      setId: result.setId,
+    });
   } catch (error) {
     console.error(`Error creating new images: ${error}`);
+    return json(
+      {
+        success: false,
+        message: "Failed to create images",
+        error: "An unexpected error occurred. Please try again.",
+      },
+      { status: 500 }
+    );
   }
-  return json({ error: "Failed to create images" }, { status: 500 });
 };
 
 export default function Index() {
