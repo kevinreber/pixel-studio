@@ -1,5 +1,7 @@
 import { prisma } from "~/services/prisma.server";
+import { invalidateCache } from "~/utils/cache.server";
 import { invariantResponse } from "~/utils/invariantResponse";
+import { Logger } from "~/utils/logger.server";
 
 /**
  *
@@ -11,7 +13,13 @@ export const updateUserCredits = async (
   userId: string,
   numberOfCreditsToDecrement = 1
 ) => {
-  console.log(`updating user credits for: ${userId}`);
+  Logger.info({
+    message: `updating user credits for: ${userId}`,
+    metadata: {
+      userId,
+      numberOfCreditsToDecrement,
+    },
+  });
 
   const userData = await prisma.user.updateMany({
     where: {
@@ -26,6 +34,16 @@ export const updateUserCredits = async (
       },
     },
   });
+
+  Logger.info({
+    message: `updated user credits for: ${userId}`,
+    metadata: {
+      userId,
+      numberOfCreditsToDecrement,
+    },
+  });
+  const cacheKey = `user-login:${userId}`;
+  await invalidateCache(cacheKey);
 
   invariantResponse(userData.count > 0, "Not enough credits");
 };
