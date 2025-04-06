@@ -13,7 +13,7 @@ import {
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { Analytics } from "@vercel/analytics/react";
 // import { Toaster, toast as showToast } from "sonner";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@/components/ui/sonner";
 import NavigationSidebar from "components/NavigationSidebar";
 import { csrf } from "./utils/csrf.server";
 import { getEnv } from "./utils/env.server";
@@ -159,7 +159,7 @@ export default function App() {
     <HoneypotProvider {...loaderData.honeyProps}>
       <AuthenticityTokenProvider token={loaderData.csrfToken}>
         <Outlet context={{ userData: loaderData.userData }} />
-        <Toaster />
+        <Toaster richColors position="top-right" />
       </AuthenticityTokenProvider>
     </HoneypotProvider>
   );
