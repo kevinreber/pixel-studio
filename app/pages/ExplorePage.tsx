@@ -14,26 +14,51 @@ import {
   ImageCard,
   ErrorList,
   ImageGridSkeleton,
+  PaginationControls,
 } from "~/components";
-import { ImageTagType } from "~/server/getImages";
+import { type GetImagesResponse } from "~/server/getImages";
+import type { ImageDetail } from "~/server/getImage";
 
 const LoadingSkeleton = () => {
   return (
-    <div className="w-full space-y-6 animate-pulse">
+    <div className="flex flex-col h-full space-y-6 animate-pulse">
       {/* Search bar skeleton */}
-      <div className="flex rounded-md shadow-sm">
-        <div className="w-full h-10 bg-gray-700/50 rounded-l-md" />
-        <div className="w-12 h-10 bg-gray-700/50 rounded-r-md" />
+      <div className="flex-shrink-0">
+        <div className="flex rounded-md shadow-sm">
+          <div className="w-full h-10 bg-gray-700/50 rounded-l-md" />
+          <div className="w-12 h-10 bg-gray-700/50 rounded-r-md" />
+        </div>
       </div>
 
-      {/* Content skeleton */}
-      <ImageGridSkeleton />
+      {/* Scrollable content skeleton */}
+      <div className="flex-1 overflow-hidden">
+        <ImageGridSkeleton />
+      </div>
     </div>
   );
 };
 
-const ImageGrid = ({ images }: { images: ImageTagType[] }) => {
-  if (!images || images.length === 0) {
+const ImageGrid = ({
+  imagesData,
+}: {
+  imagesData: GetImagesResponse | undefined;
+}) => {
+  if (!imagesData) {
+    return <ImageGridSkeleton />;
+  }
+
+  if (imagesData.status === "error") {
+    return (
+      <div className="text-center w-full block">
+        <p className="text-red-500 mb-2">Error loading images</p>
+        {imagesData.error && (
+          <p className="text-sm text-gray-400">{imagesData.error}</p>
+        )}
+      </div>
+    );
+  }
+
+  if (!imagesData.images || imagesData.images.length === 0) {
     return (
       <p className="text-center w-full block italic font-light">
         No images found
@@ -43,11 +68,23 @@ const ImageGrid = ({ images }: { images: ImageTagType[] }) => {
 
   return (
     <ul className="grid grid-cols-2 md:grid-cols-3 gap-1 md:gap-4 lg:gap-6">
-      {images.map(
+      {imagesData.images.map(
         (image) =>
           image && (
             <li key={image.id} className="hover:!opacity-60">
-              <ImageCard imageData={image} />
+              <ImageCard
+                imageData={
+                  {
+                    ...image,
+                    createdAt: new Date(image.createdAt),
+                    private: null,
+                    user: { id: image.userId, username: "", image: null },
+                    comments: [],
+                    likes: [],
+                    setId: null,
+                  } as ImageDetail
+                }
+              />
             </li>
           )
       )}
@@ -56,8 +93,7 @@ const ImageGrid = ({ images }: { images: ImageTagType[] }) => {
 };
 
 const ExplorePageAccessor = () => {
-  const asyncData = useAsyncValue() as Awaited<ReturnType<ExplorePageLoader>>;
-  const images = asyncData.images as unknown as ImageTagType[];
+  const imagesData = useAsyncValue() as GetImagesResponse | undefined;
   const navigation = useNavigation();
   const [searchParams] = useSearchParams();
   const initialSearchTerm = searchParams.get("q") || "";
@@ -65,8 +101,9 @@ const ExplorePageAccessor = () => {
   const isLoading = navigation.state !== "idle";
 
   return (
-    <div>
-      <div className="w-full">
+    <div className="flex flex-col h-[calc(100vh-6rem)]">
+      {/* Fixed Search Bar */}
+      <div className="flex-shrink-0 w-full">
         <Form action="/explore" method="GET">
           <div className="mt-2 flex rounded-md shadow-sm">
             <div className="relative flex flex-grow items-stretch focus-within:z-10">
@@ -96,11 +133,64 @@ const ExplorePageAccessor = () => {
             </button>
           </div>
         </Form>
+
+        {/* Results info */}
+        {!isLoading && imagesData?.pagination && (
+          <div className="flex justify-between items-center mt-4 mb-2">
+            <div className="text-sm text-gray-400">
+              {imagesData.pagination.totalCount > 0 ? (
+                <>
+                  Showing{" "}
+                  {(imagesData.pagination.currentPage - 1) *
+                    imagesData.pagination.pageSize +
+                    1}{" "}
+                  to{" "}
+                  {Math.min(
+                    imagesData.pagination.currentPage *
+                      imagesData.pagination.pageSize,
+                    imagesData.pagination.totalCount
+                  )}{" "}
+                  of {imagesData.pagination.totalCount.toLocaleString()} images
+                  {initialSearchTerm && (
+                    <span className="ml-2">
+                      for &ldquo;
+                      <span className="text-white">{initialSearchTerm}</span>
+                      &rdquo;
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>No images found</>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="container pt-8 max-w-5xl">
-        {isLoading ? <ImageGridSkeleton /> : <ImageGrid images={images} />}
+      {/* Scrollable Images Container */}
+      <div className="flex-1 overflow-y-auto min-h-0 px-2 scroll-smooth">
+        <div className="max-w-5xl mx-auto pb-4">
+          {isLoading ? (
+            <ImageGridSkeleton />
+          ) : (
+            <ImageGrid imagesData={imagesData} />
+          )}
+        </div>
       </div>
+
+      {/* Fixed Pagination at Bottom */}
+      {!isLoading && imagesData?.pagination && (
+        <div className="flex-shrink-0 border-t border-border/20">
+          <PaginationControls
+            currentPage={imagesData.pagination.currentPage}
+            totalPages={imagesData.pagination.totalPages}
+            hasNextPage={imagesData.pagination.hasNextPage}
+            hasPrevPage={imagesData.pagination.hasPrevPage}
+            basePath="/explore"
+            searchTerm={initialSearchTerm}
+          />
+        </div>
+      )}
     </div>
   );
 };
@@ -112,16 +202,20 @@ const ExplorePage = () => {
 
   return (
     <PageContainer>
-      <div className="flex flex-col justify-between w-full max-w-5xl m-auto">
-        <h1 className="text-2xl font-semibold mb-2">Explore</h1>
+      <div className="flex flex-col h-[calc(100vh-6rem)] w-full max-w-5xl m-auto">
+        {/* Fixed Header */}
+        <div className="flex-shrink-0 pb-4">
+          <h1 className="text-2xl font-semibold mb-2">Explore</h1>
+        </div>
+
         <React.Suspense fallback={<LoadingSkeleton />}>
           <Await
-            resolve={loaderData.images}
+            resolve={loaderData.imagesData}
             errorElement={
               <ErrorList errors={["There was an error loading images"]} />
             }
           >
-            <div className="relative">
+            <div className="relative flex flex-col flex-1 min-h-0">
               {isNavigating && (
                 <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
                   <div className="flex items-center gap-2 text-muted-foreground">

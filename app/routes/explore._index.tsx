@@ -16,18 +16,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const searchParams = new URL(request.url).searchParams;
   const searchTerm = searchParams.get("q") || "";
   const currentPage = Math.max(Number(searchParams.get("page") || 1), 1);
+  const pageSize = Math.max(Number(searchParams.get("pageSize") || 50), 10);
 
-  const cacheKey = `explore-images?q=${searchTerm}&page=${currentPage}`;
-  const images = getCachedDataWithRevalidate(
+  const cacheKey = `explore-images?q=${searchTerm}&page=${currentPage}&pageSize=${pageSize}`;
+  const imagesData = getCachedDataWithRevalidate(
     cacheKey,
-    () => getImages(searchTerm, currentPage),
+    () => getImages(searchTerm, currentPage, pageSize),
     CACHE_TTL_5_MINUTES
   );
 
   return {
-    images,
+    imagesData,
     searchTerm,
     currentPage,
+    pageSize,
   };
 };
 
