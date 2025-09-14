@@ -299,7 +299,7 @@ const SetsTableSkeleton = () => {
 const SetsTable = () => {
   const sets = useAsyncValue() as Awaited<ReturnType<typeof getUserSets>>;
 
-  if (sets.length === 0) {
+  if (sets.sets.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center">
         <div className="p-4 text-center text-muted-foreground">
@@ -329,7 +329,7 @@ const SetsTable = () => {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {sets.map((set) => (
+        {sets.sets.map((set) => (
           <SetRow key={set.id} set={set} />
         ))}
       </TableBody>
