@@ -242,7 +242,9 @@ const SetRow = ({ set }: { set: Set }) => {
         <div className="flex flex-col items-start gap-1">
           <div className="text-sm flex items-center gap-1">
             <Cpu className="w-4 h-4 opacity-90" />
-            <span className="text-muted-foreground">{set.images[0].model}</span>
+            <span className="text-muted-foreground">
+              {set.images[0]?.model || "Unknown"}
+            </span>
           </div>
           <div className="w-full overflow-hidden flex items-center gap-1">
             <NotepadText className="w-4 h-4 flex-shrink-0 opacity-90" />
@@ -297,7 +299,7 @@ const SetsTableSkeleton = () => {
 const SetsTable = () => {
   const sets = useAsyncValue() as Awaited<ReturnType<typeof getUserSets>>;
 
-  if (sets.length === 0) {
+  if (sets.sets.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center">
         <div className="p-4 text-center text-muted-foreground">
@@ -327,7 +329,7 @@ const SetsTable = () => {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {sets.map((set) => (
+        {sets.sets.map((set) => (
           <SetRow key={set.id} set={set} />
         ))}
       </TableBody>
