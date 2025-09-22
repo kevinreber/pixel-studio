@@ -97,7 +97,68 @@ npm run kafka:health
 
 ## Production Setup
 
-Refer to `TECHNICAL_IMPLEMENTATION_GUIDE.md` section 7.5 for detailed AWS MSK setup instructions.
+### Current Status: ✅ Development Ready, 🚧 Production Pending
+
+**What's Working:**
+
+- ✅ Local Kafka development environment
+- ✅ WebSocket real-time updates
+- ✅ Async image generation pipeline
+- ✅ Fixed redirect loop issues
+
+**What's Missing for Production:**
+
+- 🚧 AWS MSK cluster deployment
+- 🚧 Background worker deployment to production
+- 🚧 Production WebSocket server
+- 🚧 Production monitoring and alerting
+
+### Next Steps for Production (Priority Order)
+
+#### **IMMEDIATE** (Next 1-2 weeks)
+
+1. **Deploy AWS MSK Cluster**
+
+   ```bash
+   # Use the deployment script
+   cd infrastructure/kafka
+   chmod +x deploy.sh
+   ./deploy.sh
+   ```
+
+2. **Update Production Environment Variables**
+
+   ```env
+   KAFKA_BROKERS=your-msk-brokers-here
+   KAFKA_SSL=true
+   KAFKA_SASL_USERNAME=your-username
+   KAFKA_SASL_PASSWORD=your-password
+   ENABLE_KAFKA_IMAGE_GENERATION=true
+   ```
+
+3. **Deploy Background Workers**
+   - Use `scripts/startConsumers.ts` for production workers
+   - Configure PM2 or container orchestration
+   - Set up auto-scaling for consumer instances
+
+#### **SHORT TERM** (2-4 weeks)
+
+4. **WebSocket Server Production Deployment**
+
+   - Deploy using `scripts/startWebSocketServer.ts`
+   - Configure load balancing and CORS
+   - Test real-time updates in production
+
+5. **Monitoring Setup**
+   - Kafka topic monitoring (queue depth, consumer lag)
+   - Failed generation alerting
+   - Health check endpoints
+
+**📋 Detailed Implementation Plan:**
+See `IMPROVEMENT_STRATEGY.md` → "KAFKA PRODUCTION NEXT STEPS" for complete checklist and timelines.
+
+**📊 Cost Estimates:**
+~$220-250/month for AWS MSK infrastructure (3 kafka.t3.small brokers)
 
 ## Monitoring
 

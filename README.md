@@ -322,9 +322,17 @@ ENABLE_KAFKA_IMAGE_GENERATION=true
 
 ## 📚 Documentation
 
+### Setup & Configuration
+
 - [**Kafka Setup Guide**](./infrastructure/kafka/README.md) - Detailed Kafka configuration
 - [**Technical Implementation Guide**](./TECHNICAL_IMPLEMENTATION_GUIDE.md) - Architecture deep dive
 - [**Environment Setup**](./KAFKA_ENVIRONMENT_SETUP.md) - Environment variables guide
+- [**Improvement Strategy**](./IMPROVEMENT_STRATEGY.md) - Roadmap for enhancements and production deployment
+
+### Project History & Maintenance
+
+- [**Changelog**](./CHANGELOG.md) - All notable changes, feature additions, and version history
+- [**Bug Fixes**](./BUGFIXES.md) - Detailed bug fixes, root cause analysis, and prevention measures
 
 ## 🤝 Contributing
 
@@ -338,9 +346,12 @@ We welcome contributions! Please follow these steps:
 6. **Make** your changes
 7. **Test** your changes: `npm run test && npm run test:e2e`
 8. **Lint** your code: `npm run lint`
-9. **Commit** your changes: `git commit -m 'Add amazing feature'`
-10. **Push** to the branch: `git push origin feature/amazing-feature`
-11. **Open** a Pull Request
+9. **Update documentation**:
+   - Add entries to [CHANGELOG.md](./CHANGELOG.md) for new features/changes
+   - Document any bug fixes in [BUGFIXES.md](./BUGFIXES.md) with root cause analysis
+10. **Commit** your changes: `git commit -m 'Add amazing feature'`
+11. **Push** to the branch: `git push origin feature/amazing-feature`
+12. **Open** a Pull Request
 
 ### Before Contributing
 
