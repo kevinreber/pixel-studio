@@ -88,6 +88,39 @@ This document outlines a comprehensive strategy for improving the Pixel Studio a
 - [ ] Code coverage reporting
 - [ ] Automated dependency updates
 
+#### 3.4 Future GitHub Actions Workflow (When Ready)
+
+**Note**: Currently using Vercel auto-deployment which works well for simple deployments.
+
+**Add GitHub Actions workflow when you need:**
+
+- [ ] **Quality Gates & Automated Testing**
+
+  - Prevent broken code from being deployed
+  - Run comprehensive test suite before deployment
+  - Block deployment if tests/linting fail
+  - Code coverage reporting and enforcement
+
+- [ ] **Multi-Service Deployment Coordination**
+
+  - Deploy Kafka consumers to separate servers
+  - Coordinate WebSocket server deployments
+  - Background service health checks
+  - Multi-environment deployments (staging → production)
+
+- [ ] **Advanced Monitoring & Notifications**
+  - Post-deployment health checks
+  - Slack/Discord notifications for deployment status
+  - Rollback capabilities for failed deployments
+  - Performance regression detection
+
+**Implementation Checklist:**
+
+- [ ] Create `.github/workflows/deploy.yml` with test → deploy → verify pipeline
+- [ ] Set up staging environment for pre-production testing
+- [ ] Configure deployment secrets and environment variables
+- [ ] Add deployment status badges to README
+
 ### Phase 4: Observability & Monitoring (8-10 weeks)
 
 **Goal**: Implement comprehensive monitoring with Prometheus and Grafana
@@ -246,6 +279,75 @@ This document outlines a comprehensive strategy for improving the Pixel Studio a
 **Monthly Cost**: ~$220-250 for AWS MSK infrastructure
 **Impact**: Instant form submissions, 50% improvement in processing reliability, real-time features, 10x scaling capability
 **Risk Level**: Medium - well-established technology with good AWS managed service
+
+### **🚀 KAFKA PRODUCTION NEXT STEPS** (Priority Order)
+
+#### **IMMEDIATE (Next 1-2 weeks)**
+
+- [ ] **Production AWS MSK Cluster Setup**
+
+  - Deploy AWS MSK cluster using `infrastructure/kafka/deploy.sh`
+  - Configure 3-broker cluster with `kafka.t3.small` instances
+  - Set up proper VPC, security groups, and IAM roles
+  - Configure SSL/SASL authentication for security
+
+- [ ] **Production Environment Variables**
+
+  - Update production `.env` with MSK broker endpoints
+  - Configure Kafka SSL and SASL credentials
+  - Set `ENABLE_KAFKA_IMAGE_GENERATION=true` in production
+  - Test connection to MSK from production environment
+
+- [ ] **Background Worker Deployment**
+  - Deploy Kafka consumers to separate server/container
+  - Use `scripts/startConsumers.ts` for production worker management
+  - Configure auto-scaling for consumer instances
+  - Set up PM2 or equivalent for process management
+
+#### **SHORT TERM (2-4 weeks)**
+
+- [ ] **WebSocket Server Production Setup**
+
+  - Deploy WebSocket server using `scripts/startWebSocketServer.ts`
+  - Configure load balancing for WebSocket connections
+  - Set up proper CORS and security headers
+  - Test real-time updates in production environment
+
+- [ ] **Monitoring & Alerting Setup**
+
+  - Set up Kafka topic monitoring (queue depth, lag, throughput)
+  - Configure alerts for failed image generations
+  - Add health check endpoints for all services
+  - Implement logging aggregation for debugging
+
+- [ ] **Error Handling & Resilience**
+  - Add retry logic with exponential backoff
+  - Implement dead letter queues for failed messages
+  - Configure consumer group rebalancing
+  - Add circuit breakers for external API calls
+
+#### **MEDIUM TERM (1-2 months)**
+
+- [ ] **Performance Optimization**
+
+  - Tune Kafka partition strategy for optimal throughput
+  - Optimize consumer configurations for your workload
+  - Add horizontal scaling for worker instances
+  - Implement connection pooling and resource management
+
+- [ ] **Production Testing & Validation**
+  - Load testing with realistic image generation volumes
+  - Test failover scenarios and recovery procedures
+  - Validate data consistency and message ordering
+  - Performance benchmarking vs synchronous flow
+
+**🎯 SUCCESS CRITERIA**
+
+- [ ] Image generation requests process in < 2 seconds
+- [ ] Zero data loss during normal operations
+- [ ] < 1% message failure rate
+- [ ] Real-time status updates working reliably
+- [ ] Clean failover between sync/async modes
 
 ## Developer Experience Improvements
 

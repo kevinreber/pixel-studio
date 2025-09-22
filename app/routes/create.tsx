@@ -8,8 +8,10 @@ import {
 import { requireUserLogin } from "~/services";
 import CreatePage from "~/pages/CreatePage";
 import { createNewImages, updateUserCredits } from "~/server";
+import { getImageGenerationProducer } from "~/services/imageGenerationProducer.server";
 import { z } from "zod";
 import { PageContainer, GeneralErrorBoundary } from "~/components";
+import { cacheDelete } from "~/utils/cache.server";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Create AI Generated Images" }];
@@ -278,42 +280,101 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     );
   }
 
-  try {
-    const result = await createNewImages(validateFormData.data, user.id);
+  // Clear cache for user
+  const cacheKey = `user-login:${user.id}`;
+  await cacheDelete(cacheKey);
+  // undefined is for `prompt` and `model` - clears out all sets
+  const setsCacheKey = `sets:user:${user.id}:undefined:undefined`;
+  await cacheDelete(setsCacheKey);
 
-    // If there's an error from any AI provider, show it in the toast
-    if ("error" in result) {
-      return json({
-        success: false,
-        message: "Image generation failed",
-        error: result.error,
-        images: [],
-        setId: "",
-      });
+  // Check if Kafka-based async generation is enabled
+  const isKafkaEnabled = process.env.ENABLE_KAFKA_IMAGE_GENERATION === "true";
+
+  if (isKafkaEnabled) {
+    try {
+      // 🚀 NEW: Use Kafka producer for instant response
+      console.log("Using Kafka for async image generation...");
+
+      const producer = await getImageGenerationProducer();
+
+      // Health check - verify Kafka is available
+      const isKafkaHealthy = await producer.healthCheck();
+      if (!isKafkaHealthy) {
+        throw new Error("Image generation service is temporarily unavailable");
+      }
+
+      // Queue the image generation request (returns immediately!)
+      const response = await producer.queueImageGeneration(
+        validateFormData.data,
+        user.id
+      );
+
+      console.log(
+        `Successfully queued image generation request: ${response.requestId}`
+      );
+
+      // Redirect immediately to processing page with real-time updates
+      return redirect(response.processingUrl);
+    } catch (error) {
+      console.error("Kafka image generation failed:", error);
+
+      // If Kafka fails, we could either:
+      // 1. Fall back to synchronous generation (commented out below)
+      // 2. Show error and ask user to try again (current approach)
+
+      return json(
+        {
+          success: false,
+          message: "Image generation service is temporarily unavailable",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Service unavailable, please try again in a moment.",
+        },
+        { status: 503 }
+      );
     }
+  } else {
+    // 🔄 FALLBACK: Original synchronous behavior
+    console.log("Using synchronous image generation (Kafka disabled)...");
 
-    // Validate that we have both images and a setId
-    if (!result.setId || !result.images?.length) {
-      throw new Error("Failed to create images - incomplete response");
+    try {
+      const result = await createNewImages(validateFormData.data, user.id);
+
+      // If there's an error from any AI provider, show it in the toast
+      if ("error" in result) {
+        return json({
+          success: false,
+          message: "Image generation failed",
+          error: result.error,
+          images: [],
+          setId: "",
+        });
+      }
+
+      // Validate that we have both images and a setId
+      if (!result.setId || !result.images?.length) {
+        throw new Error("Failed to create images - incomplete response");
+      }
+
+      // If we have a setId, redirect to the set page after a small delay
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      return redirect(`/sets/${result.setId}`);
+    } catch (error) {
+      console.error(`Error creating new images: ${error}`);
+
+      return json(
+        {
+          success: false,
+          message: "Failed to create images",
+          error:
+            error instanceof Error
+              ? error.message
+              : "An unexpected error occurred. Please try again.",
+        },
+        { status: 500 }
+      );
     }
-
-    // If we have a setId, redirect to the set page after a small delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    return redirect(`/sets/${result.setId}`);
-  } catch (error) {
-    console.error(`Error creating new images: ${error}`);
-
-    return json(
-      {
-        success: false,
-        message: "Failed to create images",
-        error:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred. Please try again.",
-      },
-      { status: 500 }
-    );
   }
 };
 

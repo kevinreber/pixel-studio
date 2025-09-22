@@ -1,0 +1,299 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "AWS MSK (Managed Streaming for Apache Kafka) cluster for Pixel Studio image generation pipeline"
+
+Parameters:
+  Environment:
+    Type: String
+    Default: "dev"
+    AllowedValues: ["dev", "staging", "prod"]
+    Description: "Environment name"
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: "VPC ID where MSK cluster will be deployed"
+
+  PrivateSubnetIds:
+    Type: CommaDelimitedList
+    Description: "List of private subnet IDs (minimum 2, preferably 3 for AZ distribution)"
+
+  ApplicationSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: "Security group ID of your application instances that will connect to Kafka"
+
+  KafkaVersion:
+    Type: String
+    Default: "2.8.1"
+    AllowedValues: ["2.6.2", "2.7.1", "2.8.0", "2.8.1"]
+    Description: "Kafka version for the MSK cluster"
+
+  InstanceType:
+    Type: String
+    Default: "kafka.t3.small"
+    AllowedValues:
+      [
+        "kafka.t3.small",
+        "kafka.m5.large",
+        "kafka.m5.xlarge",
+        "kafka.m5.2xlarge",
+      ]
+    Description: "EC2 instance type for Kafka brokers"
+
+  StorageSize:
+    Type: Number
+    Default: 100
+    MinValue: 1
+    MaxValue: 16384
+    Description: "Storage size in GB for each broker"
+
+Conditions:
+  IsProduction: !Equals [!Ref Environment, "prod"]
+
+Resources:
+  # KMS Key for encryption at rest
+  KafkaKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: "KMS Key for Pixel Studio MSK Cluster encryption"
+      KeyPolicy:
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: "kms:*"
+            Resource: "*"
+      Tags:
+        - Key: Name
+          Value: !Sub "pixel-studio-kafka-${Environment}-key"
+        - Key: Environment
+          Value: !Ref Environment
+
+  KafkaKMSKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub "alias/pixel-studio-kafka-${Environment}"
+      TargetKeyId: !Ref KafkaKMSKey
+
+  # Security Group for MSK Cluster
+  KafkaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Security group for Pixel Studio MSK cluster"
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        # Kafka broker communication (9092, 9094, 9098)
+        - IpProtocol: tcp
+          FromPort: 9092
+          ToPort: 9098
+          SourceSecurityGroupId: !Ref ApplicationSecurityGroupId
+          Description: "Kafka broker access from application"
+        # Zookeeper (2181, 2182)
+        - IpProtocol: tcp
+          FromPort: 2181
+          ToPort: 2182
+          SourceSecurityGroupId: !Ref ApplicationSecurityGroupId
+          Description: "Zookeeper access from application"
+        # JMX monitoring (if needed)
+        - IpProtocol: tcp
+          FromPort: 11001
+          ToPort: 11002
+          SourceSecurityGroupId: !Ref ApplicationSecurityGroupId
+          Description: "JMX monitoring access"
+      Tags:
+        - Key: Name
+          Value: !Sub "pixel-studio-kafka-${Environment}-sg"
+        - Key: Environment
+          Value: !Ref Environment
+
+  # MSK Configuration
+  KafkaConfiguration:
+    Type: AWS::MSK::Configuration
+    Properties:
+      Name: !Sub "pixel-studio-kafka-${Environment}-config"
+      Description: "Configuration for Pixel Studio Kafka cluster"
+      KafkaVersionsList:
+        - !Ref KafkaVersion
+      ServerProperties: |
+        # Broker settings optimized for image generation workload
+        num.network.threads=8
+        num.io.threads=16
+        socket.send.buffer.bytes=102400
+        socket.receive.buffer.bytes=102400
+        socket.request.max.bytes=104857600
+
+        # Log settings for image generation pipeline
+        log.retention.hours=168
+        log.retention.bytes=10737418240
+        log.segment.bytes=1073741824
+        log.cleanup.policy=delete
+
+        # Topic settings
+        num.partitions=6
+        default.replication.factor=3
+        min.insync.replicas=2
+
+        # Producer settings for reliability
+        acks=all
+        retries=2147483647
+        max.in.flight.requests.per.connection=5
+        enable.idempotence=true
+
+        # Consumer settings
+        group.initial.rebalance.delay.ms=3000
+
+        # Compression for efficiency
+        compression.type=lz4
+
+        # Auto topic creation (disable in production)
+        auto.create.topics.enable=false
+
+  # MSK Cluster
+  KafkaCluster:
+    Type: AWS::MSK::Cluster
+    Properties:
+      ClusterName: !Sub "pixel-studio-kafka-${Environment}"
+      KafkaVersion: !Ref KafkaVersion
+      NumberOfBrokerNodes: !If [IsProduction, 3, 2]
+
+      BrokerNodeGroupInfo:
+        InstanceType: !Ref InstanceType
+        ClientSubnets: !Ref PrivateSubnetIds
+        SecurityGroups:
+          - !Ref KafkaSecurityGroup
+        StorageInfo:
+          EBSStorageInfo:
+            VolumeSize: !Ref StorageSize
+
+      # Configuration
+      ConfigurationInfo:
+        Arn: !GetAtt KafkaConfiguration.Arn
+        Revision: !GetAtt KafkaConfiguration.LatestRevision
+
+      # Encryption
+      EncryptionInfo:
+        EncryptionAtRest:
+          DataVolumeKMSKeyId: !Ref KafkaKMSKey
+        EncryptionInTransit:
+          ClientBroker: TLS
+          InCluster: true
+
+      # Authentication
+      ClientAuthentication:
+        Sasl:
+          Scram:
+            Enabled: !If [IsProduction, true, false]
+        Unauthenticated:
+          Enabled: !If [IsProduction, false, true]
+
+      # Enhanced monitoring
+      EnhancedMonitoring:
+        !If [IsProduction, "PER_TOPIC_PER_PARTITION", "PER_TOPIC_PER_BROKER"]
+
+      # Logging
+      LoggingInfo:
+        BrokerLogs:
+          CloudWatchLogs:
+            Enabled: true
+            LogGroup: !Ref KafkaLogGroup
+          Firehose:
+            Enabled: false
+          S3:
+            Enabled: false
+
+      Tags:
+        Environment: !Ref Environment
+        Application: "pixel-studio"
+        Component: "kafka"
+        Purpose: "image-generation-pipeline"
+
+  # CloudWatch Log Group
+  KafkaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/msk/pixel-studio-${Environment}"
+      RetentionInDays: !If [IsProduction, 30, 7]
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # IAM Role for application access to MSK
+  KafkaAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "pixel-studio-kafka-${Environment}-access-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: KafkaAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "kafka:*"
+                  - "kafka-cluster:*"
+                Resource: !GetAtt KafkaCluster.Arn
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                  - "logs:DescribeLog*"
+                Resource: !GetAtt KafkaLogGroup.Arn
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Instance Profile for EC2 instances
+  KafkaAccessInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref KafkaAccessRole
+
+Outputs:
+  ClusterArn:
+    Description: "MSK Cluster ARN"
+    Value: !Ref KafkaCluster
+    Export:
+      Name: !Sub "${AWS::StackName}-cluster-arn"
+
+  ClusterName:
+    Description: "MSK Cluster Name"
+    Value: !Sub "pixel-studio-kafka-${Environment}"
+    Export:
+      Name: !Sub "${AWS::StackName}-cluster-name"
+
+  ZookeeperConnectString:
+    Description: "Zookeeper connection string"
+    Value: !GetAtt KafkaCluster.ZookeeperConnectString
+    Export:
+      Name: !Sub "${AWS::StackName}-zookeeper-connect"
+
+  BootstrapBrokerString:
+    Description: "Bootstrap broker connection string"
+    Value: !GetAtt KafkaCluster.BootstrapBrokerString
+    Export:
+      Name: !Sub "${AWS::StackName}-bootstrap-brokers"
+
+  BootstrapBrokerStringTls:
+    Description: "Bootstrap broker connection string (TLS)"
+    Value: !GetAtt KafkaCluster.BootstrapBrokerStringTls
+    Export:
+      Name: !Sub "${AWS::StackName}-bootstrap-brokers-tls"
+
+  KafkaAccessRoleArn:
+    Description: "IAM Role ARN for Kafka access"
+    Value: !GetAtt KafkaAccessRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-access-role-arn"
+
+  SecurityGroupId:
+    Description: "Security Group ID for Kafka cluster"
+    Value: !Ref KafkaSecurityGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-security-group-id"
