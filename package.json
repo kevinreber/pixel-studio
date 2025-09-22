@@ -10,7 +10,12 @@
     "start": "remix-serve ./build/server/index.js",
     "typecheck": "tsc",
     "stripe:listen": "stripe listen --forward-to localhost:5173/webhook",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "kafka:create-topics": "tsx scripts/createKafkaTopics.ts",
+    "kafka:consumer": "tsx scripts/startConsumers.ts",
+    "kafka:websocket": "tsx scripts/startWebSocketServer.ts",
+    "kafka:health": "tsx scripts/checkKafkaHealth.ts",
+    "kafka:monitor": "tsx scripts/monitorKafka.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.685.0",
@@ -65,7 +70,9 @@
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "winston": "^3.17.0",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "kafkajs": "^2.2.4",
+    "ws": "^8.14.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.46.1",
@@ -74,6 +81,7 @@
     "@types/node": "^22.5.0",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
+    "@types/ws": "^8.5.6",
     "@typescript-eslint/eslint-plugin": "^6.7.4",
     "@typescript-eslint/parser": "^6.7.4",
     "autoprefixer": "^10.4.19",
