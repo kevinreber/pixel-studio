@@ -20,9 +20,7 @@ import {
 } from "lucide-react";
 
 const SetDetailsAccessor = () => {
-  const asyncValue = useAsyncValue() as Awaited<
-    Awaited<ReturnType<SetPageLoader>>["data"]
-  >;
+  const asyncValue = useAsyncValue() as Record<string, unknown>;
   const setData = asyncValue ?? {
     images: [],
     prompt: "",
@@ -39,8 +37,8 @@ const SetDetailsAccessor = () => {
     createdAt: setCreatedAt,
     user: setUser,
   } = setData;
-  const model = setImages[0].model || "";
-  const style = setImages[0].style || "";
+  const model = setImages?.[0]?.model || "";
+  const style = setImages?.[0]?.style || "";
   const [formattedDate, setFormattedDate] = React.useState(
     typeof setCreatedAt === "string"
       ? setCreatedAt
