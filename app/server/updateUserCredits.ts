@@ -4,6 +4,34 @@ import { invariantResponse } from "~/utils/invariantResponse";
 import { Logger } from "~/utils/logger.server";
 
 /**
+ * @description
+ * Checks if a user has enough credits without deducting.
+ * Returns the user's current credit balance.
+ * Throws an error if user doesn't have enough credits.
+ */
+export const checkUserCredits = async (
+  userId: string,
+  requiredCredits: number
+): Promise<number> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { credits: true },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (user.credits < requiredCredits) {
+    throw new Error(
+      `Not enough credits. You have ${user.credits} credits but need ${requiredCredits}.`
+    );
+  }
+
+  return user.credits;
+};
+
+/**
  *
  * @description
  * This function updates a user's number of credits.

@@ -17,7 +17,9 @@ import {
   Images,
   NotepadText,
   Clock,
+  Coins,
 } from "lucide-react";
+import { getModelCreditCost } from "~/config/pricing";
 
 const SetDetailsAccessor = () => {
   const asyncValue = useAsyncValue() as Record<string, unknown>;
@@ -39,6 +41,9 @@ const SetDetailsAccessor = () => {
   } = setData;
   const model = setImages?.[0]?.model || "";
   const style = setImages?.[0]?.style || "";
+  const imageCount = setImages?.length || 0;
+  const creditCostPerImage = model ? getModelCreditCost(model) : 0;
+  const totalCost = creditCostPerImage * imageCount;
   const [formattedDate, setFormattedDate] = React.useState(
     typeof setCreatedAt === "string"
       ? setCreatedAt
@@ -92,6 +97,21 @@ const SetDetailsAccessor = () => {
             >
               {setUser.username}
             </Link>
+          </div>
+        </div>
+        <div>
+          <div className="text-xl flex items-center gap-2">
+            <Coins className="w-4 h-4" />
+            Cost
+          </div>
+          <div className="text-sm text-zinc-300 flex items-center gap-2">
+            <span className="text-amber-400 font-medium">
+              {totalCost} credit{totalCost !== 1 ? "s" : ""}
+            </span>
+            <span className="text-zinc-500">
+              ({creditCostPerImage} per image × {imageCount} image
+              {imageCount !== 1 ? "s" : ""})
+            </span>
           </div>
         </div>
         <div>
