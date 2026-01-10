@@ -310,7 +310,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   // Check if Kafka-based async generation is enabled
-  const isKafkaEnabled = process.env.ENABLE_KAFKA_IMAGE_GENERATION === "true";
+  // Only allow Kafka in development - not ready for production yet
+  const isProduction = process.env.NODE_ENV === "production";
+  const isKafkaEnabled =
+    !isProduction && process.env.ENABLE_KAFKA_IMAGE_GENERATION === "true";
 
   if (isKafkaEnabled) {
     try {
