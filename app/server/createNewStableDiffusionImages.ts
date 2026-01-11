@@ -81,37 +81,61 @@ const createStableDiffusionImages = async ({
   numberOfImages = DEFAULT_NUMBER_OF_IMAGES_CREATED,
   model = DEFAULT_AI_IMAGE_LANGUAGE_MODEL,
   stylePreset = DEFAULT_IMAGE_STYLE_PRESET,
+  // New generation parameters
+  width = IMAGE_WIDTH,
+  height = IMAGE_HEIGHT,
+  cfgScale = 7,
+  steps = 40,
+  negativePrompt,
 }: {
   prompt: string;
   numberOfImages: number;
   model: string;
   stylePreset?: string;
+  // New generation parameters
+  width?: number;
+  height?: number;
+  cfgScale?: number;
+  steps?: number;
+  negativePrompt?: string;
 }) => {
   Logger.info({
     message: `Attempting to generate ${numberOfImages} Stable Diffusion images with ${model} model and style preset: ${stylePreset}`,
+    metadata: { width, height, cfgScale, steps, hasNegativePrompt: !!negativePrompt },
   });
 
   const promptMessage = prompt;
   const numberOfImagesToGenerate = Math.round(numberOfImages);
   const engineId = model;
 
+  // Build text_prompts array with optional negative prompt
+  const textPrompts: Array<{ text: string; weight: number }> = [
+    {
+      text: promptMessage,
+      weight: 1,
+    },
+  ];
+
+  // Add negative prompt if provided (with negative weight)
+  if (negativePrompt && negativePrompt.trim()) {
+    textPrompts.push({
+      text: negativePrompt,
+      weight: -1,
+    });
+  }
+
   const body = {
     /**
      * `cfg_scale` is how strictly the diffusion process adheres to the prompt text.
      * The higher values keep your image closer to your prompt (Ex: 1-35)
      */
-    cfg_scale: 7,
-    height: IMAGE_HEIGHT,
-    width: IMAGE_WIDTH,
-    steps: 40,
+    cfg_scale: cfgScale,
+    height: height,
+    width: width,
+    steps: steps,
     style_preset: stylePreset,
     samples: numberOfImagesToGenerate,
-    text_prompts: [
-      {
-        text: promptMessage,
-        weight: 1,
-      },
-    ],
+    text_prompts: textPrompts,
   };
 
   try {
@@ -199,12 +223,18 @@ export const createNewStableDiffusionImages = async (
       return { images: mockData, setId: MOCK_SET_ID };
     }
 
-    // Generate Images
+    // Generate Images with new parameters
     const images = await createStableDiffusionImages({
       prompt,
       numberOfImages,
       model,
       stylePreset,
+      // New generation parameters
+      width: formData.width,
+      height: formData.height,
+      cfgScale: formData.cfgScale,
+      steps: formData.steps,
+      negativePrompt: formData.negativePrompt,
     });
 
     // Create a new set in our DB
@@ -217,7 +247,7 @@ export const createNewStableDiffusionImages = async (
     const formattedImagesData = await Promise.all(
       images.artifacts.map(async (image) => {
         if (image.finishReason !== "ERROR") {
-          // Store Image into DB
+          // Store Image into DB with generation parameters
           const imageData = await createNewImage({
             prompt,
             userId,
@@ -225,6 +255,13 @@ export const createNewStableDiffusionImages = async (
             preset: stylePreset,
             isImagePrivate,
             setId,
+            // Store generation parameters
+            width: formData.width,
+            height: formData.height,
+            cfgScale: formData.cfgScale,
+            steps: formData.steps,
+            negativePrompt: formData.negativePrompt,
+            seed: formData.seed,
           });
           Logger.info({
             message: `Successfully stored Image Data in DB: ${imageData.id}`,

@@ -124,8 +124,11 @@ const createBlackForestImage = async (
         },
         body: JSON.stringify({
           prompt: formData.prompt,
-          width: DEFAULT_WIDTH,
-          height: DEFAULT_HEIGHT,
+          width: formData.width ?? DEFAULT_WIDTH,
+          height: formData.height ?? DEFAULT_HEIGHT,
+          // Optional parameters
+          ...(formData.seed !== undefined && { seed: formData.seed }),
+          ...(formData.promptUpsampling && { prompt_upsampling: true }),
         }),
       },
       CONFIG.REQUEST_TIMEOUT
@@ -323,7 +326,7 @@ const processBatch = async (
       // Step 2: Poll until image is ready
       const base64Image = await pollForBlackForestImageResult(requestId);
 
-      // Step 3: Store image metadata in database
+      // Step 3: Store image metadata in database with generation parameters
       const imageData = await createNewImage({
         prompt: formData.prompt,
         userId,
@@ -331,6 +334,11 @@ const processBatch = async (
         preset: undefined,
         isImagePrivate: false,
         setId,
+        // Store generation parameters
+        width: formData.width ?? DEFAULT_WIDTH,
+        height: formData.height ?? DEFAULT_HEIGHT,
+        seed: formData.seed,
+        promptUpsampling: formData.promptUpsampling,
       });
       Logger.info({
         message: `[createBlackForestImages.ts]: Successfully stored image #${

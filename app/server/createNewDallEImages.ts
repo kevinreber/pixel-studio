@@ -54,7 +54,7 @@ const getOpenAIClient = () => {
 
 const ONE_IMAGE_AT_A_TIME = 1;
 const DEFAULT_NUMBER_OF_IMAGES_CREATED = 1;
-const IMAGE_SIZE = "1024x1024";
+const DEFAULT_IMAGE_SIZE = "1024x1024";
 const DEFAULT_AI_IMAGE_LANGUAGE_MODEL = DALL_E_2_MODEL;
 const DEFAULT_IS_IMAGE_PRIVATE = false;
 
@@ -67,6 +67,12 @@ const DEFAULT_PAYLOAD = {
   private: DEFAULT_IS_IMAGE_PRIVATE,
 };
 
+// Valid size options per model
+const VALID_SIZES = {
+  "dall-e-3": ["1024x1024", "1792x1024", "1024x1792"],
+  "dall-e-2": ["256x256", "512x512", "1024x1024"],
+};
+
 /**
  * @description
  * This function makes a request to Open AI's Dall-E API to fetch images generated using the prompt
@@ -74,7 +80,13 @@ const DEFAULT_PAYLOAD = {
 const createDallEImages = async (
   prompt: string,
   numberOfImages = DEFAULT_NUMBER_OF_IMAGES_CREATED,
-  model: string
+  model: string,
+  options?: {
+    width?: number;
+    height?: number;
+    quality?: string;
+    generationStyle?: string;
+  }
 ) => {
   Logger.info({
     message: "Creating DALL-E images...",
@@ -82,14 +94,26 @@ const createDallEImages = async (
       prompt,
       numberOfImages,
       model,
+      options,
     },
   });
   const numberOfImagesToGenerate = Math.round(numberOfImages);
   const base64EncodedImages: (string | undefined)[] = [];
+
+  // Determine size string from width/height or use default
+  let sizeStr = DEFAULT_IMAGE_SIZE;
+  if (options?.width && options?.height) {
+    const requestedSize = `${options.width}x${options.height}`;
+    const validSizes = VALID_SIZES[model as keyof typeof VALID_SIZES] || VALID_SIZES["dall-e-2"];
+    if (validSizes.includes(requestedSize)) {
+      sizeStr = requestedSize;
+    }
+  }
+
   const payload = {
     prompt,
     model,
-    size: IMAGE_SIZE,
+    size: sizeStr as "1024x1024" | "1792x1024" | "1024x1792" | "256x256" | "512x512",
     response_format: BASE_64_FORMAT,
   } as const;
 
@@ -99,6 +123,7 @@ const createDallEImages = async (
       message: `Number of ${model} images to generate: ${numberOfImagesToGenerate}`,
       metadata: {
         numberOfImagesToGenerate,
+        size: sizeStr,
       },
     });
     if (model === DALL_E_3_MODEL) {
@@ -107,6 +132,9 @@ const createDallEImages = async (
         const response = await openai.images.generate({
           ...payload,
           n: ONE_IMAGE_AT_A_TIME,
+          // DALL-E 3 specific options
+          quality: (options?.quality as "standard" | "hd") || "standard",
+          style: (options?.generationStyle as "vivid" | "natural") || "vivid",
         });
         const encodedImage = response.data[0].b64_json;
         if (encodedImage) {
@@ -172,8 +200,13 @@ export const createNewDallEImages = async (
       return { images: mockData, setId: MOCK_SET_ID };
     }
 
-    // Generate Images
-    const imagesImages = await createDallEImages(prompt, numberOfImages, model);
+    // Generate Images with new options
+    const imagesImages = await createDallEImages(prompt, numberOfImages, model, {
+      width: formData.width,
+      height: formData.height,
+      quality: formData.quality,
+      generationStyle: formData.generationStyle,
+    });
 
     // Create a new set
     const set = await createNewSet({
@@ -184,7 +217,7 @@ export const createNewDallEImages = async (
 
     const formattedImagesData = await Promise.all(
       imagesImages.map(async (imageImage) => {
-        // Store Image into DB
+        // Store Image into DB with generation parameters
         const imageData = await createNewImage({
           prompt,
           userId,
@@ -192,6 +225,12 @@ export const createNewDallEImages = async (
           preset: "",
           isImagePrivate,
           setId,
+          // Pass generation parameters for storage
+          width: formData.width,
+          height: formData.height,
+          quality: formData.quality,
+          generationStyle: formData.generationStyle,
+          seed: formData.seed,
         });
         console.log(`Successfully stored Image Data in DB: ${imageData.id}`);
 
