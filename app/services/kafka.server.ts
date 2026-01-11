@@ -1,23 +1,27 @@
 import { Kafka } from "kafkajs";
 
+const isTestEnvironment = process.env.CI === "true" || process.env.NODE_ENV === "test";
+
 // Kafka client configuration
-const kafka = new Kafka({
-  clientId: process.env.KAFKA_CLIENT_ID || "pixel-studio",
-  brokers: process.env.KAFKA_BROKERS?.split(",") || ["localhost:9092"],
-  ssl: process.env.KAFKA_SSL === "true",
-  sasl:
-    process.env.KAFKA_SSL === "true"
-      ? {
-          mechanism: "scram-sha-512",
-          username: process.env.KAFKA_SASL_USERNAME!,
-          password: process.env.KAFKA_SASL_PASSWORD!,
-        }
-      : undefined,
-  retry: {
-    initialRetryTime: 100,
-    retries: 8,
-  },
-});
+const kafka = isTestEnvironment
+  ? (null as unknown as Kafka) // Mock Kafka in test environment
+  : new Kafka({
+      clientId: process.env.KAFKA_CLIENT_ID || "pixel-studio",
+      brokers: process.env.KAFKA_BROKERS?.split(",") || ["localhost:9092"],
+      ssl: process.env.KAFKA_SSL === "true",
+      sasl:
+        process.env.KAFKA_SSL === "true"
+          ? {
+              mechanism: "scram-sha-512",
+              username: process.env.KAFKA_SASL_USERNAME!,
+              password: process.env.KAFKA_SASL_PASSWORD!,
+            }
+          : undefined,
+      retry: {
+        initialRetryTime: 100,
+        retries: 8,
+      },
+    });
 
 // Topic definitions for image generation pipeline
 export const IMAGE_TOPICS = {

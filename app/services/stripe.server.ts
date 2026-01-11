@@ -2,9 +2,22 @@ import Stripe from "stripe";
 import { json } from "@remix-run/node";
 import { Logger } from "~/utils/logger.server";
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-11-20.acacia",
+const isTestEnvironment = process.env.CI === "true" || process.env.NODE_ENV === "test";
+
+// Create mock Stripe for test environments
+const createMockStripe = () => ({
+  checkout: {
+    sessions: {
+      create: async () => ({ id: "mock_session_id", url: "https://mock-checkout.stripe.com" }),
+    },
+  },
 });
+
+export const stripe = isTestEnvironment
+  ? (createMockStripe() as unknown as Stripe)
+  : new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: "2024-11-20.acacia",
+    });
 
 export const stripeCheckout = async ({ userId }: { userId: string }) => {
   try {
