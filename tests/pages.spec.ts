@@ -81,7 +81,7 @@ test.describe("Dynamic Routes - Handle gracefully", () => {
   test("Collection detail with invalid ID shows error or redirects", async ({
     page,
   }) => {
-    const response = await page.goto("/collections/invalid-id");
+    await page.goto("/collections/invalid-id");
     // Should redirect to login for protected routes
     await expect(page).toHaveURL(/login/);
   });
@@ -89,7 +89,7 @@ test.describe("Dynamic Routes - Handle gracefully", () => {
   test("Set detail with invalid ID shows error or redirects", async ({
     page,
   }) => {
-    const response = await page.goto("/sets/invalid-id");
+    await page.goto("/sets/invalid-id");
     // Should redirect to login for protected routes
     await expect(page).toHaveURL(/login/);
   });
