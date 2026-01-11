@@ -12,6 +12,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "stripe:listen": "stripe listen --forward-to localhost:5173/webhook",
     "postinstall": "prisma generate",
     "kafka:create-topics": "tsx scripts/createKafkaTopics.ts",
