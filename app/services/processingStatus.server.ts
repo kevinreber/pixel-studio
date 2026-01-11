@@ -3,7 +3,6 @@ import type { ProcessingStatusUpdate } from "./imageGenerationWorker.server";
 
 // Constants
 const PROCESSING_KEY_PREFIX = "processing:";
-const PROCESSING_UPDATES_CHANNEL = "processing-updates";
 const DEFAULT_TTL = 3600; // 1 hour in seconds
 
 // Extended status update interface for storage
@@ -40,7 +39,39 @@ export class ProcessingStatusService {
     };
 
     try {
-      // Use Redis SET NX (set if not exists) for atomic claim
+      // First check if request exists and is in "queued" status (can be claimed)
+      const existingData = await this.getProcessingStatus(requestId);
+
+      if (existingData) {
+        // If already processing/complete/failed by another worker, don't claim
+        if (existingData.status !== "queued") {
+          console.log(
+            `❌ Request ${requestId} already in status "${existingData.status}" by ${
+              existingData.processor || "unknown"
+            }`
+          );
+          return {
+            claimed: false,
+            currentProcessor: existingData.processor || "unknown",
+          };
+        }
+
+        // Request is in "queued" status - claim it by updating
+        claimData.createdAt = existingData.createdAt; // Preserve original creation time
+        await safeRedisOperation(async () => {
+          return await redis.set(key, JSON.stringify(claimData), {
+            ex: DEFAULT_TTL,
+          });
+        });
+
+        console.log(
+          `✅ Successfully claimed queued request ${requestId} for worker ${workerId}`
+        );
+        await this.broadcastUpdate(claimData);
+        return { claimed: true };
+      }
+
+      // Request doesn't exist yet - use SET NX for atomic claim
       const result = await safeRedisOperation(async () => {
         return await redis.set(key, JSON.stringify(claimData), {
           ex: DEFAULT_TTL,
@@ -51,21 +82,21 @@ export class ProcessingStatusService {
       if (result) {
         // Successfully claimed the request
         console.log(
-          `✅ Successfully claimed request ${requestId} for worker ${workerId}`
+          `✅ Successfully claimed new request ${requestId} for worker ${workerId}`
         );
         await this.broadcastUpdate(claimData);
         return { claimed: true };
       } else {
-        // Request already exists, check who's processing it
-        const existingData = await this.getProcessingStatus(requestId);
+        // Race condition - someone else claimed it between our check and set
+        const newExistingData = await this.getProcessingStatus(requestId);
         console.log(
-          `❌ Request ${requestId} already claimed by ${
-            existingData?.processor || "unknown"
+          `❌ Request ${requestId} claimed by another worker: ${
+            newExistingData?.processor || "unknown"
           }`
         );
         return {
           claimed: false,
-          currentProcessor: existingData?.processor || "unknown",
+          currentProcessor: newExistingData?.processor || "unknown",
         };
       }
     } catch (error) {
@@ -265,18 +296,20 @@ export class ProcessingStatusService {
 
   /**
    * Broadcast status update to WebSocket clients
+   *
+   * Note: Upstash REST Redis doesn't support pub/sub.
+   * The WebSocket server uses polling to check for status updates instead.
+   * This method is kept for compatibility but the actual broadcast is handled
+   * by the WebSocket server's polling mechanism.
    */
   private async broadcastUpdate(
     statusData: ProcessingStatusData
   ): Promise<void> {
-    try {
-      // Using Upstash Redis for pub/sub
-      await safeRedisOperation(() =>
-        redis.publish(PROCESSING_UPDATES_CHANNEL, JSON.stringify(statusData))
-      );
-    } catch (error) {
-      console.error("Failed to broadcast status update:", error);
-    }
+    // Upstash REST Redis doesn't support pub/sub (publish/subscribe).
+    // The WebSocket server polls Redis for status updates instead.
+    // No action needed here - status is already saved to Redis.
+    // Just log for debugging purposes.
+    console.log(`[Status broadcast] ${statusData.requestId}: ${statusData.status}`);
   }
 
   /**
