@@ -1,7 +1,7 @@
 import React from "react";
 import PixelStudioIcon from "components/PixelStudioIcon";
 import { Link } from "@remix-run/react";
-import { Search, PenTool, User, Images, Heart } from "lucide-react";
+import { Search, PenTool, User, Images, Heart, Rss } from "lucide-react";
 import { UserAvatarButton } from "./UserAvatarButton";
 import { useLoggedInUser } from "~/hooks";
 
@@ -37,6 +37,11 @@ const NavigationSidebar = () => {
       title: "Explore",
       icon: <Search className="md:h-4 md:w-4" />,
       href: "/explore",
+    },
+    {
+      title: "Feed",
+      icon: <Rss className="md:h-4 md:w-4" />,
+      href: "/feed",
     },
     {
       title: "Create",
