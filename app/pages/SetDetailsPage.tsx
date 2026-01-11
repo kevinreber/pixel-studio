@@ -6,7 +6,7 @@ import {
   Link,
   useNavigation,
 } from "@remix-run/react";
-import { PageContainer, ErrorList, ImageCard } from "~/components";
+import { PageContainer, ErrorList, ImageCard, ModelBadge } from "~/components";
 import { SetPageLoader } from "~/routes/sets.$setId";
 import { Skeleton } from "@/components/ui/skeleton";
 import { convertUtcDateToLocalDateString } from "~/client";
@@ -72,7 +72,9 @@ const SetDetailsAccessor = () => {
             <Cpu className="w-4 h-4" />
             Model
           </div>
-          <div className="text-sm text-zinc-300">{model}</div>
+          <div className="mt-1">
+            <ModelBadge model={model} size="md" />
+          </div>
         </div>
         {style && (
           <div>

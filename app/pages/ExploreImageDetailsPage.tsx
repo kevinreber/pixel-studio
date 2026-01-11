@@ -2,7 +2,7 @@ import React from "react";
 import { useLoggedInUser } from "~/hooks";
 import { Await, Link, useAsyncValue, useLoaderData } from "@remix-run/react";
 import { ExplorePageImageLoader } from "~/routes/explore.$imageId";
-import { convertUtcDateToLocalDateString, fallbackImageSource } from "~/client";
+import { convertUtcDateToLocalDateString } from "~/client";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,8 @@ import {
 import { LikeImageButton } from "~/components/LikeImageButton";
 import { CommentForm } from "~/components/CommentForm";
 import { ImageComment } from "~/components/ImageComment";
+import { ProgressiveImage } from "~/components/ProgressiveImage";
+import { ModelBadge } from "~/components/ModelBadge";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import {
   HoverCard,
@@ -144,15 +146,12 @@ const ExploreImageDetailsPageAccessor = ({
         {/* Image section - Mobile optimized, desktop unchanged */}
         <div className="md:flex-1 md:bg-black">
           <div className="md:h-full md:flex md:items-center md:justify-center">
-            <img
-              loading="lazy"
-              decoding="async"
+            <ProgressiveImage
               src={imageData.url}
               alt={imageData.prompt || "Generated Image"}
-              className="w-full md:h-auto md:max-h-[90vh] md:w-auto aspect-square md:aspect-auto object-contain bg-black"
-              onError={(e) => {
-                e.currentTarget.src = fallbackImageSource;
-              }}
+              blurSrc={imageData.blurURL}
+              className="w-full md:h-auto md:max-h-[90vh] md:w-auto aspect-square md:aspect-auto object-contain"
+              containerClassName="bg-black w-full md:w-auto"
             />
           </div>
         </div>
@@ -229,9 +228,9 @@ const ExploreImageDetailsPageAccessor = ({
                         <span className="font-semibold flex items-center gap-1">
                           <Cpu className="w-4 h-4" />
                           Model:
-                        </span>{" "}
-                        <span className="italic">{imageData.model}</span>
+                        </span>
                       </p>
+                      <ModelBadge model={imageData.model} size="sm" />
                     </div>
                     {imageData.stylePreset && (
                       <div className="space-y-1">
@@ -330,7 +329,7 @@ const ExploreImageDetailsPageAccessor = ({
                         <Cpu className="w-4 h-4" />
                         Engine Model
                       </h4>
-                      <p className="italic text-sm">{imageData.model}</p>
+                      <ModelBadge model={imageData.model} size="sm" />
                     </div>
 
                     <div className="space-y-1">

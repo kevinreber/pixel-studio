@@ -131,6 +131,7 @@ model Image {
   prompt      String
   model       String?              @default("dall-e")
   stylePreset String?              @default("none")
+  blurDataURL String?              // Base64-encoded blur placeholder for progressive loading
   user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String
   comments    Comment[]
@@ -139,7 +140,7 @@ model Image {
   private     Boolean?             @default(false)
   // NOTE: To avoid DB being overwritten, I am setting "set" and "setId" as optional for now
   set         Set?                 @relation(fields: [setId], references: [id], onDelete: Cascade)
-  setId       String?              
+  setId       String?
   createdAt   DateTime             @default(now())
   updatedAt   DateTime?            @updatedAt
 

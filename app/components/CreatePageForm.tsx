@@ -25,6 +25,7 @@ import {
 } from "~/routes/create";
 import { toast } from "sonner";
 import type { ActionData } from "~/routes/create";
+import { ProviderBadge } from "./ModelBadge";
 
 const PROMPT_EXAMPLES = [
   "A serene Japanese garden at sunset with cherry blossoms floating in the breeze",
@@ -33,20 +34,6 @@ const PROMPT_EXAMPLES = [
   "An astronaut riding a horse on Mars, cinematic lighting",
   "A magical forest with bioluminescent mushrooms and fireflies",
 ];
-
-const COMPANY_COLORS: Record<string, string> = {
-  "OpenAI": "bg-emerald-600",
-  "Stability AI": "bg-purple-600",
-  "Black Forest Labs": "bg-orange-600",
-};
-
-const CompanyBadge = ({ company }: { company: string }) => (
-  <span
-    className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white ${COMPANY_COLORS[company] || "bg-gray-600"}`}
-  >
-    {company}
-  </span>
-);
 
 const MOBILE_WIDTH = 768;
 const MAX_TEXT_AREA_CHAR_COUNT = 500;
@@ -384,7 +371,7 @@ const CreatePageForm = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <CompanyBadge company={model.company} />
+                      <ProviderBadge company={model.company} />
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-600/20 text-amber-400 border border-amber-600/30">
                         <Coins className="w-3 h-3" />
                         {model.creditCost} credit{model.creditCost !== 1 ? "s" : ""}
@@ -622,7 +609,7 @@ const CreatePageForm = () => {
                         )}
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <CompanyBadge company={model.company} />
+                        <ProviderBadge company={model.company} />
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-600/20 text-amber-400 border border-amber-600/30">
                           <Coins className="w-3 h-3" />
                           {model.creditCost} credit{model.creditCost !== 1 ? "s" : ""}
