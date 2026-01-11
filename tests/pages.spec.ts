@@ -18,7 +18,7 @@ test.describe("Public Pages", () => {
   test("Health check page loads", async ({ page }) => {
     await page.goto("/health");
     await expect(
-      page.getByRole("heading", { name: /health check/i })
+      page.getByRole("heading", { name: /pixel studio health check/i })
     ).toBeVisible();
   });
 });
