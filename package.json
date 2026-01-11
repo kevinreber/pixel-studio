@@ -9,6 +9,9 @@
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
     "start": "remix-serve ./build/server/index.js",
     "typecheck": "tsc",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "stripe:listen": "stripe listen --forward-to localhost:5173/webhook",
     "postinstall": "prisma generate",
     "kafka:create-topics": "tsx scripts/createKafkaTopics.ts",
@@ -79,13 +82,17 @@
   "devDependencies": {
     "@playwright/test": "^1.46.1",
     "@remix-run/dev": "^2.13.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
     "@types/crypto-js": "^4.2.1",
     "@types/node": "^22.5.0",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
+    "@types/testing-library__jest-dom": "^5.14.9",
     "@types/ws": "^8.5.6",
     "@typescript-eslint/eslint-plugin": "^6.7.4",
     "@typescript-eslint/parser": "^6.7.4",
+    "@vitest/coverage-v8": "^4.0.16",
     "autoprefixer": "^10.4.19",
     "eslint": "^8.38.0",
     "eslint-import-resolver-typescript": "^3.6.1",
@@ -94,6 +101,7 @@
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "husky": "^9.1.7",
+    "jsdom": "^27.4.0",
     "lint-staged": "^16.2.7",
     "postcss": "^8.4.38",
     "prettier": "^3.7.4",
@@ -102,7 +110,8 @@
     "tsx": "^4.19.3",
     "typescript": "^5.1.6",
     "vite": "^5.4.2",
-    "vite-tsconfig-paths": "^4.2.1"
+    "vite-tsconfig-paths": "^4.2.1",
+    "vitest": "^4.0.16"
   },
   "engines": {
     "node": ">=20.0.0"
