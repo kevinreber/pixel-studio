@@ -262,6 +262,9 @@ export const createNewStableDiffusionImages = async (
             steps: formData.steps,
             negativePrompt: formData.negativePrompt,
             seed: formData.seed,
+            // Remix fields
+            isRemix: formData.isRemix,
+            parentImageId: formData.parentImageId,
           });
           Logger.info({
             message: `Successfully stored Image Data in DB: ${imageData.id}`,

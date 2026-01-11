@@ -269,6 +269,9 @@ export type CreateImagesFormData = {
   cfgScale?: number;
   steps?: number;
   promptUpsampling?: boolean;
+  // Remix fields
+  isRemix?: boolean;
+  parentImageId?: string;
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {

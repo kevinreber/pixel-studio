@@ -15,6 +15,9 @@ type FormDataPayload = {
   model: string;
   stylePreset?: string;
   private?: boolean;
+  // Remix fields
+  isRemix?: boolean;
+  parentImageId?: string;
 };
 
 const getHuggingFaceClient = () => {
@@ -73,6 +76,9 @@ export const createHuggingFaceImages = async (
         preset: undefined,
         isImagePrivate: false,
         setId,
+        // Remix fields
+        isRemix: formData.isRemix,
+        parentImageId: formData.parentImageId,
       });
       Logger.info({
         message: `[createHuggingFaceImages.ts]: Successfully stored Hugging Face Image data #${

@@ -231,6 +231,9 @@ export const createNewDallEImages = async (
           quality: formData.quality,
           generationStyle: formData.generationStyle,
           seed: formData.seed,
+          // Remix fields
+          isRemix: formData.isRemix,
+          parentImageId: formData.parentImageId,
         });
         console.log(`Successfully stored Image Data in DB: ${imageData.id}`);
 

@@ -25,12 +25,15 @@ import {
   SlidersHorizontal,
   MinusCircle,
   ArrowUpCircle,
+  Shuffle,
 } from "lucide-react";
 import { LikeImageButton } from "~/components/LikeImageButton";
 import { CommentForm } from "~/components/CommentForm";
 import { ImageComment } from "~/components/ImageComment";
 import { ProgressiveImage } from "~/components/ProgressiveImage";
 import { ModelBadge } from "~/components/ModelBadge";
+import { RemixImageButton } from "~/components/RemixImageButton";
+import { RemixBadge } from "~/components/RemixBadge";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import {
   HoverCard,
@@ -193,6 +196,10 @@ const ExploreImageDetailsPageAccessor = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <LikeImageButton imageData={imageData} />
+                <RemixImageButton
+                  imageId={imageData.id as string}
+                  currentModel={imageData.model}
+                />
               </div>
               <div className="flex items-center gap-2">
                 <p className="text-xs text-zinc-500">
@@ -210,6 +217,23 @@ const ExploreImageDetailsPageAccessor = ({
                     align="end"
                   >
                     <h4 className="font-semibold text-sm">Image Details</h4>
+                    {/* Remix Badge - Mobile */}
+                    {imageData.isRemix && (
+                      <div className="space-y-1">
+                        <p className="text-xs flex items-center gap-2">
+                          <span className="font-semibold flex items-center gap-1">
+                            <Shuffle className="w-4 h-4" />
+                            Remix:
+                          </span>
+                        </p>
+                        <RemixBadge
+                          parentImageId={imageData.parentImageId}
+                          parentModel={imageData.parentImage?.model}
+                          size="sm"
+                          showLink={true}
+                        />
+                      </div>
+                    )}
                     <div className="space-y-1">
                       <p className="text-xs flex items-center gap-2">
                         <span className="font-semibold flex items-center gap-1">
@@ -405,6 +429,21 @@ const ExploreImageDetailsPageAccessor = ({
 
                 <TabsContent value="info" className="h-full overflow-y-auto">
                   <div className="p-4 space-y-4">
+                    {/* Remix Badge - Show if this image is a remix */}
+                    {imageData.isRemix && (
+                      <div className="space-y-1">
+                        <h4 className="font-semibold flex items-center gap-2">
+                          <Shuffle className="w-4 h-4" />
+                          Remix
+                        </h4>
+                        <RemixBadge
+                          parentImageId={imageData.parentImageId}
+                          parentModel={imageData.parentImage?.model}
+                          showLink={true}
+                        />
+                      </div>
+                    )}
+
                     {imageData.setId && (
                       <div className="space-y-1">
                         <h4 className="font-semibold flex items-center gap-2">
@@ -577,7 +616,13 @@ const ExploreImageDetailsPageAccessor = ({
           {/* Action buttons - Desktop only */}
           <div className="shrink-0 p-4 border-b border-zinc-200 dark:border-zinc-800 hidden md:block">
             <div className="flex items-center justify-between">
-              <LikeImageButton imageData={imageData} />
+              <div className="flex items-center gap-3">
+                <LikeImageButton imageData={imageData} />
+                <RemixImageButton
+                  imageId={imageData.id as string}
+                  currentModel={imageData.model}
+                />
+              </div>
               <p className="text-xs text-zinc-500">
                 {convertUtcDateToLocalDateString(imageData.createdAt!)}
               </p>

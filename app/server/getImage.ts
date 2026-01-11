@@ -24,6 +24,12 @@ interface ImageLike {
   userId: string;
 }
 
+// Parent image info for remix badge
+interface ParentImageInfo {
+  id: string;
+  model: string | null;
+}
+
 export interface ImageData {
   id: string;
   title: string | null;
@@ -46,6 +52,10 @@ export interface ImageData {
   cfgScale: number | null;
   steps: number | null;
   promptUpsampling: boolean | null;
+  // Remix fields
+  isRemix: boolean | null;
+  parentImageId: string | null;
+  parentImage: ParentImageInfo | null;
 }
 
 export interface FormattedImageData extends ImageData {
@@ -116,6 +126,15 @@ export const getImage = async (
       cfgScale: true,
       steps: true,
       promptUpsampling: true,
+      // Remix fields
+      isRemix: true,
+      parentImageId: true,
+      parentImage: {
+        select: {
+          id: true,
+          model: true,
+        },
+      },
     },
   });
 

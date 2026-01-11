@@ -339,6 +339,9 @@ const processBatch = async (
         height: formData.height ?? DEFAULT_HEIGHT,
         seed: formData.seed,
         promptUpsampling: formData.promptUpsampling,
+        // Remix fields
+        isRemix: formData.isRemix,
+        parentImageId: formData.parentImageId,
       });
       Logger.info({
         message: `[createBlackForestImages.ts]: Successfully stored image #${
