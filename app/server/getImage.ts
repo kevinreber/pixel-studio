@@ -36,6 +36,16 @@ export interface ImageData {
   comments: ImageComment[];
   likes: ImageLike[];
   setId: string | null;
+  // Generation parameters
+  width: number | null;
+  height: number | null;
+  quality: string | null;
+  generationStyle: string | null;
+  negativePrompt: string | null;
+  seed: number | null;
+  cfgScale: number | null;
+  steps: number | null;
+  promptUpsampling: boolean | null;
 }
 
 export interface FormattedImageData extends ImageData {
@@ -96,6 +106,16 @@ export const getImage = async (
         },
       },
       setId: true,
+      // Generation parameters
+      width: true,
+      height: true,
+      quality: true,
+      generationStyle: true,
+      negativePrompt: true,
+      seed: true,
+      cfgScale: true,
+      steps: true,
+      promptUpsampling: true,
     },
   });
 
