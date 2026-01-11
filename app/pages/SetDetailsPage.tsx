@@ -21,17 +21,38 @@ import {
 } from "lucide-react";
 import { getModelCreditCost } from "~/config/pricing";
 
-const SetDetailsAccessor = () => {
-  const asyncValue = useAsyncValue() as Record<string, unknown>;
-  const setData = asyncValue ?? {
-    images: [],
-    prompt: "",
-    createdAt: "",
-    user: {
-      id: "",
-      username: "",
-    },
+interface SetImage {
+  id: string;
+  model: string | null;
+  stylePreset: string | null;
+  prompt: string;
+  title: string | null;
+  private: boolean | null;
+  createdAt: Date;
+  updatedAt: Date;
+  userId: string;
+  setId: string | null;
+  url: string;
+  thumbnailURL: string;
+}
+
+interface SetData {
+  images: SetImage[];
+  prompt: string;
+  createdAt: Date | string;
+  user: {
+    id: string;
+    username: string;
   };
+}
+
+const SetDetailsAccessor = () => {
+  const asyncValue = useAsyncValue() as SetData | never[];
+  const isError = Array.isArray(asyncValue);
+
+  const setData = isError
+    ? { images: [], prompt: "", createdAt: "", user: { id: "", username: "" } }
+    : asyncValue;
 
   const {
     images: setImages,
@@ -40,7 +61,7 @@ const SetDetailsAccessor = () => {
     user: setUser,
   } = setData;
   const model = setImages?.[0]?.model || "";
-  const style = setImages?.[0]?.style || "";
+  const style = setImages?.[0]?.stylePreset || "";
   const imageCount = setImages?.length || 0;
   const creditCostPerImage = model ? getModelCreditCost(model) : 0;
   const totalCost = creditCostPerImage * imageCount;
@@ -55,6 +76,10 @@ const SetDetailsAccessor = () => {
       setFormattedDate(convertUtcDateToLocalDateString(setCreatedAt));
     }
   }, [setCreatedAt]);
+
+  if (isError) {
+    return <ErrorList errors={["Set not found"]} />;
+  }
 
   return (
     <div className="flex flex-col justify-between w-full max-w-5xl m-auto">
@@ -124,7 +149,15 @@ const SetDetailsAccessor = () => {
           <ul className="grid grid-cols-2 md:grid-cols-3 gap-1 md:gap-4 lg:gap-6">
             {setImages.map((image) => (
               <li key={image.id} className="hover:!opacity-60">
-                <ImageCard imageData={image} />
+                <ImageCard
+                  imageData={{
+                    ...image,
+                    blurURL: "",
+                    user: setUser as { id: string; username: string; image: string | null },
+                    comments: [],
+                    likes: [],
+                  }}
+                />
               </li>
             ))}
           </ul>
