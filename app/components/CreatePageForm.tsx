@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Slider } from "@/components/ui/slider";
 import {
   Dialog,
   DialogContent,
@@ -17,7 +19,7 @@ import {
   DialogOverlay,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ChevronDown, Check, Loader2, Sparkles, Coins } from "lucide-react";
+import { ChevronDown, Check, Loader2, Sparkles, Coins, Settings2 } from "lucide-react";
 import {
   CreatePageLoader,
   STYLE_OPTIONS,
@@ -26,6 +28,56 @@ import {
 import { toast } from "sonner";
 import type { ActionData } from "~/routes/create";
 import { ProviderBadge } from "./ModelBadge";
+
+// Size options per model type
+type SizeOption = { label: string; ratio: string; width: number; height: number };
+
+const SIZE_OPTIONS: Record<string, SizeOption[]> = {
+  "dall-e-3": [
+    { label: "Square", ratio: "1:1", width: 1024, height: 1024 },
+    { label: "Landscape", ratio: "16:9", width: 1792, height: 1024 },
+    { label: "Portrait", ratio: "9:16", width: 1024, height: 1792 },
+  ],
+  "dall-e-2": [
+    { label: "Small", ratio: "1:1", width: 256, height: 256 },
+    { label: "Medium", ratio: "1:1", width: 512, height: 512 },
+    { label: "Large", ratio: "1:1", width: 1024, height: 1024 },
+  ],
+  "stable-diffusion": [
+    { label: "Square", ratio: "1:1", width: 1024, height: 1024 },
+    { label: "Landscape", ratio: "4:3", width: 1152, height: 896 },
+    { label: "Portrait", ratio: "3:4", width: 896, height: 1152 },
+  ],
+  flux: [
+    { label: "Square", ratio: "1:1", width: 1024, height: 1024 },
+    { label: "Landscape", ratio: "16:9", width: 1344, height: 768 },
+    { label: "Portrait", ratio: "9:16", width: 768, height: 1344 },
+  ],
+};
+
+// Helper to get size options for a model
+const getSizeOptionsForModel = (modelValue: string): SizeOption[] => {
+  if (modelValue.includes("dall-e-3")) return SIZE_OPTIONS["dall-e-3"];
+  if (modelValue.includes("dall-e-2")) return SIZE_OPTIONS["dall-e-2"];
+  if (modelValue.includes("stable-diffusion")) return SIZE_OPTIONS["stable-diffusion"];
+  if (modelValue.includes("flux")) return SIZE_OPTIONS["flux"];
+  return SIZE_OPTIONS["stable-diffusion"]; // default
+};
+
+// Helper to check if model is a Flux model
+const isFluxModel = (modelValue: string): boolean => {
+  return modelValue.includes("flux");
+};
+
+// Helper to check if model is Stable Diffusion
+const isStableDiffusionModel = (modelValue: string): boolean => {
+  return modelValue.includes("stable-diffusion");
+};
+
+// Helper to check if model is DALL-E 3
+const isDallE3Model = (modelValue: string): boolean => {
+  return modelValue === "dall-e-3";
+};
 
 const PROMPT_EXAMPLES = [
   "A serene Japanese garden at sunset with cherry blossoms floating in the breeze",
@@ -175,12 +227,30 @@ const CreatePageForm = () => {
   >("model");
   const [numImages, setNumImages] = React.useState(1);
 
+  // New generation parameter states
+  const [selectedSize, setSelectedSize] = React.useState({ width: 1024, height: 1024 });
+  const [quality, setQuality] = React.useState<"standard" | "hd">("standard");
+  const [generationStyle, setGenerationStyle] = React.useState<"vivid" | "natural">("vivid");
+  const [negativePrompt, setNegativePrompt] = React.useState("");
+  const [seed, setSeed] = React.useState<number | undefined>(undefined);
+  const [cfgScale, setCfgScale] = React.useState(7);
+  const [steps, setSteps] = React.useState(40);
+  const [promptUpsampling, setPromptUpsampling] = React.useState(false);
+  const [showAdvanced, setShowAdvanced] = React.useState(false);
+
   React.useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_WIDTH);
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  // Reset size to default when model changes
+  React.useEffect(() => {
+    const sizeOptions = getSizeOptionsForModel(selectedModel.value);
+    const defaultSize = sizeOptions[0]; // First option is always the default (usually square)
+    setSelectedSize({ width: defaultSize.width, height: defaultSize.height });
+  }, [selectedModel.value]);
 
   React.useEffect(() => {
     if (actionData) {
@@ -494,6 +564,102 @@ const CreatePageForm = () => {
                     </div>
                   </Button>
                 </div>
+
+                {/* Aspect Ratio Selector */}
+                <div>
+                  <Label>Aspect Ratio</Label>
+                  <input type="hidden" name="width" value={selectedSize.width} />
+                  <input type="hidden" name="height" value={selectedSize.height} />
+                  <div className="flex gap-2 mt-1">
+                    {getSizeOptionsForModel(selectedModel.value).map((size) => {
+                      const isSelected = selectedSize.width === size.width && selectedSize.height === size.height;
+                      // Calculate aspect ratio for the visual indicator
+                      const aspectW = size.width > size.height ? 1 : size.width / size.height;
+                      const aspectH = size.height > size.width ? 1 : size.height / size.width;
+                      const isSquare = size.width === size.height;
+
+                      return (
+                        <Button
+                          key={`${size.width}x${size.height}`}
+                          type="button"
+                          variant={isSelected ? "secondary" : "outline"}
+                          onClick={() => setSelectedSize({ width: size.width, height: size.height })}
+                          disabled={isSubmitting}
+                          className={`flex-1 flex flex-col items-center gap-1.5 py-3 h-auto ${
+                            isSelected
+                              ? "bg-zinc-700 hover:bg-zinc-600 border-pink-500"
+                              : "bg-zinc-800/50 hover:bg-zinc-700/50"
+                          }`}
+                        >
+                          {/* Visual aspect ratio indicator */}
+                          <div
+                            className={`border-2 rounded-sm ${isSelected ? "border-pink-400" : "border-zinc-500"}`}
+                            style={{
+                              width: isSquare ? 20 : (aspectW * 24),
+                              height: isSquare ? 20 : (aspectH * 24),
+                            }}
+                          />
+                          <span className="text-xs font-medium">{size.ratio}</span>
+                          <span className="text-[10px] text-zinc-400">{size.width}x{size.height}</span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* DALL-E 3 Quality Toggle */}
+                {isDallE3Model(selectedModel.value) && (
+                  <div>
+                    <Label>Quality</Label>
+                    <input type="hidden" name="quality" value={quality} />
+                    <div className="flex gap-2 mt-1">
+                      {(["standard", "hd"] as const).map((q) => (
+                        <Button
+                          key={q}
+                          type="button"
+                          variant={quality === q ? "secondary" : "outline"}
+                          onClick={() => setQuality(q)}
+                          disabled={isSubmitting}
+                          className={`flex-1 ${
+                            quality === q
+                              ? "bg-zinc-700 hover:bg-zinc-600"
+                              : "bg-zinc-800/50 hover:bg-zinc-700/50"
+                          }`}
+                        >
+                          {q === "hd" ? "HD" : "Standard"}
+                        </Button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">HD creates finer details but takes longer</p>
+                  </div>
+                )}
+
+                {/* DALL-E 3 Style Toggle */}
+                {isDallE3Model(selectedModel.value) && (
+                  <div>
+                    <Label>Generation Style</Label>
+                    <input type="hidden" name="generationStyle" value={generationStyle} />
+                    <div className="flex gap-2 mt-1">
+                      {(["vivid", "natural"] as const).map((s) => (
+                        <Button
+                          key={s}
+                          type="button"
+                          variant={generationStyle === s ? "secondary" : "outline"}
+                          onClick={() => setGenerationStyle(s)}
+                          disabled={isSubmitting}
+                          className={`flex-1 ${
+                            generationStyle === s
+                              ? "bg-zinc-700 hover:bg-zinc-600"
+                              : "bg-zinc-800/50 hover:bg-zinc-700/50"
+                          }`}
+                        >
+                          {s.charAt(0).toUpperCase() + s.slice(1)}
+                        </Button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Vivid is hyper-real, Natural is more realistic</p>
+                  </div>
+                )}
               </div>
               <div className="flex-grow flex flex-col">
                 <Label htmlFor="prompt">Text Prompt</Label>
@@ -535,6 +701,162 @@ const CreatePageForm = () => {
                   disabled={isSubmitting}
                   creditCostPerImage={selectedModel.creditCost}
                 />
+              </div>
+
+              {/* Advanced Options Collapsible Section */}
+              <div className="border-t border-zinc-700 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-white transition-colors w-full"
+                >
+                  <Settings2 className="w-4 h-4" />
+                  Advanced Options
+                  <ChevronDown
+                    className={`w-4 h-4 ml-auto transition-transform ${
+                      showAdvanced ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {showAdvanced && (
+                  <div className="mt-4 space-y-4">
+                    {/* Hidden inputs for advanced options */}
+                    <input type="hidden" name="negativePrompt" value={negativePrompt} />
+                    <input type="hidden" name="seed" value={seed ?? ""} />
+                    <input type="hidden" name="cfgScale" value={cfgScale} />
+                    <input type="hidden" name="steps" value={steps} />
+                    <input type="hidden" name="promptUpsampling" value={promptUpsampling.toString()} />
+
+                    {/* Negative Prompt - Stable Diffusion only */}
+                    {isStableDiffusionModel(selectedModel.value) && (
+                      <div>
+                        <Label htmlFor="negativePrompt">Negative Prompt</Label>
+                        <Textarea
+                          id="negativePrompt"
+                          placeholder="Describe what to avoid in the image..."
+                          value={negativePrompt}
+                          onChange={(e) => setNegativePrompt(e.target.value)}
+                          disabled={isSubmitting}
+                          className="mt-1 min-h-[80px] bg-zinc-800/50"
+                          maxLength={1000}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Elements to exclude from the generated image
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Seed - All models */}
+                    <div>
+                      <Label htmlFor="seed">Seed</Label>
+                      <div className="flex gap-2 mt-1">
+                        <Input
+                          id="seed"
+                          type="number"
+                          placeholder="Random"
+                          value={seed ?? ""}
+                          onChange={(e) =>
+                            setSeed(e.target.value ? parseInt(e.target.value) : undefined)
+                          }
+                          disabled={isSubmitting}
+                          className="flex-1 bg-zinc-800/50"
+                          min={0}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setSeed(undefined)}
+                          disabled={isSubmitting}
+                          className="bg-zinc-800/50"
+                        >
+                          Random
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Use a specific seed for reproducible results
+                      </p>
+                    </div>
+
+                    {/* CFG Scale - Stable Diffusion only */}
+                    {isStableDiffusionModel(selectedModel.value) && (
+                      <div>
+                        <div className="flex justify-between items-center mb-3">
+                          <Label>CFG Scale</Label>
+                          <span className="text-sm font-medium text-pink-400">{cfgScale}</span>
+                        </div>
+                        <Slider
+                          value={[cfgScale]}
+                          onValueChange={(value) => setCfgScale(value[0])}
+                          min={1}
+                          max={20}
+                          step={1}
+                          disabled={isSubmitting}
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>1</span>
+                          <span>Creative</span>
+                          <span>Strict</span>
+                          <span>20</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">
+                          How closely to follow the prompt (higher = stricter)
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Steps - Stable Diffusion only */}
+                    {isStableDiffusionModel(selectedModel.value) && (
+                      <div>
+                        <div className="flex justify-between items-center mb-3">
+                          <Label>Steps</Label>
+                          <span className="text-sm font-medium text-pink-400">{steps}</span>
+                        </div>
+                        <Slider
+                          value={[steps]}
+                          onValueChange={(value) => setSteps(value[0])}
+                          min={10}
+                          max={50}
+                          step={5}
+                          disabled={isSubmitting}
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>10</span>
+                          <span>Fast</span>
+                          <span>Quality</span>
+                          <span>50</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">
+                          More steps = higher quality but slower
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Prompt Upsampling - Flux only */}
+                    {isFluxModel(selectedModel.value) && (
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          id="promptUpsampling"
+                          checked={promptUpsampling}
+                          onChange={(e) => setPromptUpsampling(e.target.checked)}
+                          disabled={isSubmitting}
+                          className="w-4 h-4 rounded border-zinc-600 bg-zinc-800/50"
+                        />
+                        <div>
+                          <Label htmlFor="promptUpsampling" className="cursor-pointer">
+                            Prompt Upsampling
+                          </Label>
+                          <p className="text-xs text-gray-500">
+                            Enhance your prompt for better results
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </CardContent>
             <CardFooter>
