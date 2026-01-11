@@ -59,6 +59,94 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     tier: "premium",
     apiCostEstimate: 0.08,
   },
+
+  // Replicate Models
+  "replicate-sdxl": {
+    credits: 2,
+    tier: "standard",
+    apiCostEstimate: 0.03,
+  },
+  "replicate-playground-v2.5": {
+    credits: 2,
+    tier: "standard",
+    apiCostEstimate: 0.03,
+  },
+  "replicate-kandinsky-2.2": {
+    credits: 2,
+    tier: "standard",
+    apiCostEstimate: 0.025,
+  },
+
+  // Ideogram Models
+  "ideogram-v2": {
+    credits: 4,
+    tier: "premium",
+    apiCostEstimate: 0.05,
+  },
+  "ideogram-v2-turbo": {
+    credits: 2,
+    tier: "standard",
+    apiCostEstimate: 0.02,
+  },
+  "ideogram-v1": {
+    credits: 2,
+    tier: "standard",
+    apiCostEstimate: 0.03,
+  },
+  "ideogram-v1-turbo": {
+    credits: 1,
+    tier: "budget",
+    apiCostEstimate: 0.015,
+  },
+
+  // Fal.ai Models
+  "fal-flux-schnell": {
+    credits: 1,
+    tier: "budget",
+    apiCostEstimate: 0.003,
+  },
+  "fal-flux-dev": {
+    credits: 2,
+    tier: "standard",
+    apiCostEstimate: 0.025,
+  },
+  "fal-flux-pro": {
+    credits: 3,
+    tier: "standard",
+    apiCostEstimate: 0.035,
+  },
+  "fal-sdxl-lightning": {
+    credits: 1,
+    tier: "budget",
+    apiCostEstimate: 0.005,
+  },
+  "fal-stable-cascade": {
+    credits: 2,
+    tier: "standard",
+    apiCostEstimate: 0.02,
+  },
+
+  // Together AI Models
+  "together-flux-schnell": {
+    credits: 1,
+    tier: "budget",
+    apiCostEstimate: 0.003,
+  },
+  "together-flux-dev": {
+    credits: 2,
+    tier: "standard",
+    apiCostEstimate: 0.025,
+  },
+  "together-sdxl": {
+    credits: 1,
+    tier: "budget",
+    apiCostEstimate: 0.01,
+  },
+  "together-sd-turbo": {
+    credits: 1,
+    tier: "budget",
+    apiCostEstimate: 0.005,
+  },
 } as const;
 
 /**

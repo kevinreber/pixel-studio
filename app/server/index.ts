@@ -24,4 +24,8 @@ export * from "./commentLikes";
 export * from "./getUserCollections";
 export * from "./createHuggingFaceImages";
 export * from "./createBlackForestImages";
+export * from "./createReplicateImages";
+export * from "./createIdeogramImages";
+export * from "./createFalImages";
+export * from "./createTogetherImages";
 export * from "./getUserSets";
