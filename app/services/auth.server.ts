@@ -7,7 +7,6 @@ import {
   sessionStorage,
 } from "~/services/session.server";
 import { redirect } from "@remix-run/node";
-import bcrypt from "bcryptjs";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { prisma } from "~/services/prisma.server";
 import {
@@ -19,7 +18,6 @@ export const AUTH_KEY = "_auth";
 // ? Placeholder for GOOGLE_SESSION_KEY
 // export const GOOGLE_SESSION_KEY = "_google_auth";
 export const USER_ID_KEY = "_userId";
-const SESSION_EXPIRATION_TIME = 1000 * 60 * 60 * 24 * 30;
 
 // Create an instance of the authenticator
 // It will take session storage as an input parameter and creates the user session on successful authentication
@@ -104,8 +102,7 @@ interface GoogleUserJson {
  * Login Page if they are not logged in
  */
 export const requireUserLogin = async (
-  request: Request,
-  { redirectTo }: { redirectTo?: string | null } = {}
+  request: Request
 ): Promise<UserProfile | SupabaseUser> => {
   try {
     // First check supabase auth

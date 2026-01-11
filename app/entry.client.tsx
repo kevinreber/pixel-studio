@@ -19,7 +19,7 @@ Sentry.init({
       useEffect,
       useLocation,
       useMatches
-    }), Sentry.replayIntegration()]
+    })]
 })
 
 startTransition(() => {

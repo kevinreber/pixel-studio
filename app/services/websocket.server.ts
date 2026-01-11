@@ -9,7 +9,6 @@ import type { ProcessingStatusData } from "./processingStatus.server";
 
 // WebSocket server configuration
 const WS_PORT = parseInt(process.env.WS_PORT || "3001");
-const PROCESSING_UPDATES_CHANNEL = "processing-updates";
 
 /**
  * WebSocket server for real-time processing status updates
@@ -17,7 +16,7 @@ const PROCESSING_UPDATES_CHANNEL = "processing-updates";
  */
 export class ProcessingWebSocketServer {
   private wss: WebSocketServer;
-  private httpServer: any;
+  private httpServer: ReturnType<typeof createServer>;
   private clients: Map<string, Set<WebSocket>> = new Map();
   private isRunning: boolean = false;
   private statusPollingInterval: NodeJS.Timeout | null = null;
@@ -267,7 +266,7 @@ export class ProcessingWebSocketServer {
     }
   }
 
-  private handleConnection(ws: WebSocket, request: any): void {
+  private handleConnection(ws: WebSocket, request: { url?: string }): void {
     const requestId = this.extractRequestId(request.url);
 
     if (!requestId) {
@@ -332,8 +331,8 @@ export class ProcessingWebSocketServer {
 
   private handleClientMessage(
     ws: WebSocket,
-    requestId: string,
-    message: any
+    _requestId: string,
+    message: { type: string }
   ): void {
     // Handle client messages (e.g., ping, status request, etc.)
     switch (message.type) {
@@ -458,7 +457,7 @@ export class ProcessingWebSocketServer {
     }
   }
 
-  private sendMessage(ws: WebSocket, message: any): void {
+  private sendMessage(ws: WebSocket, message: Record<string, unknown>): void {
     try {
       if (ws.readyState === WebSocket.OPEN) {
         const messageString = JSON.stringify(message);
@@ -489,7 +488,7 @@ export class ProcessingWebSocketServer {
       // /ws/processing/123
       const requestId =
         (parsed.query.requestId as string) ||
-        parsed.pathname?.match(/\/processing\/([^\/]+)/)?.[1];
+        parsed.pathname?.match(/\/processing\/([^/]+)/)?.[1];
 
       return requestId || null;
     } catch (error) {
@@ -503,7 +502,7 @@ export class ProcessingWebSocketServer {
     return this.isRunning && this.wss.readyState === this.wss.OPEN;
   }
 
-  getConnectionStats(): any {
+  getConnectionStats(): Record<string, unknown> {
     const stats = {
       isRunning: this.isRunning,
       totalClients: Array.from(this.clients.values()).reduce(
