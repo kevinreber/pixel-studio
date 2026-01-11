@@ -29,6 +29,16 @@ export const createNewImage = async ({
   preset = "",
   isImagePrivate = false,
   setId,
+  // New generation parameters
+  width,
+  height,
+  quality,
+  generationStyle,
+  negativePrompt,
+  seed,
+  cfgScale,
+  steps,
+  promptUpsampling,
 }: {
   prompt: string;
   userId: string;
@@ -36,6 +46,16 @@ export const createNewImage = async ({
   preset?: string;
   isImagePrivate: boolean;
   setId: string;
+  // New generation parameters
+  width?: number;
+  height?: number;
+  quality?: string;
+  generationStyle?: string;
+  negativePrompt?: string;
+  seed?: number;
+  cfgScale?: number;
+  steps?: number;
+  promptUpsampling?: boolean;
 }) => {
   console.log("Creating new image in DB...");
   if (!setId) {
@@ -52,6 +72,16 @@ export const createNewImage = async ({
         stylePreset: preset,
         private: isImagePrivate,
         setId,
+        // New generation parameters
+        width,
+        height,
+        quality,
+        generationStyle,
+        negativePrompt,
+        seed,
+        cfgScale,
+        steps,
+        promptUpsampling,
       },
     });
     console.log(`Successfully created new image in DB: ${image.id}`);

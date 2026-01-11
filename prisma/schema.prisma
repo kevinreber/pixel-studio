@@ -144,6 +144,17 @@ model Image {
   createdAt   DateTime             @default(now())
   updatedAt   DateTime?            @updatedAt
 
+  // Generation parameters
+  width            Int?             // Image width in pixels
+  height           Int?             // Image height in pixels
+  quality          String?          // "standard", "hd" (DALL-E 3), "high", "medium", "low" (GPT Image)
+  generationStyle  String?          // "vivid", "natural" (DALL-E 3 style parameter)
+  negativePrompt   String?          // Text describing what to avoid (Stable Diffusion)
+  seed             Int?             // Seed for reproducible results
+  cfgScale         Float?           // CFG scale 1-35 (Stable Diffusion)
+  steps            Int?             // Diffusion steps 10-50 (Stable Diffusion)
+  promptUpsampling Boolean?         @default(false) // Prompt enhancement (Flux)
+
   @@index([userId])
   @@index([setId])
 }

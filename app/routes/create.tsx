@@ -234,6 +234,16 @@ const CreateImagesFormSchema = z.object({
     .max(MAX_NUMBER_OF_IMAGES, {
       message: `Number of images to generate must be ${MIN_NUMBER_OF_IMAGES}-${MAX_NUMBER_OF_IMAGES}`,
     }),
+  // New generation parameters
+  width: z.number().min(256).max(2048).optional(),
+  height: z.number().min(256).max(2048).optional(),
+  quality: z.enum(["standard", "hd", "high", "medium", "low"]).optional(),
+  generationStyle: z.enum(["vivid", "natural"]).optional(),
+  negativePrompt: z.string().max(1000).optional(),
+  seed: z.number().int().min(0).optional(),
+  cfgScale: z.number().min(1).max(35).optional(),
+  steps: z.number().int().min(10).max(50).optional(),
+  promptUpsampling: z.boolean().optional(),
 });
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -249,6 +259,16 @@ export type CreateImagesFormData = {
   model: string;
   stylePreset?: string;
   private?: boolean;
+  // Generation parameters
+  width?: number;
+  height?: number;
+  quality?: string;
+  generationStyle?: string;
+  negativePrompt?: string;
+  seed?: number;
+  cfgScale?: number;
+  steps?: number;
+  promptUpsampling?: boolean;
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -260,15 +280,44 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   let stylePreset = formData.get("style") || undefined;
   const numberOfImages = formData.get("numberOfImages") || "1";
 
+  // Parse new generation parameters
+  const widthStr = formData.get("width");
+  const heightStr = formData.get("height");
+  const quality = formData.get("quality") || undefined;
+  const generationStyle = formData.get("generationStyle") || undefined;
+  const negativePrompt = formData.get("negativePrompt") || undefined;
+  const seedStr = formData.get("seed");
+  const cfgScaleStr = formData.get("cfgScale");
+  const stepsStr = formData.get("steps");
+  const promptUpsamplingStr = formData.get("promptUpsampling");
+
   if (stylePreset === "none") {
     stylePreset = undefined;
   }
+
+  // Parse numeric values (undefined if not provided or invalid)
+  const width = widthStr ? parseInt(widthStr.toString()) : undefined;
+  const height = heightStr ? parseInt(heightStr.toString()) : undefined;
+  const seed = seedStr && seedStr !== "" ? parseInt(seedStr.toString()) : undefined;
+  const cfgScale = cfgScaleStr ? parseFloat(cfgScaleStr.toString()) : undefined;
+  const steps = stepsStr ? parseInt(stepsStr.toString()) : undefined;
+  const promptUpsampling = promptUpsamplingStr === "true";
 
   const validateFormData = CreateImagesFormSchema.safeParse({
     prompt: prompt.toString(),
     numberOfImages: parseInt(numberOfImages.toString()),
     model: model.toString(),
     stylePreset,
+    // New generation parameters
+    width: isNaN(width as number) ? undefined : width,
+    height: isNaN(height as number) ? undefined : height,
+    quality: quality?.toString() || undefined,
+    generationStyle: generationStyle?.toString() || undefined,
+    negativePrompt: negativePrompt?.toString() || undefined,
+    seed: isNaN(seed as number) ? undefined : seed,
+    cfgScale: isNaN(cfgScale as number) ? undefined : cfgScale,
+    steps: isNaN(steps as number) ? undefined : steps,
+    promptUpsampling,
   });
 
   if (!validateFormData.success) {

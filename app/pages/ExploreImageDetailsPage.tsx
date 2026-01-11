@@ -19,6 +19,12 @@ import {
   Images,
   NotepadText,
   Palette,
+  Maximize2,
+  Sparkles,
+  Hash,
+  SlidersHorizontal,
+  MinusCircle,
+  ArrowUpCircle,
 } from "lucide-react";
 import { LikeImageButton } from "~/components/LikeImageButton";
 import { CommentForm } from "~/components/CommentForm";
@@ -199,7 +205,7 @@ const ExploreImageDetailsPageAccessor = ({
                     </button>
                   </HoverCardTrigger>
                   <HoverCardContent
-                    className="w-80 p-3 space-y-2 bg-zinc-800 text-white border-zinc-700"
+                    className="w-80 p-3 space-y-2 bg-zinc-800 text-white border-zinc-700 max-h-[60vh] overflow-y-auto"
                     side="bottom"
                     align="end"
                   >
@@ -254,6 +260,97 @@ const ExploreImageDetailsPageAccessor = ({
                         <span className="italic">{imageData.prompt}</span>
                       </p>
                     </div>
+
+                    {/* Generation Parameters - Mobile */}
+                    {(imageData.width || imageData.height || imageData.quality || imageData.generationStyle || imageData.seed || imageData.cfgScale || imageData.steps || imageData.negativePrompt || imageData.promptUpsampling) && (
+                      <div className="border-t border-zinc-600 pt-2 mt-2 space-y-2">
+                        <h4 className="font-semibold text-xs text-zinc-400 uppercase">
+                          Generation Parameters
+                        </h4>
+
+                        {(imageData.width || imageData.height) && (
+                          <p className="text-xs flex items-center gap-2">
+                            <span className="font-semibold flex items-center gap-1">
+                              <Maximize2 className="w-3 h-3" />
+                              Size:
+                            </span>{" "}
+                            {imageData.width || 1024} x {imageData.height || 1024}
+                          </p>
+                        )}
+
+                        {imageData.quality && (
+                          <p className="text-xs flex items-center gap-2">
+                            <span className="font-semibold flex items-center gap-1">
+                              <Sparkles className="w-3 h-3" />
+                              Quality:
+                            </span>{" "}
+                            <span className="capitalize">{imageData.quality}</span>
+                          </p>
+                        )}
+
+                        {imageData.generationStyle && (
+                          <p className="text-xs flex items-center gap-2">
+                            <span className="font-semibold flex items-center gap-1">
+                              <Palette className="w-3 h-3" />
+                              Gen Style:
+                            </span>{" "}
+                            <span className="capitalize">{imageData.generationStyle}</span>
+                          </p>
+                        )}
+
+                        {imageData.seed !== null && imageData.seed !== undefined && (
+                          <p className="text-xs flex items-center gap-2">
+                            <span className="font-semibold flex items-center gap-1">
+                              <Hash className="w-3 h-3" />
+                              Seed:
+                            </span>{" "}
+                            <span className="font-mono">{imageData.seed}</span>
+                          </p>
+                        )}
+
+                        {imageData.cfgScale !== null && imageData.cfgScale !== undefined && (
+                          <p className="text-xs flex items-center gap-2">
+                            <span className="font-semibold flex items-center gap-1">
+                              <SlidersHorizontal className="w-3 h-3" />
+                              CFG:
+                            </span>{" "}
+                            {imageData.cfgScale}
+                          </p>
+                        )}
+
+                        {imageData.steps !== null && imageData.steps !== undefined && (
+                          <p className="text-xs flex items-center gap-2">
+                            <span className="font-semibold flex items-center gap-1">
+                              <SlidersHorizontal className="w-3 h-3" />
+                              Steps:
+                            </span>{" "}
+                            {imageData.steps}
+                          </p>
+                        )}
+
+                        {imageData.negativePrompt && (
+                          <div className="text-xs">
+                            <span className="font-semibold flex items-center gap-1">
+                              <MinusCircle className="w-3 h-3" />
+                              Negative:
+                            </span>
+                            <span className="italic text-zinc-300 block mt-1">
+                              {imageData.negativePrompt}
+                            </span>
+                          </div>
+                        )}
+
+                        {imageData.promptUpsampling && (
+                          <p className="text-xs flex items-center gap-2">
+                            <span className="font-semibold flex items-center gap-1">
+                              <ArrowUpCircle className="w-3 h-3" />
+                              Upsampling:
+                            </span>{" "}
+                            Enabled
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </HoverCardContent>
                 </HoverCard>
               </div>
@@ -358,6 +455,119 @@ const ExploreImageDetailsPageAccessor = ({
                         /> */}
                       </div>
                     </div>
+
+                    {/* Generation Parameters Section */}
+                    {(imageData.width || imageData.height || imageData.quality || imageData.generationStyle || imageData.seed || imageData.cfgScale || imageData.steps || imageData.negativePrompt || imageData.promptUpsampling) && (
+                      <div className="border-t border-zinc-700 pt-4 mt-4 space-y-4">
+                        <h3 className="font-semibold text-sm text-zinc-400 uppercase tracking-wide">
+                          Generation Parameters
+                        </h3>
+
+                        {/* Size */}
+                        {(imageData.width || imageData.height) && (
+                          <div className="space-y-1">
+                            <h4 className="font-semibold flex items-center gap-2">
+                              <Maximize2 className="w-4 h-4" />
+                              Size
+                            </h4>
+                            <p className="text-sm text-zinc-300">
+                              {imageData.width || 1024} x {imageData.height || 1024}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Quality (DALL-E 3) */}
+                        {imageData.quality && (
+                          <div className="space-y-1">
+                            <h4 className="font-semibold flex items-center gap-2">
+                              <Sparkles className="w-4 h-4" />
+                              Quality
+                            </h4>
+                            <p className="text-sm text-zinc-300 capitalize">
+                              {imageData.quality}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Generation Style (DALL-E 3) */}
+                        {imageData.generationStyle && (
+                          <div className="space-y-1">
+                            <h4 className="font-semibold flex items-center gap-2">
+                              <Palette className="w-4 h-4" />
+                              Generation Style
+                            </h4>
+                            <p className="text-sm text-zinc-300 capitalize">
+                              {imageData.generationStyle}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Seed */}
+                        {imageData.seed !== null && imageData.seed !== undefined && (
+                          <div className="space-y-1">
+                            <h4 className="font-semibold flex items-center gap-2">
+                              <Hash className="w-4 h-4" />
+                              Seed
+                            </h4>
+                            <p className="text-sm text-zinc-300 font-mono">
+                              {imageData.seed}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* CFG Scale (Stable Diffusion) */}
+                        {imageData.cfgScale !== null && imageData.cfgScale !== undefined && (
+                          <div className="space-y-1">
+                            <h4 className="font-semibold flex items-center gap-2">
+                              <SlidersHorizontal className="w-4 h-4" />
+                              CFG Scale
+                            </h4>
+                            <p className="text-sm text-zinc-300">
+                              {imageData.cfgScale}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Steps (Stable Diffusion) */}
+                        {imageData.steps !== null && imageData.steps !== undefined && (
+                          <div className="space-y-1">
+                            <h4 className="font-semibold flex items-center gap-2">
+                              <SlidersHorizontal className="w-4 h-4" />
+                              Steps
+                            </h4>
+                            <p className="text-sm text-zinc-300">
+                              {imageData.steps}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Negative Prompt (Stable Diffusion) */}
+                        {imageData.negativePrompt && (
+                          <div className="space-y-1">
+                            <h4 className="font-semibold flex items-center gap-2">
+                              <MinusCircle className="w-4 h-4" />
+                              Negative Prompt
+                            </h4>
+                            <p className="italic text-sm text-zinc-300">
+                              {imageData.negativePrompt}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Prompt Upsampling (Flux) */}
+                        {imageData.promptUpsampling && (
+                          <div className="space-y-1">
+                            <h4 className="font-semibold flex items-center gap-2">
+                              <ArrowUpCircle className="w-4 h-4" />
+                              Prompt Upsampling
+                            </h4>
+                            <p className="text-sm text-zinc-300">
+                              Enabled
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
               </div>
