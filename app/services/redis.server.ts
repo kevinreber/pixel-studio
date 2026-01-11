@@ -1,16 +1,29 @@
 import { Redis } from "@upstash/redis";
 
+const isTestEnvironment = process.env.CI === "true" || process.env.NODE_ENV === "test";
+
 if (
-  !process.env.UPSTASH_REDIS_REST_URL ||
-  !process.env.UPSTASH_REDIS_REST_TOKEN
+  !isTestEnvironment &&
+  (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN)
 ) {
   throw new Error("Redis credentials not found in environment variables");
 }
 
-export const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+// Create a mock Redis client for test environments
+const createMockRedis = () => ({
+  get: async () => null,
+  set: async () => "OK",
+  del: async () => 1,
+  ping: async () => "PONG",
+  keys: async () => [],
 });
+
+export const redis = isTestEnvironment
+  ? (createMockRedis() as unknown as Redis)
+  : new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    });
 
 export class RedisError extends Error {
   constructor(message: string) {
