@@ -17,7 +17,7 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   invariantResponse(imageId, "Image does not exist");
 
   // Try to get user, but don't require login
-  let user: any = null;
+  let user: { id: string } | null = null;
   try {
     user = await requireUserLogin(request);
   } catch {

@@ -1,4 +1,4 @@
-type AnyObject = Record<string, any>;
+type AnyObject = Record<string, unknown>;
 
 /**
   @descripton
@@ -11,15 +11,15 @@ type AnyObject = Record<string, any>;
  */
 export const removeEmptyValuesFromObject = (obj: AnyObject) => {
   const result: AnyObject = {};
-  const stack: [string, any][] = Object.entries(obj);
+  const stack: [string, unknown][] = Object.entries(obj);
 
   while (stack.length > 0) {
     const [key, value] = stack.pop()!;
 
     if (value !== null && value !== undefined && value !== "") {
       if (typeof value === "object") {
-        const nested = Object.entries(value).filter(
-          ([_, v]) => v !== null && v !== undefined && v !== "",
+        const nested = Object.entries(value as Record<string, unknown>).filter(
+          ([, v]) => v !== null && v !== undefined && v !== "",
         );
         if (nested.length > 0) {
           result[key] = Object.fromEntries(nested);

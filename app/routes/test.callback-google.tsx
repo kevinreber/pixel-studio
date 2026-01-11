@@ -95,10 +95,13 @@ export async function action({ request }: ActionFunctionArgs) {
     const { headers } = await signOutOfSupabase({ request, useBase: true });
 
     return redirect("/test/login-google", { headers });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const headers = error && typeof error === "object" && "headers" in error
+      ? (error.headers as Headers) ?? new Headers()
+      : new Headers();
     return json(
       { error: error instanceof Error ? error.message : String(error) },
-      { headers: error.headers ?? new Headers() }
+      { headers }
     );
   }
 }

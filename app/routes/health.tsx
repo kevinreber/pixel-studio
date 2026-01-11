@@ -1,4 +1,3 @@
-import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { prisma } from "~/services/prisma.server";
 import { redis, safeRedisOperation } from "~/services/redis.server";
@@ -15,7 +14,7 @@ import { redis, safeRedisOperation } from "~/services/redis.server";
  * - Redis cache connectivity
  * - Basic application health
  */
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async () => {
   const startTime = Date.now();
   const checks = {
     database: false,
@@ -119,7 +118,7 @@ export default function HealthCheck() {
             marginTop: "0.5rem",
           }}
         >
-          curl -H "Accept: application/json"{" "}
+          curl -H &quot;Accept: application/json&quot;{" "}
           {typeof window !== "undefined" ? window.location.href : "/health"}
         </code>
       </div>

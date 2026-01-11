@@ -1,7 +1,7 @@
 import React from "react";
 import PixelStudioIcon from "components/PixelStudioIcon";
 import { Link } from "@remix-run/react";
-import { Search, Layers, PenTool, User, Images, Heart } from "lucide-react";
+import { Search, PenTool, User, Images, Heart } from "lucide-react";
 import { UserAvatarButton } from "./UserAvatarButton";
 import { useLoggedInUser } from "~/hooks";
 

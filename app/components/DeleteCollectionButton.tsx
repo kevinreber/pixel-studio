@@ -9,13 +9,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Trash2 } from "lucide-react";
-import { FetcherWithComponents, useFetcher } from "@remix-run/react";
+import { FetcherWithComponents } from "@remix-run/react";
 import { toast } from "sonner";
 
 interface DeleteCollectionButtonProps {
   collectionId: string;
   disabled?: boolean;
-  fetcher: FetcherWithComponents<any>;
+  fetcher: FetcherWithComponents<unknown>;
 }
 
 export function DeleteCollectionButton({

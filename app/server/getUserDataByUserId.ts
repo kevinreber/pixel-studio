@@ -1,14 +1,7 @@
 import { prisma } from "~/services/prisma.server";
 import { getS3BucketThumbnailURL, getS3BucketURL } from "utils/s3Utils";
 
-const DEFAULT_CURRENT_PAGE = 1;
-const DEFAULT_PAGE_SIZE = 50;
-
-export const getUserDataByUserId = async (
-  userId: string,
-  page = DEFAULT_CURRENT_PAGE,
-  pageSize = DEFAULT_PAGE_SIZE
-) => {
+export const getUserDataByUserId = async (userId: string) => {
   // If UserA is visiting UserB's profile, we do not want to show UserB's Private images to UserA
   // const selectImageQuery = createImageSelectQuery();
 

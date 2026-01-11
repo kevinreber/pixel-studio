@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import "dotenv/config";
 import { createAdmin, IMAGE_TOPICS } from "../app/services/kafka.server.js";
