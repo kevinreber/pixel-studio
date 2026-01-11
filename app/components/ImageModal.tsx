@@ -1,4 +1,3 @@
-import React from "react";
 import { useLoggedInUser } from "~/hooks";
 import { Link } from "@remix-run/react";
 import { convertUtcDateToLocalDateString, fallbackImageSource } from "~/client";
@@ -21,18 +20,6 @@ const ImageModal = ({ imageData }: { imageData: ImageDetail }) => {
   const userData = useLoggedInUser();
   const isUserLoggedIn = Boolean(userData);
 
-  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
-
-  React.useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setIsPopoverOpen(false);
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   if (!imageData) return null;
 
