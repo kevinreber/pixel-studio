@@ -1,6 +1,6 @@
 import { prisma } from "~/services/prisma.server";
 
-export const getImageCollection = async (imageId: string, user?: any) => {
+export const getImageCollection = async (imageId: string, user?: { id: string } | null) => {
   if (!user || !user.id) {
     return [];
   }

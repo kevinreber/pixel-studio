@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Pencil } from "lucide-react";
-import { useFetcher, type FetcherWithComponents } from "@remix-run/react";
+import { type FetcherWithComponents } from "@remix-run/react";
 import { CollectionSchema } from "~/schemas/collection";
 import { toast } from "sonner";
 
@@ -21,7 +21,7 @@ interface EditCollectionDialogProps {
     description?: string | null;
   };
   disabled?: boolean;
-  fetcher: FetcherWithComponents<any>;
+  fetcher: FetcherWithComponents<unknown>;
 }
 
 export function EditCollectionDialog({

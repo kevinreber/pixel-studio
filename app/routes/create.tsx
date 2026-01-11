@@ -7,11 +7,16 @@ import {
 } from "@remix-run/node";
 import { requireUserLogin } from "~/services";
 import CreatePage from "~/pages/CreatePage";
-import { createNewImages, updateUserCredits } from "~/server";
+import {
+  createNewImages,
+  updateUserCredits,
+  checkUserCredits,
+} from "~/server";
 import { getImageGenerationProducer } from "~/services/imageGenerationProducer.server";
 import { z } from "zod";
 import { PageContainer, GeneralErrorBoundary } from "~/components";
 import { cacheDelete } from "~/utils/cache.server";
+import { getModelCreditCost } from "~/config/pricing";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Create AI Generated Images" }];
@@ -23,48 +28,66 @@ export const MODEL_OPTIONS = [
     value: "stable-diffusion-v1-6",
     image: "/assets/model-thumbs/sd-1-5.jpg",
     description: "The most popular first-generation stable diffusion model.",
+    company: "Stability AI",
+    supportsStyles: true,
+    creditCost: 1,
   },
   {
     name: "Stable Diffusion XL",
     value: "stable-diffusion-xl-1024-v1-0",
     image: "/assets/model-thumbs/sdxlv1.jpg",
     description: "The state-of-the-art in open-source image generation.",
+    company: "Stability AI",
+    supportsStyles: true,
+    creditCost: 2,
   },
   {
     name: "Flux Schnell",
     value: "flux-pro",
-    // value: "black-forest-labs/FLUX.1-schnell",
     image: "/assets/model-thumbs/flux-schnell.jpg",
     description:
       "Fastest open-source text-to-image model to date, by Black Forest Labs.",
+    company: "Black Forest Labs",
+    supportsStyles: false,
+    creditCost: 2,
   },
   {
     name: "Flux Pro 1.1",
     value: "flux-pro-1.1",
-    // value: "black-forest-labs/FLUX.1-schnell",
     image: "/assets/model-thumbs/flux-pro-1-1.jpg",
     description:
-      "Professional grade image generation with excellent prompt following and visual quality, by Black Forest Labs.",
+      "Professional grade image generation with excellent prompt following and visual quality.",
+    company: "Black Forest Labs",
+    supportsStyles: false,
+    creditCost: 4,
   },
   {
     name: "Flux Dev",
     value: "flux-dev",
-    // value: "black-forest-labs/FLUX.1-dev",
     image: "/assets/model-thumbs/flux-dev-thumb-2.jpg",
     description:
-      "Development version offering cost-effective image generation while maintaining good quality, by Black Forest Labs.",
+      "Development version offering cost-effective image generation while maintaining good quality.",
+    company: "Black Forest Labs",
+    supportsStyles: false,
+    creditCost: 2,
   },
   {
     name: "DALL-E 3",
     value: "dall-e-3",
     image: "/assets/model-thumbs/dalle3.jpg",
-    description: "State-of-the-art image generator from OpenAI's DALL-E 3.",
+    description: "State-of-the-art image generator from OpenAI.",
+    company: "OpenAI",
+    supportsStyles: false,
+    creditCost: 6,
   },
   {
     name: "DALL-E 2",
     value: "dall-e-2",
     image: "/assets/model-thumbs/dalle2.jpg",
-    description: "State-of-the-art image generator from OpenAI's DALL-E 2.",
+    description: "Reliable image generator from OpenAI.",
+    company: "OpenAI",
+    supportsStyles: false,
+    creditCost: 1,
   },
   // ! TODO: RunDiffusion/Juggernaut-XL-v9 is not accessible off Hugging Face for some reason
   // {
@@ -261,38 +284,43 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     );
   }
 
-  // Verify user has enough credits
+  // Calculate total credit cost based on model and number of images
+  const modelValue = validateFormData.data.model;
+  const creditCostPerImage = getModelCreditCost(modelValue);
+  const totalCreditCost =
+    creditCostPerImage * validateFormData.data.numberOfImages;
+
+  // Check if user has enough credits (without deducting yet)
   try {
-    await updateUserCredits(user.id, parseInt(numberOfImages.toString()));
+    await checkUserCredits(user.id, totalCreditCost);
   } catch (error: unknown) {
     console.error(error);
 
     return json(
       {
         success: false,
-        message: "Error updating user credits",
+        message: "Insufficient credits",
         error:
           error instanceof Error
             ? error.message
-            : "Not enough credits available",
+            : `Not enough credits. This generation requires ${totalCreditCost} credits.`,
       },
-      { status: 500 }
+      { status: 400 }
     );
   }
 
-  // Clear cache for user
-  const cacheKey = `user-login:${user.id}`;
-  await cacheDelete(cacheKey);
-  // undefined is for `prompt` and `model` - clears out all sets
-  const setsCacheKey = `sets:user:${user.id}:undefined:undefined`;
-  await cacheDelete(setsCacheKey);
-
   // Check if Kafka-based async generation is enabled
-  const isKafkaEnabled = process.env.ENABLE_KAFKA_IMAGE_GENERATION === "true";
+  // Only allow Kafka in development - not ready for production yet
+  const isProduction = process.env.NODE_ENV === "production";
+  const isKafkaEnabled =
+    !isProduction && process.env.ENABLE_KAFKA_IMAGE_GENERATION === "true";
+
+  // Track if credits were already deducted (to prevent double charging)
+  let creditsAlreadyDeducted = false;
 
   if (isKafkaEnabled) {
     try {
-      // 🚀 NEW: Use Kafka producer for instant response
+      // 🚀 Kafka: Use async generation
       console.log("Using Kafka for async image generation...");
 
       const producer = await getImageGenerationProducer();
@@ -302,6 +330,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       if (!isKafkaHealthy) {
         throw new Error("Image generation service is temporarily unavailable");
       }
+
+      // For Kafka, we charge upfront since it's async
+      // The consumer should handle refunds on failure
+      await updateUserCredits(user.id, totalCreditCost);
+      creditsAlreadyDeducted = true;
+
+      // Clear cache for user
+      const cacheKey = `user-login:${user.id}`;
+      await cacheDelete(cacheKey);
+      const setsCacheKey = `sets:user:${user.id}:undefined:undefined`;
+      await cacheDelete(setsCacheKey);
 
       // Queue the image generation request (returns immediately!)
       const response = await producer.queueImageGeneration(
@@ -316,65 +355,67 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       // Redirect immediately to processing page with real-time updates
       return redirect(response.processingUrl);
     } catch (error) {
-      console.error("Kafka image generation failed:", error);
-
-      // If Kafka fails, we could either:
-      // 1. Fall back to synchronous generation (commented out below)
-      // 2. Show error and ask user to try again (current approach)
-
-      return json(
-        {
-          success: false,
-          message: "Image generation service is temporarily unavailable",
-          error:
-            error instanceof Error
-              ? error.message
-              : "Service unavailable, please try again in a moment.",
-        },
-        { status: 503 }
+      console.error(
+        "Kafka image generation failed, falling back to synchronous:",
+        error
       );
+      // Fall through to synchronous generation below
     }
-  } else {
-    // 🔄 FALLBACK: Original synchronous behavior
-    console.log("Using synchronous image generation (Kafka disabled)...");
+  }
 
-    try {
-      const result = await createNewImages(validateFormData.data, user.id);
+  // 🔄 Synchronous generation (used when Kafka is disabled or fails)
+  console.log("Using synchronous image generation...");
 
-      // If there's an error from any AI provider, show it in the toast
-      if ("error" in result) {
-        return json({
-          success: false,
-          message: "Image generation failed",
-          error: result.error,
-          images: [],
-          setId: "",
-        });
-      }
+  try {
+    const result = await createNewImages(validateFormData.data, user.id);
 
-      // Validate that we have both images and a setId
-      if (!result.setId || !result.images?.length) {
-        throw new Error("Failed to create images - incomplete response");
-      }
-
-      // If we have a setId, redirect to the set page after a small delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      return redirect(`/sets/${result.setId}`);
-    } catch (error) {
-      console.error(`Error creating new images: ${error}`);
-
-      return json(
-        {
-          success: false,
-          message: "Failed to create images",
-          error:
-            error instanceof Error
-              ? error.message
-              : "An unexpected error occurred. Please try again.",
-        },
-        { status: 500 }
-      );
+    // If there's an error from any AI provider, don't charge
+    if ("error" in result) {
+      return json({
+        success: false,
+        message: "Image generation failed",
+        error: result.error,
+        images: [],
+        setId: "",
+      });
     }
+
+    // Validate that we have both images and a setId
+    if (!result.setId || !result.images?.length) {
+      throw new Error("Failed to create images - incomplete response");
+    }
+
+    // SUCCESS! Now charge the user credits (unless already charged in Kafka path)
+    if (!creditsAlreadyDeducted) {
+      try {
+        await updateUserCredits(user.id, totalCreditCost);
+        // Clear cache for user
+        const cacheKey = `user-login:${user.id}`;
+        await cacheDelete(cacheKey);
+        const setsCacheKey = `sets:user:${user.id}:undefined:undefined`;
+        await cacheDelete(setsCacheKey);
+      } catch (creditError) {
+        // If credit deduction fails after successful generation, log it but don't fail the request
+        console.error("Failed to deduct credits after successful generation:", creditError);
+      }
+    }
+
+    // Redirect to the set page
+    return redirect(`/sets/${result.setId}`);
+  } catch (error) {
+    console.error(`Error creating new images: ${error}`);
+
+    return json(
+      {
+        success: false,
+        message: "Failed to create images",
+        error:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred. Please try again.",
+      },
+      { status: 500 }
+    );
   }
 };
 
@@ -383,7 +424,7 @@ export type ActionData = {
   success: boolean;
   message?: string;
   error?: string | { [key: string]: string[] };
-  images?: any[];
+  images?: { id: string; url: string }[];
   setId?: string;
 };
 

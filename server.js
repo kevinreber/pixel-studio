@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import './instrumentation.server.mjs';
 import { createRequestHandler } from "@remix-run/express";
 import express from "express";

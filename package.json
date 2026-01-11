@@ -15,7 +15,8 @@
     "kafka:consumer": "tsx scripts/startConsumers.ts",
     "kafka:websocket": "tsx scripts/startWebSocketServer.ts",
     "kafka:health": "tsx scripts/checkKafkaHealth.ts",
-    "kafka:monitor": "tsx scripts/monitorKafka.ts"
+    "kafka:monitor": "tsx scripts/monitorKafka.ts",
+    "prepare": "husky"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.685.0",
@@ -24,6 +25,7 @@
     "@huggingface/inference": "^2.8.1",
     "@paralleldrive/cuid2": "^2.2.2",
     "@prisma/client": "^5.19.0",
+    "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-avatar": "^1.1.1",
     "@radix-ui/react-dialog": "^1.1.2",
     "@radix-ui/react-dropdown-menu": "^2.1.1",
@@ -56,6 +58,7 @@
     "date-fns": "^3.6.0",
     "express": "^4.19.2",
     "isbot": "^4.4.0",
+    "kafkajs": "^2.2.4",
     "lucide-react": "^0.435.0",
     "next-themes": "^0.4.6",
     "openai": "^4.70.2",
@@ -70,9 +73,8 @@
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "winston": "^3.17.0",
-    "zod": "^3.23.8",
-    "kafkajs": "^2.2.4",
-    "ws": "^8.14.0"
+    "ws": "^8.14.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@playwright/test": "^1.46.1",
@@ -91,7 +93,10 @@
     "eslint-plugin-jsx-a11y": "^6.7.1",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "postcss": "^8.4.38",
+    "prettier": "^3.7.4",
     "tailwindcss": "^3.4.4",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.3",
@@ -101,5 +106,13 @@
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix"
+    ],
+    "*.{json,md,css}": [
+      "prettier --write"
+    ]
   }
 }

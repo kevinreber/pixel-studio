@@ -60,7 +60,7 @@ export const getImages = async (
       WHERE i.private = false AND (i.title LIKE ${like} OR i.prompt LIKE ${like} OR i."stylePreset" LIKE ${like})
     `;
 
-    const totalCount = (totalCountResult as any[])[0]?.count || 0;
+    const totalCount = (totalCountResult as { count: number }[])[0]?.count || 0;
     const totalPages = Math.ceil(totalCount / pageSize);
     const hasNextPage = page < totalPages;
     const hasPrevPage = page > 1;

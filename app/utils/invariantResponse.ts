@@ -14,7 +14,7 @@
  * @throws {Response} if condition is falsey
  */
 export function invariantResponse(
-  condition: any,
+  condition: unknown,
   message: string | (() => string),
   responseInit?: ResponseInit
 ): asserts condition {

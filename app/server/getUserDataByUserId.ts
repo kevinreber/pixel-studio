@@ -31,8 +31,8 @@ export const getUserDataByUserId = async (
       createdAt: true,
 
       images: {
-        // take: pageSize,
-        // skip: (page - 1) * pageSize,
+        take: pageSize,
+        skip: (page - 1) * pageSize,
         orderBy: {
           createdAt: "desc",
         },

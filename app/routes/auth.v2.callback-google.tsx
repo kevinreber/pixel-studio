@@ -30,7 +30,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   if (code) {
     try {
       console.log("Exchanging code for session...");
-      const { data, error: exchangeError } =
+      const { error: exchangeError } =
         await supabase.auth.exchangeCodeForSession(code);
 
       if (exchangeError) {

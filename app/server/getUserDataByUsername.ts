@@ -76,7 +76,7 @@ export const getUserDataByUsername = async (
       username: true,
       image: true,
       createdAt: true,
-      // @ts-ignore
+      // @ts-expect-error - Prisma type inference issue with nested select
       images: {
         take: pageSize,
         skip: (page - 1) * pageSize,
@@ -89,8 +89,8 @@ export const getUserDataByUsername = async (
   });
 
   // Append images source URL since we cannot use `env` variables in our UI
-  // @ts-ignore
-  const formattedImages = userData?.images.map((image) => ({
+  // @ts-expect-error - Prisma type inference issue with nested select
+  const formattedImages = userData?.images.map((image: { id: string }) => ({
     ...image,
     url: getS3BucketURL(image.id),
     thumbnailURL: getS3BucketThumbnailURL(image.id),

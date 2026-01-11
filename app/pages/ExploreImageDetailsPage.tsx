@@ -7,7 +7,6 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -17,17 +16,13 @@ import {
   Loader2,
   X,
   Cpu,
-  Clock,
   Images,
   NotepadText,
-  Trash2,
   Palette,
 } from "lucide-react";
-import { CopyToClipboardButton } from "~/components";
 import { LikeImageButton } from "~/components/LikeImageButton";
 import { CommentForm } from "~/components/CommentForm";
 import { ImageComment } from "~/components/ImageComment";
-import { AddImageToCollectionButton } from "~/components/AddImageToCollectionButton";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import {
   HoverCard,
@@ -109,19 +104,6 @@ const ExploreImageDetailsPageAccessor = ({
   const imageUserData = imageData.user as ImageUserData;
   const userData = useLoggedInUser();
   const isUserLoggedIn = Boolean(userData);
-
-  const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
-
-  React.useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setIsPopoverOpen(false);
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   if (!imageData) return null;
 

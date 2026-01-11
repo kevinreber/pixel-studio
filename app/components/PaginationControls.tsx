@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useSearchParams } from "@remix-run/react";
+import { useSearchParams } from "@remix-run/react";
 import {
   Pagination,
   PaginationContent,
