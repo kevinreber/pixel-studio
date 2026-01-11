@@ -76,12 +76,13 @@ const ImageGrid = ({
                 imageData={
                   {
                     ...image,
-                    createdAt: new Date(image.createdAt),
+                    createdAt: image.createdAt,
                     private: null,
                     user: { id: image.userId, username: "", image: null },
                     comments: [],
                     likes: [],
                     setId: null,
+                    blurURL: "",
                   } as ImageDetail
                 }
               />

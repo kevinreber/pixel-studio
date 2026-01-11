@@ -24,7 +24,7 @@ type Image = {
   model: string;
   stylePreset?: string | null;
   userId: string;
-  createdAt: string;
+  createdAt: Date;
 };
 
 export type ImageTagType = Image & { url: string; thumbnailURL: string };

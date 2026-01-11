@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
 import { useLoggedInUser } from "~/hooks";
 import { useFetcher } from "@remix-run/react";
-import { GetImageDataAPIResponse } from "~/server";
 
 interface LikeImageButtonProps {
-  imageData: GetImageDataAPIResponse;
+  imageData: {
+    id?: string;
+    likes?: Array<{ userId: string }>;
+  };
 }
 
 export const LikeImageButton = ({ imageData }: LikeImageButtonProps) => {

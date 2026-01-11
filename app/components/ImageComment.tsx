@@ -26,6 +26,11 @@ interface ImageCommentProps {
   likes: CommentLike[];
 }
 
+interface FetcherData {
+  error?: string;
+  success?: boolean;
+}
+
 export const ImageComment = ({
   id,
   imageId,
@@ -35,7 +40,7 @@ export const ImageComment = ({
   likes,
 }: ImageCommentProps) => {
   const loggedInUser = useLoggedInUser();
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<FetcherData>();
   const isLoading = fetcher.state !== "idle";
   const [isLiked, setIsLiked] = React.useState(
     likes?.some((like) => like.userId === loggedInUser?.id) ?? false

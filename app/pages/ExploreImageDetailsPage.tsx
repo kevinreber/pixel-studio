@@ -116,7 +116,7 @@ const ExploreImageDetailsPageAccessor = ({
         <div className="flex items-center gap-2">
           <Avatar className="h-8 w-8">
             <AvatarImage
-              src={imageUserData.image}
+              src={imageUserData.image ?? undefined}
               alt={imageUserData.username}
             />
             <AvatarFallback>
@@ -147,7 +147,7 @@ const ExploreImageDetailsPageAccessor = ({
         <div className="md:flex-1 md:bg-black">
           <div className="md:h-full md:flex md:items-center md:justify-center">
             <ProgressiveImage
-              src={imageData.url}
+              src={imageData.url || ""}
               alt={imageData.prompt || "Generated Image"}
               blurSrc={imageData.blurURL}
               className="w-full md:h-auto md:max-h-[90vh] md:w-auto aspect-square md:aspect-auto object-contain"
@@ -164,7 +164,7 @@ const ExploreImageDetailsPageAccessor = ({
               <div className="flex items-center gap-3">
                 <Avatar className="h-6 w-6">
                   <AvatarImage
-                    src={imageUserData.image}
+                    src={imageUserData.image ?? undefined}
                     alt={imageUserData.username}
                   />
                   <AvatarFallback>
