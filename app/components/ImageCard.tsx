@@ -47,6 +47,13 @@ export const ImageCard = ({
           alt={imageData!.prompt}
           className="inset-0 object-cover cursor-pointer absolute w-full h-full"
           decoding="async"
+          onError={(e) => {
+            // Fallback to original image if thumbnail not ready yet
+            const target = e.currentTarget;
+            if (imageData?.url && target.src !== imageData.url) {
+              target.src = imageData.url;
+            }
+          }}
         />
       </Link>
       {/* Hover Overlay */}
