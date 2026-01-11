@@ -315,6 +315,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const isKafkaEnabled =
     !isProduction && process.env.ENABLE_KAFKA_IMAGE_GENERATION === "true";
 
+  // Track if credits were already deducted (to prevent double charging)
+  let creditsAlreadyDeducted = false;
+
   if (isKafkaEnabled) {
     try {
       // 🚀 Kafka: Use async generation
@@ -331,6 +334,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       // For Kafka, we charge upfront since it's async
       // The consumer should handle refunds on failure
       await updateUserCredits(user.id, totalCreditCost);
+      creditsAlreadyDeducted = true;
 
       // Clear cache for user
       const cacheKey = `user-login:${user.id}`;
@@ -381,17 +385,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       throw new Error("Failed to create images - incomplete response");
     }
 
-    // SUCCESS! Now charge the user credits
-    try {
-      await updateUserCredits(user.id, totalCreditCost);
-      // Clear cache for user
-      const cacheKey = `user-login:${user.id}`;
-      await cacheDelete(cacheKey);
-      const setsCacheKey = `sets:user:${user.id}:undefined:undefined`;
-      await cacheDelete(setsCacheKey);
-    } catch (creditError) {
-      // If credit deduction fails after successful generation, log it but don't fail the request
-      console.error("Failed to deduct credits after successful generation:", creditError);
+    // SUCCESS! Now charge the user credits (unless already charged in Kafka path)
+    if (!creditsAlreadyDeducted) {
+      try {
+        await updateUserCredits(user.id, totalCreditCost);
+        // Clear cache for user
+        const cacheKey = `user-login:${user.id}`;
+        await cacheDelete(cacheKey);
+        const setsCacheKey = `sets:user:${user.id}:undefined:undefined`;
+        await cacheDelete(setsCacheKey);
+      } catch (creditError) {
+        // If credit deduction fails after successful generation, log it but don't fail the request
+        console.error("Failed to deduct credits after successful generation:", creditError);
+      }
     }
 
     // Redirect to the set page
