@@ -60,6 +60,7 @@ model User {
   accounts     Account[]
   sessions     Session[]
   images       Image[]
+  videos       Video[]
   sets         Set[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime?     @updatedAt
@@ -119,10 +120,46 @@ model Set {
   prompt      String
   createdAt   DateTime  @default(now())
   images      Image[]
-  userId      String       
+  videos      Video[]
+  userId      String
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model Video {
+  id            String    @id @default(cuid())
+  title         String?   @default("Untitled")
+  prompt        String
+  model         String?   @default("runway-gen3")
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  private       Boolean?  @default(false)
+  set           Set?      @relation(fields: [setId], references: [id], onDelete: Cascade)
+  setId         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime? @updatedAt
+
+  // Video-specific parameters
+  duration      Int?      // Duration in seconds
+  fps           Int?      // Frames per second
+  aspectRatio   String?   // "16:9", "9:16", "1:1"
+  resolution    String?   // "720p", "1080p", "4K"
+
+  // Source image (for image-to-video generation)
+  sourceImageId String?
+  sourceImageUrl String?
+
+  // Generation status
+  status        String?   @default("pending") // "pending", "processing", "complete", "failed"
+  progress      Int?      @default(0)         // 0-100
+  errorMessage  String?
+
+  // External provider data
+  externalId    String?   // ID from video generation API
+
+  @@index([userId])
+  @@index([setId])
 }
 
 model Image {

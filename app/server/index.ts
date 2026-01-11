@@ -25,3 +25,11 @@ export * from "./getUserCollections";
 export * from "./createHuggingFaceImages";
 export * from "./createBlackForestImages";
 export * from "./getUserSets";
+
+// Video generation exports
+export * from "./createNewVideo";
+export * from "./createNewVideos";
+export { createRunwayVideo } from "./createRunwayVideo";
+export { createLumaVideo } from "./createLumaVideo";
+export { createStabilityVideo } from "./createStabilityVideo";
+export * from "./addVideoToS3.server";
