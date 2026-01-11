@@ -1,5 +1,9 @@
 import { prisma } from "~/services/prisma.server";
-import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
+import {
+  getS3BucketBlurURL,
+  getS3BucketThumbnailURL,
+  getS3BucketURL,
+} from "~/utils/s3Utils";
 
 interface ImageUser {
   id: string;
@@ -37,11 +41,13 @@ export interface ImageData {
 export interface FormattedImageData extends ImageData {
   url: string;
   thumbnailURL: string;
+  blurURL: string;
 }
 
 export interface GetImageDataAPIResponse extends ImageData {
   url: string;
   thumbnailURL: string;
+  blurURL: string;
 }
 
 export const getImage = async (
@@ -100,6 +106,7 @@ export const getImage = async (
     ...image,
     url: getS3BucketURL(imageId),
     thumbnailURL: getS3BucketThumbnailURL(imageId),
+    blurURL: getS3BucketBlurURL(imageId),
   };
 
   return formattedImage;
