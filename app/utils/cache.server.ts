@@ -103,6 +103,30 @@ export async function cacheDelete(key: string) {
   return safeRedisOperation(() => redis.del(key));
 }
 
+export async function cacheDeletePattern(pattern: string) {
+  Logger.info({
+    message: `Deleting cache keys matching pattern: ${pattern}`,
+    metadata: {
+      pattern,
+    },
+  });
+
+  // Get all keys matching the pattern
+  const keys = await safeRedisOperation(() => redis.keys(pattern));
+
+  if (keys && keys.length > 0) {
+    // Delete all matching keys
+    await safeRedisOperation(() => redis.del(...keys));
+    Logger.info({
+      message: `Deleted ${keys.length} cache keys matching pattern: ${pattern}`,
+      metadata: {
+        pattern,
+        deletedCount: keys.length,
+      },
+    });
+  }
+}
+
 export async function getCachedDataWithRevalidate<T>(
   key: string,
   fetchFn: () => Promise<T>,

@@ -68,8 +68,8 @@ model User {
   commentLikes CommentLike[]
   collections  Collection[]
   roles        Role[]
-  // engagingUsers        UserEngagement[]           @relation("engagingUsers")
-  // engagedUsers         UserEngagement[]           @relation("engagedUsers")
+  followedBy   Follow[]      @relation("FollowedBy")
+  following    Follow[]      @relation("Following")
 }
 
 model Password {
@@ -215,6 +215,17 @@ model CollectionHasImage {
   @@index([collectionId, imageId])
   @@index([collectionId])
   @@index([imageId])
+}
+
+model Follow {
+  follower    User   @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  followerId  String
+  following   User   @relation("FollowedBy", fields: [followingId], references: [id], onDelete: Cascade)
+  followingId String
+  createdAt   DateTime @default(now())
+
+  @@id([followerId, followingId])
+  @@index([followingId])
 }
 
 // ! TODO: Add this to the schema
