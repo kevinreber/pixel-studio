@@ -11,3 +11,4 @@ export * from "./ImageCard";
 export * from "./ModelBadge";
 export { default as PaginationControls } from "./PaginationControls";
 export * from "./FollowButton";
+export * from "./FollowListModal";

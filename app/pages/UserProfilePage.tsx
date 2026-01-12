@@ -13,6 +13,7 @@ import {
   ErrorList,
   ImageGridSkeleton,
   FollowButton,
+  FollowListModal,
 } from "~/components";
 import type { UserProfilePageLoader } from "~/routes/profile.$userId";
 import { Grid, User, Loader2 } from "lucide-react";
@@ -98,6 +99,8 @@ const UserProfileAccessor = ({
   const [followersCount, setFollowersCount] = React.useState(
     followStats.followersCount
   );
+  const [followListModalOpen, setFollowListModalOpen] = React.useState(false);
+  const [followListTab, setFollowListTab] = React.useState<"followers" | "following">("followers");
 
   if (!userData) return <UserDoesNotExist />;
 
@@ -105,8 +108,28 @@ const UserProfileAccessor = ({
     setFollowersCount((prev) => (isNowFollowing ? prev + 1 : prev - 1));
   };
 
+  const openFollowersModal = () => {
+    setFollowListTab("followers");
+    setFollowListModalOpen(true);
+  };
+
+  const openFollowingModal = () => {
+    setFollowListTab("following");
+    setFollowListModalOpen(true);
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
+      {/* Follow List Modal */}
+      <FollowListModal
+        isOpen={followListModalOpen}
+        onClose={() => setFollowListModalOpen(false)}
+        userId={profileUserId}
+        initialTab={followListTab}
+        followersCount={followersCount}
+        followingCount={followStats.followingCount}
+      />
+
       {/* Sticky Header */}
       <div className="pb-4">
         {/* Profile Header */}
@@ -137,14 +160,20 @@ const UserProfileAccessor = ({
                 <span className="font-semibold">{userImages.length}</span>{" "}
                 <span className="text-zinc-500">posts</span>
               </div>
-              <div>
+              <button
+                onClick={openFollowersModal}
+                className="hover:opacity-70 transition-opacity text-left"
+              >
                 <span className="font-semibold">{followersCount}</span>{" "}
                 <span className="text-zinc-500">followers</span>
-              </div>
-              <div>
+              </button>
+              <button
+                onClick={openFollowingModal}
+                className="hover:opacity-70 transition-opacity text-left"
+              >
                 <span className="font-semibold">{followStats.followingCount}</span>{" "}
                 <span className="text-zinc-500">following</span>
-              </div>
+              </button>
             </div>
           </div>
         </div>

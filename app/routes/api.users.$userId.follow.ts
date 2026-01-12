@@ -2,7 +2,7 @@ import { ActionFunctionArgs, json } from "@remix-run/node";
 import { createFollow, deleteFollow } from "~/server";
 import { requireUserLogin } from "~/services";
 import { invariantResponse } from "~/utils";
-import { cacheDelete } from "~/utils/cache.server";
+import { cacheDelete, cacheDeletePattern } from "~/utils/cache.server";
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
@@ -12,18 +12,26 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   invariantResponse(user, "User is required");
   invariantResponse(user.id !== targetUserId, "Cannot follow yourself");
 
-  // Invalidate caches
-  await cacheDelete(`user-profile:${targetUserId}`);
-  await cacheDelete(`user-profile:${user.id}`);
-  await cacheDelete(`user-follow-stats:${targetUserId}`);
-  await cacheDelete(`user-follow-stats:${user.id}`);
-  await cacheDelete(`following-feed:${user.id}`);
+  try {
+    if (request.method === "POST") {
+      await createFollow({ followerId: user.id, followingId: targetUserId });
+    } else if (request.method === "DELETE") {
+      await deleteFollow({ followerId: user.id, followingId: targetUserId });
+    }
 
-  if (request.method === "POST") {
-    await createFollow({ followerId: user.id, followingId: targetUserId });
-  } else if (request.method === "DELETE") {
-    await deleteFollow({ followerId: user.id, followingId: targetUserId });
+    // Invalidate caches after successful operation
+    // Use pattern deletion for keys that include pagination
+    await Promise.all([
+      cacheDeletePattern(`user-profile:${targetUserId}:*`),
+      cacheDeletePattern(`user-profile:${user.id}:*`),
+      cacheDelete(`user-follow-stats:${targetUserId}`),
+      cacheDelete(`user-follow-stats:${user.id}`),
+      cacheDeletePattern(`following-feed:${user.id}:*`),
+    ]);
+
+    return json({ success: true });
+  } catch (error) {
+    console.error("Follow action error:", error);
+    return json({ success: false, error: "Failed to update follow status" }, { status: 500 });
   }
-
-  return json({ success: true });
 };
