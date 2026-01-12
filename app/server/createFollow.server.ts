@@ -1,5 +1,6 @@
 import { prisma } from "~/services/prisma.server";
 import { Logger } from "~/utils/logger.server";
+import { createNotification } from "./notifications";
 
 /**
  * @description
@@ -19,6 +20,13 @@ export const createFollow = async ({
 
   const response = await prisma.follow.create({
     data: { followerId, followingId },
+  });
+
+  // Create notification for the user being followed
+  await createNotification({
+    type: "NEW_FOLLOWER",
+    recipientId: followingId,
+    actorId: followerId,
   });
 
   return response;

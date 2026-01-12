@@ -303,6 +303,17 @@ async function processImageGenerationLocally(
       timestamp: new Date(),
     });
 
+    // Create notification for image completion
+    const { createNotification } = await import("~/server/notifications");
+    const firstImageId = result.images[0]?.id;
+    if (firstImageId) {
+      await createNotification({
+        type: "IMAGE_COMPLETED",
+        recipientId: userId,
+        imageId: firstImageId,
+      });
+    }
+
     console.log(
       `[Local Worker] Completed request ${requestId}, setId: ${result.setId}`
     );
