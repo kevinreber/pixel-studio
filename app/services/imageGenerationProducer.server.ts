@@ -1,3 +1,24 @@
+/**
+ * =============================================================================
+ * KAFKA IMAGE GENERATION PRODUCER - READY FOR SCALE
+ * =============================================================================
+ *
+ * This producer queues image generation requests to Kafka for async processing.
+ * It's designed for high-throughput scenarios with AWS MSK.
+ *
+ * CURRENT STATUS: Available but not the default (using QStash for cost savings)
+ *
+ * For the unified queue interface, see: ./imageQueue.server.ts
+ * That module automatically selects between QStash and Kafka based on config.
+ *
+ * TO USE KAFKA DIRECTLY:
+ * 1. Set QUEUE_BACKEND=kafka in .env
+ * 2. Use getImageGenerationProducer() from this module
+ *
+ * See infrastructure/kafka/README.md for full setup instructions.
+ * =============================================================================
+ */
+
 import { createId } from "@paralleldrive/cuid2";
 import { createProducer, createAdmin, IMAGE_TOPICS } from "./kafka.server";
 import type { CreateImagesFormData } from "~/routes/create";
