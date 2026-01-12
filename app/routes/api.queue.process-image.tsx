@@ -20,6 +20,7 @@ import {
   verifyQStashSignature,
   type QStashImageGenerationRequest,
 } from "~/services/qstash.server";
+import { createNotification } from "~/server/notifications";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   // Only allow POST requests
@@ -135,6 +136,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       images: result.images,
       timestamp: new Date(),
     });
+
+    // Create notification for image completion
+    // Use the first image ID from the result if available
+    const firstImageId = result.images[0]?.id;
+    if (firstImageId) {
+      await createNotification({
+        type: "IMAGE_COMPLETED",
+        recipientId: userId,
+        imageId: firstImageId,
+      });
+    }
 
     console.log(
       `[QStash Worker] Completed request ${requestId}, setId: ${result.setId}`

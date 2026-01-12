@@ -70,6 +70,8 @@ model User {
   roles        Role[]
   followedBy   Follow[]      @relation("FollowedBy")
   following    Follow[]      @relation("Following")
+  notificationsReceived Notification[] @relation("NotificationRecipient")
+  notificationsTriggered Notification[] @relation("NotificationActor")
 }
 
 model Password {
@@ -137,6 +139,7 @@ model Image {
   comments    Comment[]
   likes       ImageLike[]
   collections CollectionHasImage[]
+  notifications Notification[]
   private     Boolean?             @default(false)
   // NOTE: To avoid DB being overwritten, I am setting "set" and "setId" as optional for now
   set         Set?                 @relation(fields: [setId], references: [id], onDelete: Cascade)
@@ -181,6 +184,7 @@ model Comment {
   children  Comment[]     @relation("ParentChild")
   parentId  String?
   likes     CommentLike[]
+  notifications Notification[]
 }
 
 model CommentLike {
@@ -226,6 +230,39 @@ model Follow {
 
   @@id([followerId, followingId])
   @@index([followingId])
+}
+
+enum NotificationType {
+  NEW_FOLLOWER
+  IMAGE_LIKED
+  IMAGE_COMMENT
+  IMAGE_COMPLETED
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  // Recipient of the notification
+  recipient   User   @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientId String
+
+  // Actor who triggered the notification (optional - not applicable for IMAGE_COMPLETED)
+  actor   User?   @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+  actorId String?
+
+  // Related image (for IMAGE_LIKED, IMAGE_COMMENT, IMAGE_COMPLETED)
+  image   Image?  @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  imageId String?
+
+  // Related comment (for IMAGE_COMMENT)
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId String?
+
+  @@index([recipientId, read])
+  @@index([recipientId, createdAt])
 }
 
 // ! TODO: Add this to the schema
