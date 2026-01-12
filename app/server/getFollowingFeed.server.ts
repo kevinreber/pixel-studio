@@ -12,10 +12,11 @@ export const getFollowingFeed = async (
 ) => {
   const skip = (page - 1) * pageSize;
 
-  // Get list of users the current user follows
+  // Get list of users the current user follows (limited to prevent unbounded queries)
   const followingIds = await prisma.follow.findMany({
     where: { followerId: userId },
     select: { followingId: true },
+    take: 1000,
   });
 
   const followingUserIds = followingIds.map((f) => f.followingId);
