@@ -1,6 +1,7 @@
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { getFollowing, isFollowing } from "~/server";
 import { getGoogleSessionAuth } from "~/services";
+import { Logger } from "~/utils/logger.server";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const userId = params.userId;
@@ -36,7 +37,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       hasMore: result.hasMore,
     });
   } catch (error) {
-    console.error("Error fetching following:", error);
+    Logger.error({
+      message: "Error fetching following",
+      error: error instanceof Error ? error : new Error(String(error)),
+      metadata: { userId },
+    });
     return Response.json({ error: "Failed to fetch following" }, { status: 500 });
   }
 };

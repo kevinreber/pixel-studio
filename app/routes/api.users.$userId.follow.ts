@@ -3,6 +3,7 @@ import { createFollow, deleteFollow } from "~/server";
 import { requireUserLogin } from "~/services";
 import { invariantResponse } from "~/utils";
 import { cacheDelete, cacheDeletePattern } from "~/utils/cache.server";
+import { Logger } from "~/utils/logger.server";
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
@@ -31,7 +32,11 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
     return json({ success: true });
   } catch (error) {
-    console.error("Follow action error:", error);
+    Logger.error({
+      message: "Follow action error",
+      error: error instanceof Error ? error : new Error(String(error)),
+      metadata: { userId: user.id, targetUserId },
+    });
     return json({ success: false, error: "Failed to update follow status" }, { status: 500 });
   }
 };

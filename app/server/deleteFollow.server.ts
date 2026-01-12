@@ -1,4 +1,5 @@
 import { prisma } from "~/services/prisma.server";
+import { Logger } from "~/utils/logger.server";
 
 /**
  * @description
@@ -11,9 +12,10 @@ export const deleteFollow = async ({
   followerId: string;
   followingId: string;
 }) => {
-  console.log(
-    `Deleting Follow: ${followerId} is unfollowing ${followingId}`
-  );
+  Logger.info({
+    message: `Deleting follow relationship`,
+    metadata: { followerId, followingId },
+  });
 
   const response = await prisma.follow.delete({
     where: {

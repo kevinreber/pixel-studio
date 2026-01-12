@@ -106,7 +106,9 @@ export const FollowListModal = ({
           });
           setFollowingStatus((prev) => ({ ...prev, ...status }));
         })
-        .catch(console.error)
+        .catch(() => {
+          // Error is handled by showing empty state
+        })
         .finally(() => setFollowersLoading(false));
     }
   }, [isOpen, activeTab, userId, followers.length]);
@@ -126,7 +128,9 @@ export const FollowListModal = ({
           });
           setFollowingStatus((prev) => ({ ...prev, ...status }));
         })
-        .catch(console.error)
+        .catch(() => {
+          // Error is handled by showing empty state
+        })
         .finally(() => setFollowingLoading(false));
     }
   }, [isOpen, activeTab, userId, following.length]);

@@ -1,4 +1,5 @@
 import { prisma } from "~/services/prisma.server";
+import { Logger } from "~/utils/logger.server";
 
 /**
  * @description
@@ -11,9 +12,10 @@ export const createFollow = async ({
   followerId: string;
   followingId: string;
 }) => {
-  console.log(
-    `Creating Follow: ${followerId} is now following ${followingId}`
-  );
+  Logger.info({
+    message: `Creating follow relationship`,
+    metadata: { followerId, followingId },
+  });
 
   const response = await prisma.follow.create({
     data: { followerId, followingId },
