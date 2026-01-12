@@ -1,4 +1,5 @@
 import { type LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
+import { ShouldRevalidateFunctionArgs } from "@remix-run/react";
 import UserProfilePage from "~/pages/UserProfilePage";
 import { getUserDataByUserId, getUserFollowStats, isFollowing } from "~/server";
 import { loader as UserLoaderData } from "../root";
@@ -6,6 +7,19 @@ import { invariantResponse } from "~/utils/invariantResponse";
 import { PageContainer, GeneralErrorBoundary } from "~/components";
 import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 import { getGoogleSessionAuth } from "~/services";
+
+// Prevent revalidation after fetcher actions (like follow/unfollow)
+// The UI handles optimistic updates, so we don't need to refetch all data
+export const shouldRevalidate = ({
+  formAction,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) => {
+  // Don't revalidate after follow/unfollow actions - UI handles optimistic updates
+  if (formAction?.includes("/follow")) {
+    return false;
+  }
+  return defaultShouldRevalidate;
+};
 
 export const meta: MetaFunction<
   typeof loader,

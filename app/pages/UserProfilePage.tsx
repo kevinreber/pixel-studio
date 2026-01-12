@@ -260,6 +260,7 @@ export default function UserProfilePage() {
   const isNavigating = navigation.state !== "idle";
 
   // Resolve all promises together
+  // Use profileUserId as dependency - promises only need to change when viewing a different profile
   const combinedPromise = React.useMemo(
     () =>
       Promise.all([data.userData, data.followStats, data.isFollowing]).then(
@@ -269,7 +270,8 @@ export default function UserProfilePage() {
           isFollowing,
         })
       ),
-    [data.userData, data.followStats, data.isFollowing]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.profileUserId]
   );
 
   return (

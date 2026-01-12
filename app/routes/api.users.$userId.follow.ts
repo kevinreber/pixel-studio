@@ -5,6 +5,12 @@ import { invariantResponse } from "~/utils";
 import { cacheDelete, cacheDeletePattern } from "~/utils/cache.server";
 import { Logger } from "~/utils/logger.server";
 
+// Prevent automatic revalidation of parent routes after follow/unfollow actions
+// The UI handles optimistic updates, so we don't need to refetch all data
+export const shouldRevalidate = () => {
+  return false;
+};
+
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
   const targetUserId = params.userId;
