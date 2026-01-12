@@ -1,3 +1,25 @@
+/**
+ * =============================================================================
+ * KAFKA IMAGE GENERATION WORKER - READY FOR SCALE
+ * =============================================================================
+ *
+ * This worker consumes image generation requests from Kafka and processes them
+ * asynchronously. It includes:
+ * - Atomic job claiming (prevents duplicate processing)
+ * - Progress tracking via Redis pub/sub
+ * - Automatic retries and error handling
+ * - Worker pooling for horizontal scaling
+ *
+ * CURRENT STATUS: Available but not used (using QStash for cost savings)
+ *
+ * TO USE WITH KAFKA:
+ * 1. Set QUEUE_BACKEND=kafka in .env
+ * 2. Start workers: npm run kafka:consumer
+ *
+ * See infrastructure/kafka/README.md for full setup instructions.
+ * =============================================================================
+ */
+
 import { createConsumer, createProducer, IMAGE_TOPICS } from "./kafka.server";
 import { createNewImages } from "~/server/createNewImages";
 import {

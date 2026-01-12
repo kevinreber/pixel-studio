@@ -1,3 +1,28 @@
+/**
+ * =============================================================================
+ * KAFKA SERVICE - READY FOR SCALE
+ * =============================================================================
+ *
+ * This Kafka integration is fully implemented and tested for high-throughput
+ * image generation pipelines. It's designed for production use with AWS MSK.
+ *
+ * CURRENT STATUS: Disabled by default (using QStash for cost savings)
+ *
+ * WHEN TO ENABLE KAFKA:
+ * - When processing > 10,000 jobs/month consistently
+ * - When you need advanced features like partitioning, ordering guarantees
+ * - When you have budget for AWS MSK (~$220/month minimum)
+ *
+ * TO ENABLE:
+ * 1. Deploy MSK cluster: cd infrastructure/kafka && ./deploy.sh deploy -e prod ...
+ * 2. Set environment variables (KAFKA_BROKERS, KAFKA_SSL, etc.)
+ * 3. Set QUEUE_BACKEND=kafka in .env
+ * 4. Start workers: npm run kafka:consumer
+ *
+ * See infrastructure/kafka/README.md for full setup instructions.
+ * =============================================================================
+ */
+
 import { Kafka } from "kafkajs";
 
 const isTestEnvironment = process.env.CI === "true" || process.env.NODE_ENV === "test";

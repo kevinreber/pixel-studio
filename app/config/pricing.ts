@@ -20,11 +20,6 @@ export interface ModelPricing {
  */
 export const MODEL_PRICING: Record<string, ModelPricing> = {
   // Budget Tier (1 credit) - Older/cheaper models
-  "stable-diffusion-v1-6": {
-    credits: 1,
-    tier: "budget",
-    apiCostEstimate: 0.02,
-  },
   "dall-e-2": {
     credits: 1,
     tier: "budget",
