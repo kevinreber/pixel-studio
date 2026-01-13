@@ -1,0 +1,239 @@
+name: Documentation Update Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-docs:
+    name: Check Documentation Updates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files_yaml: |
+            app:
+              - 'app/**'
+            services:
+              - 'app/services/**'
+            routes:
+              - 'app/routes/**'
+            components:
+              - 'app/components/**'
+            kafka:
+              - 'infrastructure/kafka/**'
+              - 'app/services/kafka*.ts'
+              - 'app/services/imageGeneration*.ts'
+              - 'scripts/*Kafka*.ts'
+              - 'scripts/*Consumer*.ts'
+            config:
+              - 'package.json'
+              - 'vite.config.ts'
+              - 'tsconfig.json'
+              - 'tailwind.config.ts'
+              - 'prisma/schema.prisma'
+            env:
+              - 'env.example'
+              - '.env*'
+            workflows:
+              - '.github/workflows/**'
+            docs:
+              - 'README.md'
+              - 'TECHNICAL_IMPLEMENTATION_GUIDE.md'
+              - 'IMPROVEMENT_STRATEGY.md'
+              - 'CHANGELOG.md'
+              - 'BUGFIXES.md'
+              - 'KAFKA_ENVIRONMENT_SETUP.md'
+              - 'infrastructure/kafka/README.md'
+              - '**/*.md'
+
+      - name: Analyze documentation needs
+        id: analyze
+        env:
+          APP_CHANGED: ${{ steps.changed-files.outputs.app_any_changed }}
+          SERVICES_CHANGED: ${{ steps.changed-files.outputs.services_any_changed }}
+          ROUTES_CHANGED: ${{ steps.changed-files.outputs.routes_any_changed }}
+          COMPONENTS_CHANGED: ${{ steps.changed-files.outputs.components_any_changed }}
+          KAFKA_CHANGED: ${{ steps.changed-files.outputs.kafka_any_changed }}
+          CONFIG_CHANGED: ${{ steps.changed-files.outputs.config_any_changed }}
+          ENV_CHANGED: ${{ steps.changed-files.outputs.env_any_changed }}
+          WORKFLOWS_CHANGED: ${{ steps.changed-files.outputs.workflows_any_changed }}
+          DOCS_CHANGED: ${{ steps.changed-files.outputs.docs_any_changed }}
+          APP_FILES: ${{ steps.changed-files.outputs.app_all_changed_files }}
+          SERVICES_FILES: ${{ steps.changed-files.outputs.services_all_changed_files }}
+          ROUTES_FILES: ${{ steps.changed-files.outputs.routes_all_changed_files }}
+          KAFKA_FILES: ${{ steps.changed-files.outputs.kafka_all_changed_files }}
+          CONFIG_FILES: ${{ steps.changed-files.outputs.config_all_changed_files }}
+          ENV_FILES: ${{ steps.changed-files.outputs.env_all_changed_files }}
+          DOCS_FILES: ${{ steps.changed-files.outputs.docs_all_changed_files }}
+        run: |
+          echo "=== Documentation Update Analysis ==="
+
+          SUGGESTIONS=""
+          NEEDS_REVIEW="false"
+
+          # Check if services were changed without updating technical docs
+          if [[ "$SERVICES_CHANGED" == "true" ]]; then
+            echo "📦 Services changed: $SERVICES_FILES"
+            if [[ "$DOCS_CHANGED" != "true" ]] || [[ ! "$DOCS_FILES" =~ "TECHNICAL_IMPLEMENTATION_GUIDE.md" ]]; then
+              SUGGESTIONS="${SUGGESTIONS}- **Services modified**: Consider updating \`TECHNICAL_IMPLEMENTATION_GUIDE.md\` with new service details\n"
+              NEEDS_REVIEW="true"
+            fi
+          fi
+
+          # Check if routes were changed
+          if [[ "$ROUTES_CHANGED" == "true" ]]; then
+            echo "🛤️ Routes changed: $ROUTES_FILES"
+            if [[ "$DOCS_CHANGED" != "true" ]] || [[ ! "$DOCS_FILES" =~ "TECHNICAL_IMPLEMENTATION_GUIDE.md" ]]; then
+              SUGGESTIONS="${SUGGESTIONS}- **Routes modified**: Consider updating \`TECHNICAL_IMPLEMENTATION_GUIDE.md\` with API/route changes\n"
+              NEEDS_REVIEW="true"
+            fi
+          fi
+
+          # Check if Kafka-related files were changed
+          if [[ "$KAFKA_CHANGED" == "true" ]]; then
+            echo "📨 Kafka files changed: $KAFKA_FILES"
+            if [[ "$DOCS_CHANGED" != "true" ]] || [[ ! "$DOCS_FILES" =~ "KAFKA" ]]; then
+              SUGGESTIONS="${SUGGESTIONS}- **Kafka infrastructure modified**: Consider updating \`KAFKA_ENVIRONMENT_SETUP.md\` or \`infrastructure/kafka/README.md\`\n"
+              NEEDS_REVIEW="true"
+            fi
+          fi
+
+          # Check if config files were changed
+          if [[ "$CONFIG_CHANGED" == "true" ]]; then
+            echo "⚙️ Config files changed: $CONFIG_FILES"
+            if [[ "$DOCS_CHANGED" != "true" ]] || [[ ! "$DOCS_FILES" =~ "README.md" ]]; then
+              SUGGESTIONS="${SUGGESTIONS}- **Configuration modified**: Consider updating \`README.md\` with setup/config changes\n"
+              NEEDS_REVIEW="true"
+            fi
+          fi
+
+          # Check if environment files were changed
+          if [[ "$ENV_CHANGED" == "true" ]]; then
+            echo "🔐 Environment files changed: $ENV_FILES"
+            if [[ "$DOCS_CHANGED" != "true" ]]; then
+              SUGGESTIONS="${SUGGESTIONS}- **Environment variables modified**: Consider updating \`README.md\` or \`KAFKA_ENVIRONMENT_SETUP.md\` with new env vars\n"
+              NEEDS_REVIEW="true"
+            fi
+          fi
+
+          # Check for new features that might need CHANGELOG update
+          if [[ "$APP_CHANGED" == "true" && "$DOCS_CHANGED" != "true" ]]; then
+            SUGGESTIONS="${SUGGESTIONS}- **App code modified**: Consider updating \`CHANGELOG.md\` if this includes new features\n"
+            NEEDS_REVIEW="true"
+          fi
+
+          # Check for bug fixes
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          if [[ "$PR_TITLE" =~ [Ff]ix|[Bb]ug|[Pp]atch|[Hh]otfix ]]; then
+            if [[ "$DOCS_CHANGED" != "true" ]] || [[ ! "$DOCS_FILES" =~ "BUGFIXES.md" ]]; then
+              SUGGESTIONS="${SUGGESTIONS}- **Bug fix detected**: Consider documenting the fix in \`BUGFIXES.md\`\n"
+              NEEDS_REVIEW="true"
+            fi
+          fi
+
+          # Output results
+          echo "needs_review=$NEEDS_REVIEW" >> $GITHUB_OUTPUT
+          echo "docs_updated=$DOCS_CHANGED" >> $GITHUB_OUTPUT
+
+          # Use heredoc for multiline suggestions
+          {
+            echo 'suggestions<<EOF'
+            echo -e "$SUGGESTIONS"
+            echo 'EOF'
+          } >> $GITHUB_OUTPUT
+
+          if [[ "$NEEDS_REVIEW" == "true" ]]; then
+            echo ""
+            echo "⚠️ Documentation review recommended"
+            echo -e "$SUGGESTIONS"
+          else
+            echo ""
+            echo "✅ Documentation appears to be up to date"
+          fi
+
+      - name: Find existing comment
+        if: steps.analyze.outputs.needs_review == 'true'
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '<!-- docs-check-comment -->'
+
+      - name: Create or update comment
+        if: steps.analyze.outputs.needs_review == 'true'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          edit-mode: replace
+          body: |
+            <!-- docs-check-comment -->
+            ## 📚 Documentation Update Reminder
+
+            This PR modifies code that may require documentation updates. Please review the following suggestions:
+
+            ${{ steps.analyze.outputs.suggestions }}
+
+            ### Documentation Files Reference
+
+            | File | Purpose |
+            |------|---------|
+            | `README.md` | Project overview, setup instructions, tech stack |
+            | `TECHNICAL_IMPLEMENTATION_GUIDE.md` | Architecture, features, component details |
+            | `IMPROVEMENT_STRATEGY.md` | Roadmap and enhancement plans |
+            | `CHANGELOG.md` | Version history and feature additions |
+            | `BUGFIXES.md` | Bug fixes with root cause analysis |
+            | `KAFKA_ENVIRONMENT_SETUP.md` | Kafka environment variables guide |
+            | `infrastructure/kafka/README.md` | Kafka setup and deployment |
+
+            ---
+
+            <details>
+            <summary>ℹ️ Why am I seeing this?</summary>
+
+            This automated check helps ensure documentation stays in sync with code changes. If your changes don't require documentation updates, you can safely ignore this reminder.
+
+            To dismiss: Simply ensure any necessary documentation is updated, or confirm that no docs changes are needed for this PR.
+            </details>
+
+      - name: Delete outdated comment
+        if: steps.analyze.outputs.needs_review == 'false' && steps.analyze.outputs.docs_updated == 'true'
+        uses: peter-evans/find-comment@v3
+        id: find-outdated-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '<!-- docs-check-comment -->'
+
+      - name: Remove outdated comment if docs updated
+        if: steps.find-outdated-comment.outputs.comment-id != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.deleteComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: ${{ steps.find-outdated-comment.outputs.comment-id }}
+            })
+
+      - name: Set check status
+        if: always()
+        run: |
+          if [[ "${{ steps.analyze.outputs.needs_review }}" == "true" ]]; then
+            echo "::notice::📚 Documentation review recommended - see PR comment for suggestions"
+          else
+            echo "::notice::✅ Documentation check passed"
+          fi
