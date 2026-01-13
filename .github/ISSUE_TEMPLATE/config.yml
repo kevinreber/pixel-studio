@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/kevinreber/pixel-studio#readme
+    about: Check the documentation before opening an issue
+  - name: Discussions
+    url: https://github.com/kevinreber/pixel-studio/discussions
+    about: Ask questions and discuss ideas
