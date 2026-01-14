@@ -1,0 +1,72 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Edit(app/**)",
+      "Edit(prisma/**)",
+      "Edit(tests/**)",
+      "Edit(scripts/**)",
+      "Write(app/**)",
+      "Write(prisma/**)",
+      "Write(tests/**)",
+      "Bash(npm run:*)",
+      "Bash(npm test:*)",
+      "Bash(npx prisma:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx playwright:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(gh pr:*)",
+      "Bash(gh issue:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(echo:*)"
+    ],
+    "deny": [
+      "Edit(.env)",
+      "Edit(.env.*)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Write(.env)",
+      "Write(.env.*)",
+      "Bash(rm -rf:*)",
+      "Bash(sudo:*)",
+      "Bash(chmod 777:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit(prisma/schema.prisma)",
+        "hooks": [
+          "npx prisma format"
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "Edit(app/**/*.ts)",
+        "hooks": [
+          "npm run typecheck --silent 2>&1 | head -20 || true"
+        ]
+      },
+      {
+        "matcher": "Edit(app/**/*.tsx)",
+        "hooks": [
+          "npm run typecheck --silent 2>&1 | head -20 || true"
+        ]
+      }
+    ]
+  }
+}
