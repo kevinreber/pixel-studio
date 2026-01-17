@@ -25,7 +25,7 @@ export const MODEL_OPTIONS = [
   {
     name: "Flux Pro",
     value: "flux-pro",
-    image: "/assets/model-thumbs/flux-pro.jpg",
+    image: "/assets/model-thumbs/flux-schnell.jpg",
     description: "High-quality image generation by Black Forest Labs.",
     company: "Black Forest Labs",
     supportsStyles: false,
@@ -74,25 +74,16 @@ export const MODEL_OPTIONS = [
   {
     name: "Playground v2.5",
     value: "replicate-playground-v2.5",
-    image: "/assets/model-thumbs/playground-v2-5.jpg",
+    image: "/assets/model-thumbs/dreamshaper-xl-alpha2.jpg",
     description: "High-quality aesthetic model with excellent prompt following.",
     company: "Replicate",
     supportsStyles: false,
     creditCost: 2,
   },
   {
-    name: "SDXL (Replicate)",
-    value: "replicate-sdxl",
-    image: "/assets/model-thumbs/sdxl-replicate.jpg",
-    description: "Stable Diffusion XL hosted on Replicate with fast inference.",
-    company: "Replicate",
-    supportsStyles: true,
-    creditCost: 2,
-  },
-  {
     name: "Kandinsky 2.2",
     value: "replicate-kandinsky-2.2",
-    image: "/assets/model-thumbs/kandinsky.jpg",
+    image: "/assets/model-thumbs/starlight-xl.jpg",
     description: "Multilingual model with unique artistic style.",
     company: "Replicate",
     supportsStyles: false,
@@ -103,7 +94,7 @@ export const MODEL_OPTIONS = [
   {
     name: "Ideogram V2",
     value: "ideogram-v2",
-    image: "/assets/model-thumbs/ideogram-v2.jpg",
+    image: "/assets/model-thumbs/ideogram-v2-nightcafe.jpg",
     description: "Best-in-class text rendering for logos, signs, and typography.",
     company: "Ideogram",
     supportsStyles: false,
@@ -112,7 +103,7 @@ export const MODEL_OPTIONS = [
   {
     name: "Ideogram V2 Turbo",
     value: "ideogram-v2-turbo",
-    image: "/assets/model-thumbs/ideogram-v2-turbo.jpg",
+    image: "/assets/model-thumbs/ideogram-v2-turbo-nightcafe.jpg",
     description: "Fast version of Ideogram V2 with great text rendering.",
     company: "Ideogram",
     supportsStyles: false,
@@ -141,7 +132,7 @@ export const MODEL_OPTIONS = [
   {
     name: "SDXL Lightning",
     value: "fal-sdxl-lightning",
-    image: "/assets/model-thumbs/sdxl-lightning.jpg",
+    image: "/assets/model-thumbs/ds-xl-lightning.jpg",
     description: "Lightning-fast SDXL with 4-step generation.",
     company: "Fal.ai",
     supportsStyles: true,
@@ -150,7 +141,7 @@ export const MODEL_OPTIONS = [
   {
     name: "Stable Cascade",
     value: "fal-stable-cascade",
-    image: "/assets/model-thumbs/stable-cascade.jpg",
+    image: "/assets/model-thumbs/stable-core.jpg",
     description: "Wurstchen architecture for high-quality images.",
     company: "Fal.ai",
     supportsStyles: false,
@@ -159,18 +150,9 @@ export const MODEL_OPTIONS = [
 
   // Together AI Models (unique offerings only)
   {
-    name: "Flux Schnell (Free)",
-    value: "together-flux-schnell",
-    image: "/assets/model-thumbs/together-flux-schnell.jpg",
-    description: "Free Flux Schnell model via Together AI.",
-    company: "Together AI",
-    supportsStyles: false,
-    creditCost: 1,
-  },
-  {
     name: "SDXL Turbo",
     value: "together-sd-turbo",
-    image: "/assets/model-thumbs/sdxl-turbo.jpg",
+    image: "/assets/model-thumbs/sdxl-lcm.jpg",
     description: "Distilled SDXL for instant generation.",
     company: "Together AI",
     supportsStyles: false,

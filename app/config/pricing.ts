@@ -61,11 +61,6 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
 
   // Replicate Models
-  "replicate-sdxl": {
-    credits: 2,
-    tier: "standard",
-    apiCostEstimate: 0.03,
-  },
   "replicate-playground-v2.5": {
     credits: 2,
     tier: "standard",
@@ -112,11 +107,6 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
 
   // Together AI Models (unique offerings only)
-  "together-flux-schnell": {
-    credits: 1,
-    tier: "budget",
-    apiCostEstimate: 0.003,
-  },
   "together-sd-turbo": {
     credits: 1,
     tier: "budget",

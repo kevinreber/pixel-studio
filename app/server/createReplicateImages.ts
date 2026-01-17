@@ -33,20 +33,6 @@ const REPLICATE_MODELS: Record<
   string,
   { version: string; inputMapper: (formData: CreateImagesFormData) => Record<string, unknown> }
 > = {
-  "replicate-sdxl": {
-    version: "39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
-    inputMapper: (formData) => ({
-      prompt: formData.prompt,
-      negative_prompt: formData.negativePrompt || "",
-      width: formData.width || 1024,
-      height: formData.height || 1024,
-      num_outputs: 1,
-      scheduler: "K_EULER",
-      num_inference_steps: formData.steps || 25,
-      guidance_scale: formData.cfgScale || 7.5,
-      ...(formData.seed !== undefined && { seed: formData.seed }),
-    }),
-  },
   "replicate-playground-v2.5": {
     version: "a45f82a1382bed5c7aeb861dac7c7d191b0fdf74d8d57c4a0e6ed7d4d0bf7d24",
     inputMapper: (formData) => ({
