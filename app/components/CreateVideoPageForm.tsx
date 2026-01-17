@@ -28,13 +28,13 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import {
-  CreateVideoPageLoader,
   VIDEO_MODEL_OPTIONS,
   ASPECT_RATIO_OPTIONS,
   DURATION_OPTIONS,
-} from "~/routes/create-video";
+  type VideoModelOption,
+} from "~/config/videoModels";
 import { toast } from "sonner";
-import type { ActionData } from "~/routes/create-video";
+import type { ActionData, CreateVideoPageLoader } from "~/routes/create-video";
 import { ProviderBadge } from "./ModelBadge";
 
 const PROMPT_EXAMPLES = [
@@ -48,19 +48,7 @@ const PROMPT_EXAMPLES = [
 const MOBILE_WIDTH = 768;
 const MAX_TEXT_AREA_CHAR_COUNT = 500;
 
-type VideoModelOption = {
-  name: string;
-  value: string;
-  image: string;
-  description: string;
-  company: string;
-  creditCost: number;
-  supportedModes: readonly string[];
-  maxDuration: number;
-};
-
-const DEFAULT_SELECTED_MODEL: VideoModelOption =
-  VIDEO_MODEL_OPTIONS[0] as VideoModelOption;
+const DEFAULT_SELECTED_MODEL: VideoModelOption = VIDEO_MODEL_OPTIONS[0];
 
 const Image = ({
   src,
