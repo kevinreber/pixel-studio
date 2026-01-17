@@ -42,11 +42,11 @@ export const MODEL_OPTIONS = [
     creditCost: 2,
   },
   {
-    name: "Flux Schnell",
+    name: "Flux Pro",
     value: "flux-pro",
-    image: "/assets/model-thumbs/flux-schnell.jpg",
+    image: "/assets/model-thumbs/flux-pro.jpg",
     description:
-      "Fastest open-source text-to-image model to date, by Black Forest Labs.",
+      "High-quality image generation by Black Forest Labs.",
     company: "Black Forest Labs",
     supportsStyles: false,
     creditCost: 2,
