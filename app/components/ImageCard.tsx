@@ -1,5 +1,5 @@
 import { Link } from "@remix-run/react";
-// import { Heart, MessageCircle } from "lucide-react";
+import { Shuffle } from "lucide-react";
 import { ImageDetail } from "~/server/getImage";
 
 export const ImageGrid = ({ images }: { images: ImageDetail[] }) => {
@@ -56,19 +56,12 @@ export const ImageCard = ({
           }}
         />
       </Link>
-      {/* Hover Overlay */}
-      {/* <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-        <div className="flex items-center gap-8 text-white">
-        <div className="flex items-center gap-2">
-        <Heart className="h-6 w-6 fill-white" />
-        <span className="font-semibold">0</span>
+      {/* Remix indicator badge */}
+      {imageData?.isRemix && (
+        <div className="absolute top-2 left-2 z-10 p-1.5 rounded-full bg-gradient-to-r from-purple-500/80 to-rose-500/80 shadow-lg">
+          <Shuffle className="h-3 w-3 text-white" />
         </div>
-        <div className="flex items-center gap-2">
-        <MessageCircle className="h-6 w-6 fill-white" />
-        <span className="font-semibold">0</span>
-        </div>
-        </div>
-        </div> */}
+      )}
     </div>
   );
 };

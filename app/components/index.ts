@@ -10,6 +10,8 @@ export { default as ImageGridSkeleton } from "./ImageGridSkeleton";
 export * from "./ImageCard";
 export * from "./ModelBadge";
 export { default as PaginationControls } from "./PaginationControls";
+export * from "./RemixImageButton";
+export * from "./RemixBadge";
 export * from "./FollowButton";
 export * from "./FollowListModal";
 export { GenerationQueue } from "./GenerationQueue";

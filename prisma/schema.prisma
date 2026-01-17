@@ -155,8 +155,15 @@ model Image {
   steps            Int?             // Diffusion steps 10-50 (Stable Diffusion)
   promptUpsampling Boolean?         @default(false) // Prompt enhancement (Flux)
 
+  // Remix fields - for tracking image lineage when remixed with different models
+  isRemix       Boolean?  @default(false)  // True if this image was created by remixing another
+  parentImageId String?                     // Reference to the original image that was remixed
+  parentImage   Image?    @relation("ImageRemixes", fields: [parentImageId], references: [id], onDelete: SetNull)
+  remixes       Image[]   @relation("ImageRemixes") // Images that were remixed from this one
+
   @@index([userId])
   @@index([setId])
+  @@index([parentImageId])
 }
 
 model ImageLike {

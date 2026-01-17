@@ -39,6 +39,9 @@ export const createNewImage = async ({
   cfgScale,
   steps,
   promptUpsampling,
+  // Remix fields
+  isRemix = false,
+  parentImageId,
 }: {
   prompt: string;
   userId: string;
@@ -56,6 +59,9 @@ export const createNewImage = async ({
   cfgScale?: number;
   steps?: number;
   promptUpsampling?: boolean;
+  // Remix fields
+  isRemix?: boolean;
+  parentImageId?: string;
 }) => {
   console.log("Creating new image in DB...");
   if (!setId) {
@@ -82,6 +88,9 @@ export const createNewImage = async ({
         cfgScale,
         steps,
         promptUpsampling,
+        // Remix fields
+        isRemix,
+        parentImageId,
       },
     });
     console.log(`Successfully created new image in DB: ${image.id}`);
