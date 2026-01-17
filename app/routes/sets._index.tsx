@@ -42,7 +42,7 @@ import {
 import { convertUtcDateToLocalDateString } from "~/client";
 import { Cpu, Clock, Images, NotepadText, Trash2, Video } from "lucide-react";
 import { getUserSets, type Set } from "~/server/getUserSets";
-import { getCachedDataWithRevalidate } from "~/utils/cache.server";
+import { getCachedDataWithRevalidate, cacheDeletePattern } from "~/utils/cache.server";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -78,6 +78,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const model = url.searchParams.get("model") || undefined;
 
   const cacheKey = `sets:user:${user.id}:${prompt}:${model}`;
+
+  // Allow cache bypass with ?refresh=1 query param
+  if (url.searchParams.get("refresh") === "1") {
+    await cacheDeletePattern(`sets:user:${user.id}:*`);
+  }
+
   const sets = getCachedDataWithRevalidate(cacheKey, () =>
     getUserSets(user.id, {
       prompt,
