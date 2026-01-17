@@ -197,16 +197,30 @@ const getBlackForestImageStatus = async (
     }
   );
 
-  if (!resultResponse.ok) {
-    const errorText = await resultResponse.text();
-    Logger.error({
-      message: `[createBlackForestImages.ts]: Failed to get result from Black Forest Labs`,
-      metadata: { requestId, status: resultResponse.status, statusText: resultResponse.statusText, errorText },
-    });
-    throw new Error(`Failed to get result from Black Forest Labs: ${resultResponse.status} ${resultResponse.statusText} - ${errorText}`);
-  }
+  // BFL API may return 404 with valid JSON body for "Task not found" status
+  // We need to parse the response regardless of status code
+  const responseText = await resultResponse.text();
 
-  return resultResponse.json();
+  try {
+    const responseData = JSON.parse(responseText) as BlackForestResponse;
+
+    // Log non-200 responses for debugging but don't throw - let the caller handle the status
+    if (!resultResponse.ok) {
+      Logger.warn({
+        message: `[createBlackForestImages.ts]: Non-200 response from Black Forest Labs`,
+        metadata: { requestId, status: resultResponse.status, responseData },
+      });
+    }
+
+    return responseData;
+  } catch {
+    // Only throw if we can't parse the response as JSON
+    Logger.error({
+      message: `[createBlackForestImages.ts]: Failed to parse response from Black Forest Labs`,
+      metadata: { requestId, status: resultResponse.status, statusText: resultResponse.statusText, responseText },
+    });
+    throw new Error(`Failed to get result from Black Forest Labs: ${resultResponse.status} ${resultResponse.statusText} - ${responseText}`);
+  }
 };
 
 /**
@@ -276,13 +290,24 @@ const pollForBlackForestImageResult = async (
         );
       }
 
-      // Task not found
+      // Task not found - this can happen due to eventual consistency, retry a few times
       if (resultData.status === "Task not found") {
+        if (attempts < 10) {
+          // Give the system time to register the task
+          Logger.warn({
+            message: `[createBlackForestImages.ts]: Task not found yet, retrying (attempt ${attempts + 1})`,
+            metadata: { requestId },
+          });
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          delay = Math.min(delay * 1.5, 5000);
+          attempts++;
+          continue;
+        }
         Logger.error({
-          message: `[createBlackForestImages.ts]: Task not found for requestId: ${requestId}`,
+          message: `[createBlackForestImages.ts]: Task not found after multiple retries for requestId: ${requestId}`,
           metadata: { requestId, resultData },
         });
-        throw new Error(`Task not found: ${requestId}`);
+        throw new Error(`Task not found after multiple retries: ${requestId}`);
       }
 
       // Image still processing - wait with exponential backoff
