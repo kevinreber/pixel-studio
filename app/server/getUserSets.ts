@@ -1,5 +1,5 @@
 import { prisma } from "~/services/prisma.server";
-import { getS3BucketThumbnailURL } from "~/utils/s3Utils";
+import { getS3BucketThumbnailURL, getS3VideoThumbnailURL } from "~/utils/s3Utils";
 
 const DEFAULT_CURRENT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 20;
@@ -9,7 +9,14 @@ export type Set = {
   prompt: string;
   createdAt: string | Date;
   totalImages: number;
+  totalVideos: number;
   images: Array<{
+    id: string;
+    prompt: string;
+    thumbnailUrl: string;
+    model: string;
+  }>;
+  videos: Array<{
     id: string;
     prompt: string;
     thumbnailUrl: string;
@@ -87,9 +94,18 @@ export const getUserSets = async (
           model: true,
         },
       },
+      videos: {
+        take: 4,
+        select: {
+          id: true,
+          prompt: true,
+          model: true,
+        },
+      },
       _count: {
         select: {
           images: true,
+          videos: true,
         },
       },
       user: {
@@ -111,12 +127,20 @@ export const getUserSets = async (
       thumbnailUrl: getS3BucketThumbnailURL(image.id),
     }));
 
+    const formattedVideos = set.videos.map((video) => ({
+      ...video,
+      model: video.model || "",
+      thumbnailUrl: getS3VideoThumbnailURL(video.id),
+    }));
+
     formattedData.push({
       id: set.id,
       prompt: set.prompt,
       createdAt: set.createdAt,
       totalImages: set._count.images,
+      totalVideos: set._count.videos,
       images: formattedImages,
+      videos: formattedVideos,
       user: set.user,
     });
   }
