@@ -20,11 +20,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ChevronDown, Check, Loader2, Sparkles, Coins, Settings2 } from "lucide-react";
-import {
-  CreatePageLoader,
-  STYLE_OPTIONS,
-  MODEL_OPTIONS,
-} from "~/routes/create";
+import { CreatePageLoader } from "~/routes/create";
+import { MODEL_OPTIONS, STYLE_OPTIONS } from "~/config/models";
 import { toast } from "sonner";
 import type { ActionData } from "~/routes/create";
 import { ProviderBadge } from "./ModelBadge";
