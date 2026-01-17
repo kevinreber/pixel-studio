@@ -6,6 +6,10 @@ import {
   createHuggingFaceImages,
   createBlackForestImages,
 } from "~/server";
+import { createReplicateImages, isValidReplicateModel } from "./createReplicateImages";
+import { createIdeogramImages, isValidIdeogramModel } from "./createIdeogramImages";
+import { createFalImages, isValidFalModel } from "./createFalImages";
+import { createTogetherImages, isValidTogetherModel } from "./createTogetherImages";
 import { invariantResponse } from "~/utils/invariantResponse";
 
 const DEFAULT_NUMBER_OF_IMAGES_CREATED = 1;
@@ -74,6 +78,26 @@ export const createNewImages = async (
       return data;
     } else if (isValidHuggingFaceModel(AILanguageModelToUse)) {
       const data = await createHuggingFaceImages(formData, userId);
+
+      setId = data.setId || "";
+      return data;
+    } else if (isValidReplicateModel(AILanguageModelToUse)) {
+      const data = await createReplicateImages(formData, userId);
+
+      setId = data.setId || "";
+      return data;
+    } else if (isValidIdeogramModel(AILanguageModelToUse)) {
+      const data = await createIdeogramImages(formData, userId);
+
+      setId = data.setId || "";
+      return data;
+    } else if (isValidFalModel(AILanguageModelToUse)) {
+      const data = await createFalImages(formData, userId);
+
+      setId = data.setId || "";
+      return data;
+    } else if (isValidTogetherModel(AILanguageModelToUse)) {
+      const data = await createTogetherImages(formData, userId);
 
       setId = data.setId || "";
       return data;
