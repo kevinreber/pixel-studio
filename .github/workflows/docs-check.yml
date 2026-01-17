@@ -23,31 +23,6 @@ jobs:
         uses: tj-actions/changed-files@v44
         with:
           files_yaml: |
-            app:
-              - 'app/**'
-            services:
-              - 'app/services/**'
-            routes:
-              - 'app/routes/**'
-            components:
-              - 'app/components/**'
-            kafka:
-              - 'infrastructure/kafka/**'
-              - 'app/services/kafka*.ts'
-              - 'app/services/imageGeneration*.ts'
-              - 'scripts/*Kafka*.ts'
-              - 'scripts/*Consumer*.ts'
-            config:
-              - 'package.json'
-              - 'vite.config.ts'
-              - 'tsconfig.json'
-              - 'tailwind.config.ts'
-              - 'prisma/schema.prisma'
-            env:
-              - 'env.example'
-              - '.env*'
-            workflows:
-              - '.github/workflows/**'
             docs:
               - 'README.md'
               - 'TECHNICAL_IMPLEMENTATION_GUIDE.md'
@@ -56,115 +31,227 @@ jobs:
               - 'BUGFIXES.md'
               - 'KAFKA_ENVIRONMENT_SETUP.md'
               - 'infrastructure/kafka/README.md'
-              - '**/*.md'
 
-      - name: Analyze documentation needs
-        id: analyze
+      - name: Get PR diff
+        id: get-diff
         env:
-          APP_CHANGED: ${{ steps.changed-files.outputs.app_any_changed }}
-          SERVICES_CHANGED: ${{ steps.changed-files.outputs.services_any_changed }}
-          ROUTES_CHANGED: ${{ steps.changed-files.outputs.routes_any_changed }}
-          COMPONENTS_CHANGED: ${{ steps.changed-files.outputs.components_any_changed }}
-          KAFKA_CHANGED: ${{ steps.changed-files.outputs.kafka_any_changed }}
-          CONFIG_CHANGED: ${{ steps.changed-files.outputs.config_any_changed }}
-          ENV_CHANGED: ${{ steps.changed-files.outputs.env_any_changed }}
-          WORKFLOWS_CHANGED: ${{ steps.changed-files.outputs.workflows_any_changed }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get the diff for this PR (limited to 50KB to avoid token limits)
+          gh pr diff ${{ github.event.pull_request.number }} > pr_diff.txt
+
+          # Truncate if too large (Gemini has token limits)
+          if [ $(wc -c < pr_diff.txt) -gt 50000 ]; then
+            head -c 50000 pr_diff.txt > pr_diff_truncated.txt
+            echo "...[diff truncated due to size]" >> pr_diff_truncated.txt
+            mv pr_diff_truncated.txt pr_diff.txt
+          fi
+
+          echo "Diff size: $(wc -c < pr_diff.txt) bytes"
+
+      - name: Get documentation contents
+        id: get-docs
+        run: |
+          # Create a summary of current documentation structure
+          {
+            echo "=== README.md (first 100 lines) ==="
+            head -100 README.md 2>/dev/null || echo "File not found"
+
+            echo ""
+            echo "=== TECHNICAL_IMPLEMENTATION_GUIDE.md (first 100 lines) ==="
+            head -100 TECHNICAL_IMPLEMENTATION_GUIDE.md 2>/dev/null || echo "File not found"
+
+            echo ""
+            echo "=== CHANGELOG.md (first 50 lines) ==="
+            head -50 CHANGELOG.md 2>/dev/null || echo "File not found"
+
+            echo ""
+            echo "=== BUGFIXES.md (first 50 lines) ==="
+            head -50 BUGFIXES.md 2>/dev/null || echo "File not found"
+
+            echo ""
+            echo "=== KAFKA_ENVIRONMENT_SETUP.md (first 50 lines) ==="
+            head -50 KAFKA_ENVIRONMENT_SETUP.md 2>/dev/null || echo "File not found"
+          } > docs_summary.txt
+
+      - name: Analyze with Gemini
+        id: gemini-analysis
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
           DOCS_CHANGED: ${{ steps.changed-files.outputs.docs_any_changed }}
-          APP_FILES: ${{ steps.changed-files.outputs.app_all_changed_files }}
-          SERVICES_FILES: ${{ steps.changed-files.outputs.services_all_changed_files }}
-          ROUTES_FILES: ${{ steps.changed-files.outputs.routes_all_changed_files }}
-          KAFKA_FILES: ${{ steps.changed-files.outputs.kafka_all_changed_files }}
-          CONFIG_FILES: ${{ steps.changed-files.outputs.config_all_changed_files }}
-          ENV_FILES: ${{ steps.changed-files.outputs.env_all_changed_files }}
           DOCS_FILES: ${{ steps.changed-files.outputs.docs_all_changed_files }}
         run: |
-          echo "=== Documentation Update Analysis ==="
+          # Read the diff and docs
+          DIFF_CONTENT=$(cat pr_diff.txt)
+          DOCS_CONTENT=$(cat docs_summary.txt)
 
-          SUGGESTIONS=""
-          NEEDS_REVIEW="false"
+          # Create the prompt for Gemini
+          cat > prompt.txt << 'PROMPT_END'
+          You are a documentation reviewer for a software project. Analyze the following PR diff and determine if any documentation files need to be updated.
 
-          # Check if services were changed without updating technical docs
-          if [[ "$SERVICES_CHANGED" == "true" ]]; then
-            echo "📦 Services changed: $SERVICES_FILES"
-            if [[ "$DOCS_CHANGED" != "true" ]] || [[ ! "$DOCS_FILES" =~ "TECHNICAL_IMPLEMENTATION_GUIDE.md" ]]; then
-              SUGGESTIONS="${SUGGESTIONS}- **Services modified**: Consider updating \`TECHNICAL_IMPLEMENTATION_GUIDE.md\` with new service details\n"
-              NEEDS_REVIEW="true"
-            fi
-          fi
+          ## Project Documentation Files:
+          - README.md: Project overview, setup instructions, tech stack, getting started guide
+          - TECHNICAL_IMPLEMENTATION_GUIDE.md: Architecture details, feature implementations, component documentation
+          - CHANGELOG.md: Version history, new features, breaking changes
+          - BUGFIXES.md: Bug fix documentation with root cause analysis
+          - KAFKA_ENVIRONMENT_SETUP.md: Kafka configuration and environment variables
+          - infrastructure/kafka/README.md: Kafka infrastructure setup guide
 
-          # Check if routes were changed
-          if [[ "$ROUTES_CHANGED" == "true" ]]; then
-            echo "🛤️ Routes changed: $ROUTES_FILES"
-            if [[ "$DOCS_CHANGED" != "true" ]] || [[ ! "$DOCS_FILES" =~ "TECHNICAL_IMPLEMENTATION_GUIDE.md" ]]; then
-              SUGGESTIONS="${SUGGESTIONS}- **Routes modified**: Consider updating \`TECHNICAL_IMPLEMENTATION_GUIDE.md\` with API/route changes\n"
-              NEEDS_REVIEW="true"
-            fi
-          fi
+          ## Current Documentation Summary:
+          PROMPT_END
 
-          # Check if Kafka-related files were changed
-          if [[ "$KAFKA_CHANGED" == "true" ]]; then
-            echo "📨 Kafka files changed: $KAFKA_FILES"
-            if [[ "$DOCS_CHANGED" != "true" ]] || [[ ! "$DOCS_FILES" =~ "KAFKA" ]]; then
-              SUGGESTIONS="${SUGGESTIONS}- **Kafka infrastructure modified**: Consider updating \`KAFKA_ENVIRONMENT_SETUP.md\` or \`infrastructure/kafka/README.md\`\n"
-              NEEDS_REVIEW="true"
-            fi
-          fi
+          echo "$DOCS_CONTENT" >> prompt.txt
 
-          # Check if config files were changed
-          if [[ "$CONFIG_CHANGED" == "true" ]]; then
-            echo "⚙️ Config files changed: $CONFIG_FILES"
-            if [[ "$DOCS_CHANGED" != "true" ]] || [[ ! "$DOCS_FILES" =~ "README.md" ]]; then
-              SUGGESTIONS="${SUGGESTIONS}- **Configuration modified**: Consider updating \`README.md\` with setup/config changes\n"
-              NEEDS_REVIEW="true"
-            fi
-          fi
+          cat >> prompt.txt << 'PROMPT_END'
 
-          # Check if environment files were changed
-          if [[ "$ENV_CHANGED" == "true" ]]; then
-            echo "🔐 Environment files changed: $ENV_FILES"
-            if [[ "$DOCS_CHANGED" != "true" ]]; then
-              SUGGESTIONS="${SUGGESTIONS}- **Environment variables modified**: Consider updating \`README.md\` or \`KAFKA_ENVIRONMENT_SETUP.md\` with new env vars\n"
-              NEEDS_REVIEW="true"
-            fi
-          fi
+          ## PR Information:
+          PROMPT_END
 
-          # Check for new features that might need CHANGELOG update
-          if [[ "$APP_CHANGED" == "true" && "$DOCS_CHANGED" != "true" ]]; then
-            SUGGESTIONS="${SUGGESTIONS}- **App code modified**: Consider updating \`CHANGELOG.md\` if this includes new features\n"
-            NEEDS_REVIEW="true"
-          fi
+          echo "Title: $PR_TITLE" >> prompt.txt
+          echo "Description: $PR_BODY" >> prompt.txt
+          echo "" >> prompt.txt
+          echo "Documentation files already modified in this PR: $DOCS_FILES" >> prompt.txt
 
-          # Check for bug fixes
-          PR_TITLE="${{ github.event.pull_request.title }}"
-          if [[ "$PR_TITLE" =~ [Ff]ix|[Bb]ug|[Pp]atch|[Hh]otfix ]]; then
-            if [[ "$DOCS_CHANGED" != "true" ]] || [[ ! "$DOCS_FILES" =~ "BUGFIXES.md" ]]; then
-              SUGGESTIONS="${SUGGESTIONS}- **Bug fix detected**: Consider documenting the fix in \`BUGFIXES.md\`\n"
-              NEEDS_REVIEW="true"
-            fi
-          fi
+          cat >> prompt.txt << 'PROMPT_END'
 
-          # Output results
-          echo "needs_review=$NEEDS_REVIEW" >> $GITHUB_OUTPUT
-          echo "docs_updated=$DOCS_CHANGED" >> $GITHUB_OUTPUT
+          ## Code Changes (Diff):
+          PROMPT_END
 
-          # Use heredoc for multiline suggestions
+          echo "$DIFF_CONTENT" >> prompt.txt
+
+          cat >> prompt.txt << 'PROMPT_END'
+
+          ## Your Task:
+          Analyze the code changes and determine:
+          1. Do any documentation files need to be updated based on these changes?
+          2. What specific updates should be made?
+
+          Consider:
+          - New features or APIs that users need to know about
+          - Changed configuration or environment variables
+          - New dependencies or setup steps
+          - Bug fixes that should be documented
+          - Breaking changes that affect existing users
+          - Changes to architecture or data flow
+
+          Respond in the following JSON format only (no markdown code blocks):
           {
-            echo 'suggestions<<EOF'
-            echo -e "$SUGGESTIONS"
+            "needs_update": true/false,
+            "recommendations": [
+              {
+                "file": "filename.md",
+                "priority": "high/medium/low",
+                "reason": "Brief explanation of why this doc needs updating",
+                "suggested_changes": "Specific suggestions for what to add or modify"
+              }
+            ],
+            "summary": "One sentence summary of documentation needs"
+          }
+
+          If no documentation updates are needed, set needs_update to false and provide an empty recommendations array.
+          PROMPT_END
+
+          # Call Gemini API
+          PROMPT_ESCAPED=$(cat prompt.txt | jq -Rs .)
+
+          RESPONSE=$(curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}" \
+            -H 'Content-Type: application/json' \
+            -d "{
+              \"contents\": [{
+                \"parts\": [{
+                  \"text\": $PROMPT_ESCAPED
+                }]
+              }],
+              \"generationConfig\": {
+                \"temperature\": 0.2,
+                \"maxOutputTokens\": 2048
+              }
+            }")
+
+          # Extract the text response
+          ANALYSIS=$(echo "$RESPONSE" | jq -r '.candidates[0].content.parts[0].text // empty')
+
+          if [ -z "$ANALYSIS" ]; then
+            echo "Error: Failed to get response from Gemini"
+            echo "$RESPONSE" | jq .
+            # Fallback to basic analysis
+            echo '{"needs_update": false, "recommendations": [], "summary": "Unable to analyze - Gemini API error"}' > analysis.json
+          else
+            # Clean up the response (remove markdown code blocks if present)
+            echo "$ANALYSIS" | sed 's/^```json//; s/^```//; s/```$//' | jq . > analysis.json 2>/dev/null || echo "$ANALYSIS" > analysis.json
+          fi
+
+          echo "=== Gemini Analysis ==="
+          cat analysis.json
+
+          # Parse the results
+          NEEDS_UPDATE=$(jq -r '.needs_update // false' analysis.json)
+          SUMMARY=$(jq -r '.summary // "Analysis complete"' analysis.json)
+
+          echo "needs_update=$NEEDS_UPDATE" >> $GITHUB_OUTPUT
+
+          # Store full analysis for the comment
+          {
+            echo 'analysis<<EOF'
+            cat analysis.json
             echo 'EOF'
           } >> $GITHUB_OUTPUT
 
-          if [[ "$NEEDS_REVIEW" == "true" ]]; then
-            echo ""
-            echo "⚠️ Documentation review recommended"
-            echo -e "$SUGGESTIONS"
-          else
-            echo ""
-            echo "✅ Documentation appears to be up to date"
-          fi
+      - name: Generate comment body
+        id: generate-comment
+        if: steps.gemini-analysis.outputs.needs_update == 'true'
+        run: |
+          ANALYSIS='${{ steps.gemini-analysis.outputs.analysis }}'
+
+          # Parse recommendations and build markdown
+          {
+            echo '<!-- docs-check-comment -->'
+            echo '## 📚 Documentation Update Recommendations'
+            echo ''
+            echo "_Powered by AI analysis of your code changes_"
+            echo ''
+
+            SUMMARY=$(echo "$ANALYSIS" | jq -r '.summary')
+            echo "**Summary:** $SUMMARY"
+            echo ''
+
+            echo '### Recommended Updates'
+            echo ''
+
+            # Loop through recommendations
+            echo "$ANALYSIS" | jq -r '.recommendations[] | "#### \(.priority | ascii_upcase) Priority: `\(.file)`\n\n**Why:** \(.reason)\n\n**Suggested changes:** \(.suggested_changes)\n"'
+
+            echo ''
+            echo '---'
+            echo ''
+            echo '<details>'
+            echo '<summary>📖 Documentation Files Reference</summary>'
+            echo ''
+            echo '| File | Purpose |'
+            echo '|------|---------|'
+            echo '| `README.md` | Project overview, setup instructions, tech stack |'
+            echo '| `TECHNICAL_IMPLEMENTATION_GUIDE.md` | Architecture, features, component details |'
+            echo '| `IMPROVEMENT_STRATEGY.md` | Roadmap and enhancement plans |'
+            echo '| `CHANGELOG.md` | Version history and feature additions |'
+            echo '| `BUGFIXES.md` | Bug fixes with root cause analysis |'
+            echo '| `KAFKA_ENVIRONMENT_SETUP.md` | Kafka environment variables guide |'
+            echo '| `infrastructure/kafka/README.md` | Kafka setup and deployment |'
+            echo ''
+            echo '</details>'
+            echo ''
+            echo '_This analysis is AI-generated. Use your judgment to determine if updates are truly needed._'
+          } > comment_body.md
+
+          {
+            echo 'comment<<EOF'
+            cat comment_body.md
+            echo 'EOF'
+          } >> $GITHUB_OUTPUT
 
       - name: Find existing comment
-        if: steps.analyze.outputs.needs_review == 'true'
+        if: steps.gemini-analysis.outputs.needs_update == 'true'
         uses: peter-evans/find-comment@v3
         id: find-comment
         with:
@@ -173,44 +260,16 @@ jobs:
           body-includes: '<!-- docs-check-comment -->'
 
       - name: Create or update comment
-        if: steps.analyze.outputs.needs_review == 'true'
+        if: steps.gemini-analysis.outputs.needs_update == 'true'
         uses: peter-evans/create-or-update-comment@v4
         with:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           edit-mode: replace
-          body: |
-            <!-- docs-check-comment -->
-            ## 📚 Documentation Update Reminder
+          body: ${{ steps.generate-comment.outputs.comment }}
 
-            This PR modifies code that may require documentation updates. Please review the following suggestions:
-
-            ${{ steps.analyze.outputs.suggestions }}
-
-            ### Documentation Files Reference
-
-            | File | Purpose |
-            |------|---------|
-            | `README.md` | Project overview, setup instructions, tech stack |
-            | `TECHNICAL_IMPLEMENTATION_GUIDE.md` | Architecture, features, component details |
-            | `IMPROVEMENT_STRATEGY.md` | Roadmap and enhancement plans |
-            | `CHANGELOG.md` | Version history and feature additions |
-            | `BUGFIXES.md` | Bug fixes with root cause analysis |
-            | `KAFKA_ENVIRONMENT_SETUP.md` | Kafka environment variables guide |
-            | `infrastructure/kafka/README.md` | Kafka setup and deployment |
-
-            ---
-
-            <details>
-            <summary>ℹ️ Why am I seeing this?</summary>
-
-            This automated check helps ensure documentation stays in sync with code changes. If your changes don't require documentation updates, you can safely ignore this reminder.
-
-            To dismiss: Simply ensure any necessary documentation is updated, or confirm that no docs changes are needed for this PR.
-            </details>
-
-      - name: Delete outdated comment
-        if: steps.analyze.outputs.needs_review == 'false' && steps.analyze.outputs.docs_updated == 'true'
+      - name: Find and remove outdated comment
+        if: steps.gemini-analysis.outputs.needs_update == 'false'
         uses: peter-evans/find-comment@v3
         id: find-outdated-comment
         with:
@@ -218,8 +277,8 @@ jobs:
           comment-author: 'github-actions[bot]'
           body-includes: '<!-- docs-check-comment -->'
 
-      - name: Remove outdated comment if docs updated
-        if: steps.find-outdated-comment.outputs.comment-id != ''
+      - name: Remove outdated comment
+        if: steps.gemini-analysis.outputs.needs_update == 'false' && steps.find-outdated-comment.outputs.comment-id != ''
         uses: actions/github-script@v7
         with:
           script: |
@@ -232,8 +291,8 @@ jobs:
       - name: Set check status
         if: always()
         run: |
-          if [[ "${{ steps.analyze.outputs.needs_review }}" == "true" ]]; then
-            echo "::notice::📚 Documentation review recommended - see PR comment for suggestions"
+          if [[ "${{ steps.gemini-analysis.outputs.needs_update }}" == "true" ]]; then
+            echo "::notice::📚 Documentation updates recommended - see PR comment for AI-powered suggestions"
           else
-            echo "::notice::✅ Documentation check passed"
+            echo "::notice::✅ Documentation check passed - no updates needed"
           fi
