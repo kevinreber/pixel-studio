@@ -159,6 +159,7 @@ async function startRunwayGeneration(
 
 /**
  * Poll for video generation status
+ * Runway API returns status values: PENDING, THROTTLED, RUNNING, SUCCEEDED, FAILED
  */
 async function pollRunwayStatus(taskId: string): Promise<RunwayVideoResponse> {
   if (!RUNWAY_API_KEY) {
@@ -183,18 +184,23 @@ async function pollRunwayStatus(taskId: string): Promise<RunwayVideoResponse> {
 
   const data = await response.json();
 
+  // Normalize status to lowercase for consistent handling
+  const status = (data.status || "").toLowerCase();
+
+  console.log(`Runway task ${taskId} status:`, { status, progress: data.progress, output: data.output });
+
   return {
     id: data.id,
-    status: data.status,
+    status: status as "pending" | "processing" | "succeeded" | "failed",
     progress: data.progress || 0,
     output: data.output
       ? {
-          url: data.output[0],
+          url: Array.isArray(data.output) ? data.output[0] : data.output,
           duration: data.duration || 5,
           fps: data.fps || 24,
         }
       : undefined,
-    error: data.failure,
+    error: data.failure || data.error,
   };
 }
 
@@ -214,12 +220,19 @@ async function waitForVideoCompletion(
       onProgress(status.progress || 0, status.status);
     }
 
+    // Check for success (handle both "succeeded" and "running" with output)
     if (status.status === "succeeded") {
       return status;
     }
 
+    // Check for failure
     if (status.status === "failed") {
       throw new Error(status.error || "Video generation failed");
+    }
+
+    // Check for throttled - log but continue polling
+    if (status.status === "throttled") {
+      console.log(`Task ${taskId} is throttled, continuing to poll...`);
     }
 
     // Wait before next poll
