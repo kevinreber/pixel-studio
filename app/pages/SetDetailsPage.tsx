@@ -20,7 +20,7 @@ import {
   Coins,
   Video,
 } from "lucide-react";
-import { getModelCreditCost } from "~/config/pricing";
+import { getModelCreditCost, getVideoModelCreditCost } from "~/config/pricing";
 
 interface SetImage {
   id: string;
@@ -86,8 +86,8 @@ const SetDetailsAccessor = () => {
   const videoCount = setVideos?.length || 0;
   const creditCostPerImage = model ? getModelCreditCost(model) : 0;
   const imageCost = creditCostPerImage * imageCount;
-  // Videos typically cost more - use video model cost or default
-  const creditCostPerVideo = setVideos?.[0]?.model ? getModelCreditCost(setVideos[0].model) : 0;
+  // Videos use video-specific pricing
+  const creditCostPerVideo = setVideos?.[0]?.model ? getVideoModelCreditCost(setVideos[0].model) : 0;
   const videoCost = creditCostPerVideo * videoCount;
   const totalCost = imageCost + videoCost;
   const [formattedDate, setFormattedDate] = React.useState(
