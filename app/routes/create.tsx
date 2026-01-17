@@ -12,180 +12,24 @@ import {
   updateUserCredits,
   checkUserCredits,
 } from "~/server";
-import { getImageGenerationProducer } from "~/services/imageGenerationProducer.server";
+import {
+  queueImageGeneration,
+  isQueueEnabled,
+  getQueueHealth,
+} from "~/services/imageQueue.server";
 import { z } from "zod";
 import { PageContainer, GeneralErrorBoundary } from "~/components";
 import { cacheDelete } from "~/utils/cache.server";
 import { getModelCreditCost } from "~/config/pricing";
+import { MODEL_OPTIONS, STYLE_OPTIONS } from "~/config/models";
+
+// Re-export for backwards compatibility
+export { MODEL_OPTIONS, STYLE_OPTIONS } from "~/config/models";
+export type { ModelOption, StyleOption } from "~/config/models";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Create AI Generated Images" }];
 };
-
-export const MODEL_OPTIONS = [
-  {
-    name: "Stable Diffusion 1.6",
-    value: "stable-diffusion-v1-6",
-    image: "/assets/model-thumbs/sd-1-5.jpg",
-    description: "The most popular first-generation stable diffusion model.",
-    company: "Stability AI",
-    supportsStyles: true,
-    creditCost: 1,
-  },
-  {
-    name: "Stable Diffusion XL",
-    value: "stable-diffusion-xl-1024-v1-0",
-    image: "/assets/model-thumbs/sdxlv1.jpg",
-    description: "The state-of-the-art in open-source image generation.",
-    company: "Stability AI",
-    supportsStyles: true,
-    creditCost: 2,
-  },
-  {
-    name: "Flux Schnell",
-    value: "flux-pro",
-    image: "/assets/model-thumbs/flux-schnell.jpg",
-    description:
-      "Fastest open-source text-to-image model to date, by Black Forest Labs.",
-    company: "Black Forest Labs",
-    supportsStyles: false,
-    creditCost: 2,
-  },
-  {
-    name: "Flux Pro 1.1",
-    value: "flux-pro-1.1",
-    image: "/assets/model-thumbs/flux-pro-1-1.jpg",
-    description:
-      "Professional grade image generation with excellent prompt following and visual quality.",
-    company: "Black Forest Labs",
-    supportsStyles: false,
-    creditCost: 4,
-  },
-  {
-    name: "Flux Dev",
-    value: "flux-dev",
-    image: "/assets/model-thumbs/flux-dev-thumb-2.jpg",
-    description:
-      "Development version offering cost-effective image generation while maintaining good quality.",
-    company: "Black Forest Labs",
-    supportsStyles: false,
-    creditCost: 2,
-  },
-  {
-    name: "DALL-E 3",
-    value: "dall-e-3",
-    image: "/assets/model-thumbs/dalle3.jpg",
-    description: "State-of-the-art image generator from OpenAI.",
-    company: "OpenAI",
-    supportsStyles: false,
-    creditCost: 6,
-  },
-  {
-    name: "DALL-E 2",
-    value: "dall-e-2",
-    image: "/assets/model-thumbs/dalle2.jpg",
-    description: "Reliable image generator from OpenAI.",
-    company: "OpenAI",
-    supportsStyles: false,
-    creditCost: 1,
-  },
-  // ! TODO: RunDiffusion/Juggernaut-XL-v9 is not accessible off Hugging Face for some reason
-  // {
-  //   name: "Juggernaut XL v9",
-  //   value: "RunDiffusion/Juggernaut-XL-v9",
-  //   image: "/assets/model-thumbs/juggernaut-v9-rundiffusion-lightning.jpg",
-  //   description:
-  //     "A model by RunDiffusion that is great at creating endless images.",
-  // },
-  // {
-  //   name: "NeverEnding Dream",
-  //   value: "Lykon/NeverEnding-Dream",
-  //   image: "/assets/model-thumbs/neverending-dream-1-2-2.jpg",
-  //   description: "A model by Lykon that is great at creating endless images.",
-  // },
-  // {
-  //   name: "Dreamshaper XL Lightning",
-  //   image: "/assets/model-thumbs/ds-xl-lightning.jpg",
-  //   description: "Dreamshaper XL, accelerated. High quality, fast and cheap.",
-  // },
-  // {
-  //   name: "Ideogram 2.0",
-  //   image: "/assets/model-thumbs/ideogram-v1.jpg",
-  //   description: "A model by Ideogram that is amazing at Typography.",
-  // },
-  // {
-  //   name: "Google Imagen 3.0",
-  //   image: "/assets/model-thumbs/imagen-3-0-thumb.jpg",
-  //   description:
-  //     "A model by Google DeepMind that is great at typography & prompt adherence.",
-  // },
-] as const;
-
-export const STYLE_OPTIONS = [
-  {
-    name: "3d Model",
-    value: "3d-model",
-    image: "/assets/preset-text-styles/3d-game-v2.jpg",
-  },
-  {
-    name: "Anime",
-    value: "anime",
-    image: "/assets/preset-text-styles/anime-v2.jpg",
-  },
-  {
-    name: "Cinematic",
-    value: "cinematic",
-    image: "/assets/preset-text-styles/cinematic.jpg",
-  },
-  {
-    name: "Comic Book",
-    value: "comic-book",
-    image: "/assets/preset-text-styles/modern-comic.jpg",
-  },
-  {
-    name: "Digital Art",
-    value: "digital-art",
-    image: "/assets/preset-text-styles/artistic-portrait.jpg",
-  },
-  {
-    name: "Fantasy Art",
-    value: "fantasy-art",
-    image: "/assets/preset-text-styles/fantasy.jpg",
-  },
-  {
-    name: "Neon Punk",
-    value: "neon-punk",
-    image: "/assets/preset-text-styles/cyberpunk.jpg",
-  },
-  {
-    name: "Origami",
-    value: "origami",
-    image: "/assets/preset-text-styles/epic-origami.jpg",
-  },
-  {
-    name: "Photographic",
-    value: "photographic",
-    image: "/assets/preset-text-styles/photo.jpg",
-  },
-  {
-    name: "None",
-    value: "none",
-    image: "",
-  },
-  // { name: "Isometric", image: "/assets/preset-text-styles/.jpg" },
-  // { name: "Line Art", image: "/assets/preset-text-styles/.jpg" },
-  // { name: "Low Poly", image: "/assets/preset-text-styles/.jpg" },
-  // {
-  //   name: "Modeling Compound",
-  //   image: "/assets/preset-text-styles/.jpg",
-  // },
-  // { name: "Analog Film", image: "/assets/preset-text-styles/jpg" },
-  // { name: "Pixel Art", image: "/assets/preset-text-styles/.jpg" },
-  // {
-  //   name: "Tile Texture",
-  //   image: "/assets/preset-text-styles/.jpg",
-  // },
-] as const;
 
 const MAX_PROMPT_CHARACTERS = 3500;
 const MIN_NUMBER_OF_IMAGES = 1;
@@ -358,30 +202,27 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     );
   }
 
-  // Check if Kafka-based async generation is enabled
-  // Only allow Kafka in development - not ready for production yet
-  const isProduction = process.env.NODE_ENV === "production";
-  const isKafkaEnabled =
-    !isProduction && process.env.ENABLE_KAFKA_IMAGE_GENERATION === "true";
+  // Check if async queue processing is enabled (QStash or Kafka)
+  const asyncQueueEnabled = isQueueEnabled();
 
   // Track if credits were already deducted (to prevent double charging)
   let creditsAlreadyDeducted = false;
 
-  if (isKafkaEnabled) {
+  if (asyncQueueEnabled) {
     try {
-      // 🚀 Kafka: Use async generation
-      console.log("Using Kafka for async image generation...");
+      // 🚀 Async Queue: Use QStash (default) or Kafka for async generation
+      console.log("[Create] Using async queue for image generation...");
 
-      const producer = await getImageGenerationProducer();
-
-      // Health check - verify Kafka is available
-      const isKafkaHealthy = await producer.healthCheck();
-      if (!isKafkaHealthy) {
-        throw new Error("Image generation service is temporarily unavailable");
+      // Health check - verify queue backend is available
+      const queueHealth = await getQueueHealth();
+      if (!queueHealth.healthy) {
+        throw new Error(
+          `Image generation service is temporarily unavailable: ${queueHealth.message}`
+        );
       }
 
-      // For Kafka, we charge upfront since it's async
-      // The consumer should handle refunds on failure
+      // Charge upfront since it's async
+      // The worker should handle refunds on failure
       await updateUserCredits(user.id, totalCreditCost);
       creditsAlreadyDeducted = true;
 
@@ -392,20 +233,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       await cacheDelete(setsCacheKey);
 
       // Queue the image generation request (returns immediately!)
-      const response = await producer.queueImageGeneration(
-        validateFormData.data,
-        user.id
-      );
+      const response = await queueImageGeneration(validateFormData.data, user.id);
 
       console.log(
-        `Successfully queued image generation request: ${response.requestId}`
+        `Successfully queued image generation request: ${response.requestId} via ${queueHealth.backend}`
       );
 
       // Redirect immediately to processing page with real-time updates
       return redirect(response.processingUrl);
     } catch (error) {
       console.error(
-        "Kafka image generation failed, falling back to synchronous:",
+        "Async queue image generation failed, falling back to synchronous:",
         error
       );
       // Fall through to synchronous generation below
