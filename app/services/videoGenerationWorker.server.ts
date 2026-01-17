@@ -8,8 +8,7 @@
 import { createConsumer, createProducer, VIDEO_TOPICS } from "./kafka.server";
 import { createNewVideos, type CreateVideosFormData } from "~/server/createNewVideos";
 import {
-  updateProcessingStatus,
-  claimProcessingRequest,
+  getProcessingStatusService,
   type ProcessingStatusData,
 } from "./processingStatus.server";
 import type { Consumer, Producer, EachMessagePayload } from "kafkajs";
@@ -105,13 +104,14 @@ export class VideoGenerationWorker {
     );
 
     // Try to claim this request (atomic operation to prevent duplicate processing)
-    const claimed = await claimProcessingRequest(
+    const statusService = getProcessingStatusService();
+    const claimResult = await statusService.claimProcessingRequest(
       requestId,
       userId,
       this.workerId
     );
 
-    if (!claimed) {
+    if (!claimResult.claimed) {
       console.log(
         `Request ${requestId} already claimed by another worker, skipping`
       );
@@ -165,7 +165,6 @@ export class VideoGenerationWorker {
         progress: 100,
         message: "Video generated successfully!",
         setId: result.setId,
-        videos: result.videos,
       });
 
       // Publish completion event
@@ -198,18 +197,19 @@ export class VideoGenerationWorker {
   private async updateStatus(
     requestId: string,
     userId: string,
-    update: Partial<ProcessingStatusData>
+    update: Omit<Partial<ProcessingStatusData>, "requestId" | "createdAt" | "updatedAt">
   ): Promise<void> {
     try {
-      await updateProcessingStatus(requestId, {
-        requestId,
+      const statusService = getProcessingStatusService();
+      await statusService.updateProcessingStatus(requestId, {
         userId,
-        processor: this.workerId,
+        status: update.status || "processing",
+        progress: update.progress || 0,
+        message: update.message,
+        setId: update.setId,
+        error: update.error,
         timestamp: new Date(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        ...update,
-      } as ProcessingStatusData);
+      });
     } catch (error) {
       console.error(`Failed to update status for ${requestId}:`, error);
     }

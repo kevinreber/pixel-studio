@@ -51,6 +51,20 @@ export interface CreateVideoFormData {
 }
 
 /**
+ * Map our model values to Runway API model names
+ */
+function getRunwayApiModel(modelValue: string): string {
+  const modelMap: Record<string, string> = {
+    "runway-gen4-turbo": "gen4_turbo",
+    "runway-gen4-aleph": "gen4_aleph",
+    // Legacy mappings (in case old values are used)
+    "runway-gen3": "gen4_aleph",
+    "runway-gen3-turbo": "gen4_turbo",
+  };
+  return modelMap[modelValue] || "gen4_turbo";
+}
+
+/**
  * Start a video generation request with Runway
  */
 async function startRunwayGeneration(
@@ -60,12 +74,16 @@ async function startRunwayGeneration(
     throw new Error("RUNWAY_API_KEY is not configured");
   }
 
+  const apiModel = getRunwayApiModel(request.model);
+
+  // Gen4 turbo only supports image-to-video
+  // Gen4 aleph supports both text-to-video and image-to-video
   const endpoint = request.sourceImageUrl
     ? `${RUNWAY_API_URL}/image_to_video`
     : `${RUNWAY_API_URL}/text_to_video`;
 
   const body: Record<string, unknown> = {
-    model: request.model.includes("turbo") ? "gen3a_turbo" : "gen3a",
+    model: apiModel,
     promptText: request.prompt,
     duration: request.duration || 5,
     ratio: request.aspectRatio || "16:9",

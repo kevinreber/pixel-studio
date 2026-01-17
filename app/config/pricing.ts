@@ -120,6 +120,12 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
  */
 export const VIDEO_MODEL_PRICING: Record<string, ModelPricing> = {
   // Standard Tier (10-15 credits) - Fast video generation
+  "runway-gen4-turbo": {
+    credits: 10,
+    tier: "standard",
+    apiCostEstimate: 0.25,
+  },
+  // Legacy alias for gen4-turbo
   "runway-gen3-turbo": {
     credits: 10,
     tier: "standard",
@@ -132,6 +138,12 @@ export const VIDEO_MODEL_PRICING: Record<string, ModelPricing> = {
   },
 
   // Premium Tier (20-30 credits) - High quality video generation
+  "runway-gen4-aleph": {
+    credits: 20,
+    tier: "premium",
+    apiCostEstimate: 0.50,
+  },
+  // Legacy alias for gen4-aleph
   "runway-gen3": {
     credits: 20,
     tier: "premium",

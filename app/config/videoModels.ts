@@ -2,28 +2,44 @@
  * Video generation model configuration
  */
 
-export const VIDEO_MODEL_OPTIONS = [
+export type VideoGenerationMode = "text-to-video" | "image-to-video";
+
+export interface VideoModelOption {
+  name: string;
+  value: string;
+  image: string;
+  description: string;
+  company: string;
+  creditCost: number;
+  supportedModes: VideoGenerationMode[];
+  maxDuration: number;
+  apiModel?: string;
+}
+
+export const VIDEO_MODEL_OPTIONS: VideoModelOption[] = [
   {
-    name: "Runway Gen-3 Alpha",
-    value: "runway-gen3",
-    image: "/assets/model-thumbs/runway-gen3.jpg",
-    description:
-      "High-quality video generation with excellent motion and consistency. Supports text-to-video and image-to-video.",
-    company: "Runway",
-    creditCost: 20,
-    supportedModes: ["text-to-video", "image-to-video"],
-    maxDuration: 10,
-  },
-  {
-    name: "Runway Gen-3 Turbo",
-    value: "runway-gen3-turbo",
+    name: "Runway Gen-4 Turbo",
+    value: "runway-gen4-turbo",
     image: "/assets/model-thumbs/runway-gen3-turbo.jpg",
     description:
-      "Faster video generation with good quality. Great for quick iterations and previews.",
+      "Fast image-to-video generation. Converts images to video efficiently at 5 credits/second.",
     company: "Runway",
     creditCost: 10,
+    supportedModes: ["image-to-video"],
+    maxDuration: 10,
+    apiModel: "gen4_turbo",
+  },
+  {
+    name: "Runway Gen-4 Aleph",
+    value: "runway-gen4-aleph",
+    image: "/assets/model-thumbs/runway-gen3.jpg",
+    description:
+      "Advanced video generation with text and image inputs. Premium quality at 15 credits/second.",
+    company: "Runway",
+    creditCost: 25,
     supportedModes: ["text-to-video", "image-to-video"],
     maxDuration: 10,
+    apiModel: "gen4_aleph",
   },
   {
     name: "Luma Dream Machine",
@@ -47,9 +63,7 @@ export const VIDEO_MODEL_OPTIONS = [
     supportedModes: ["image-to-video"],
     maxDuration: 4,
   },
-] as const;
-
-export type VideoModelOption = (typeof VIDEO_MODEL_OPTIONS)[number];
+];
 
 export const ASPECT_RATIO_OPTIONS = [
   { label: "Landscape", value: "16:9", width: 1280, height: 720 },

@@ -11,7 +11,13 @@ import { createStabilityVideo } from "./createStabilityVideo";
 import { deleteSet } from "~/server";
 import { invariantResponse } from "~/utils/invariantResponse";
 
-const VALID_RUNWAY_MODELS = ["runway-gen3", "runway-gen3-turbo"];
+const VALID_RUNWAY_MODELS = [
+  "runway-gen4-turbo",
+  "runway-gen4-aleph",
+  // Legacy model values (map to new models)
+  "runway-gen3",
+  "runway-gen3-turbo",
+];
 const VALID_LUMA_MODELS = ["luma-dream-machine"];
 const VALID_STABILITY_MODELS = ["stability-video"];
 
