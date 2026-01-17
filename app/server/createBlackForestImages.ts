@@ -1,4 +1,3 @@
-import { invariantResponse } from "~/utils";
 import {
   createNewImage,
   type FormattedCreateImageData,
@@ -14,7 +13,7 @@ import { prisma } from "~/services/prisma.server";
 
 interface BlackForestResponse {
   id: string;
-  status: "Ready" | "Failed" | "Processing" | "Pending" | "Request Moderated";
+  status: "Ready" | "Error" | "Pending" | "Request Moderated" | "Content Moderated" | "Task not found";
   result?: {
     sample: string; // URL to the generated image
     prompt: string; // Original prompt used
@@ -24,6 +23,7 @@ interface BlackForestResponse {
     duration: number;
   };
   error?: string;
+  progress?: number;
   details?: {
     "Moderation Reasons"?: string[];
   };
@@ -197,10 +197,14 @@ const getBlackForestImageStatus = async (
     }
   );
 
-  invariantResponse(
-    resultResponse.ok,
-    `Failed to get result from Black Forest Labs: ${resultResponse.statusText}`
-  );
+  if (!resultResponse.ok) {
+    const errorText = await resultResponse.text();
+    Logger.error({
+      message: `[createBlackForestImages.ts]: Failed to get result from Black Forest Labs`,
+      metadata: { requestId, status: resultResponse.status, statusText: resultResponse.statusText, errorText },
+    });
+    throw new Error(`Failed to get result from Black Forest Labs: ${resultResponse.status} ${resultResponse.statusText} - ${errorText}`);
+  }
 
   return resultResponse.json();
 };
@@ -248,7 +252,7 @@ const pollForBlackForestImageResult = async (
       }
 
       // Handle moderation rejection
-      if (resultData.status === "Request Moderated") {
+      if (resultData.status === "Request Moderated" || resultData.status === "Content Moderated") {
         Logger.error({
           message: `[createBlackForestImages.ts]: Request was moderated for requestId: ${requestId}`,
           metadata: { requestId, resultData },
@@ -262,7 +266,7 @@ const pollForBlackForestImageResult = async (
       }
 
       // Image generation failed
-      if (resultData.status === "Failed") {
+      if (resultData.status === "Error") {
         Logger.error({
           message: `[createBlackForestImages.ts]: Image generation failed for requestId: ${requestId}`,
           metadata: { requestId, resultData },
@@ -272,17 +276,27 @@ const pollForBlackForestImageResult = async (
         );
       }
 
+      // Task not found
+      if (resultData.status === "Task not found") {
+        Logger.error({
+          message: `[createBlackForestImages.ts]: Task not found for requestId: ${requestId}`,
+          metadata: { requestId, resultData },
+        });
+        throw new Error(`Task not found: ${requestId}`);
+      }
+
       // Image still processing - wait with exponential backoff
       await new Promise((resolve) => setTimeout(resolve, delay));
       // Increase delay for next attempt, but cap at 5 seconds
       delay = Math.min(delay * 1.5, 5000);
       attempts++;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       Logger.error({
         message: `[createBlackForestImages.ts]: Polling attempt ${
           attempts + 1
         } failed`,
-        metadata: { requestId, error },
+        metadata: { requestId, errorMessage },
       });
       throw error;
     }
