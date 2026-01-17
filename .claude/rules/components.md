@@ -19,12 +19,18 @@ import { Dialog, DialogContent, DialogHeader } from "components/ui/dialog";
 import { cn } from "~/utils/cn";
 
 // Remix hooks
-import { Form, useNavigation, useActionData, useLoaderData } from "@remix-run/react";
+import {
+  Form,
+  useNavigation,
+  useActionData,
+  useLoaderData,
+} from "@remix-run/react";
 ```
 
 ## Class Name Merging
 
 Always use `cn()` for conditional classes:
+
 ```typescript
 <div className={cn(
   "base-classes",
@@ -37,6 +43,7 @@ Always use `cn()` for conditional classes:
 ## Component Props
 
 Accept `className` for customization:
+
 ```typescript
 interface MyComponentProps {
   className?: string;
@@ -55,6 +62,7 @@ export function MyComponent({ className, children }: MyComponentProps) {
 ## Loading States
 
 Use Remix's `useNavigation` for loading states:
+
 ```typescript
 const navigation = useNavigation();
 const isSubmitting = navigation.state === "submitting";
@@ -68,6 +76,7 @@ const isLoading = navigation.state === "loading";
 ## Form Handling
 
 Use Remix `Form` component:
+
 ```typescript
 <Form method="post">
   <input type="hidden" name="intent" value="create" />

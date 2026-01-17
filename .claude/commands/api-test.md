@@ -14,6 +14,7 @@ Test endpoint: $ARGUMENTS
 ## Find the Route Handler
 
 1. Search for the route file:
+
    ```bash
    ls app/routes/api.*
    ```
@@ -55,6 +56,7 @@ curl http://localhost:5173/api/endpoint \
 ## Common API Patterns in This Project
 
 ### Protected Endpoint
+
 ```typescript
 export async function action({ request }: ActionFunctionArgs) {
   const user = await requireUserLogin(request);
@@ -63,6 +65,7 @@ export async function action({ request }: ActionFunctionArgs) {
 ```
 
 ### Public Endpoint
+
 ```typescript
 export async function loader({ request }: LoaderFunctionArgs) {
   // No auth check - public data
@@ -70,6 +73,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 ```
 
 ### Response Formats
+
 ```typescript
 // Success
 return json({ success: true, data: result });

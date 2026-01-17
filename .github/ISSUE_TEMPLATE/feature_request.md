@@ -1,9 +1,9 @@
 ---
 name: Feature Request
 about: Suggest a new feature or enhancement for Pixel Studio
-title: '[FEATURE] '
+title: "[FEATURE] "
 labels: enhancement
-assignees: ''
+assignees: ""
 ---
 
 ## Feature Description
@@ -31,6 +31,7 @@ Add any other context, mockups, or screenshots about the feature request here.
 ## Priority
 
 How important is this feature to you?
+
 - [ ] Critical - Blocking my use of the app
 - [ ] High - Would significantly improve my experience
 - [ ] Medium - Nice to have
@@ -39,6 +40,7 @@ How important is this feature to you?
 ---
 
 **Checklist before submitting:**
+
 - [ ] I have searched existing issues to ensure this isn't a duplicate
 - [ ] I have clearly described the problem or use case
 - [ ] I have considered alternative solutions

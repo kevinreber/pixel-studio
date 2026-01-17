@@ -39,6 +39,7 @@ Help me implement this feature: $ARGUMENTS
    - Run relevant tests if they exist
 
 ## Key Files to Reference
+
 - Routes: `app/routes/`
 - Components: `app/components/`
 - Server functions: `app/server/`
@@ -46,6 +47,7 @@ Help me implement this feature: $ARGUMENTS
 - Schemas: `app/schemas/`
 
 ## Conventions
+
 - Use `requireUserLogin(request)` for protected routes
 - Use `cn()` for conditional Tailwind classes
 - Follow Remix loader/action patterns

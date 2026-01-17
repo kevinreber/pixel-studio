@@ -40,7 +40,7 @@ export interface GetResourceResponse {
 export async function getResources(
   userId: string,
   page = 1,
-  pageSize = 20
+  pageSize = 20,
 ): Promise<GetResourceResponse> {
   const [resources, total] = await Promise.all([
     prisma.resource.findMany({
@@ -114,9 +114,7 @@ const user = await prisma.user.findUnique({
   where: { id: userId },
   include: {
     // Only include if imageId provided
-    images: imageId
-      ? { where: { id: imageId }, select: { id: true } }
-      : false,
+    images: imageId ? { where: { id: imageId }, select: { id: true } } : false,
   },
 });
 ```
@@ -161,7 +159,7 @@ const result = await prisma.$transaction(async (tx) => {
 ```typescript
 export async function createCollection(
   userId: string,
-  data: { title: string; description?: string }
+  data: { title: string; description?: string },
 ) {
   return prisma.collection.create({
     data: {
@@ -197,7 +195,7 @@ export async function getCollectionById(id: string, userId?: string) {
 export async function updateCollection(
   id: string,
   userId: string,
-  data: { title?: string; description?: string }
+  data: { title?: string; description?: string },
 ) {
   return prisma.collection.update({
     where: { id, userId }, // Ensures ownership

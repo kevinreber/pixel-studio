@@ -90,39 +90,41 @@ MCP servers are configured in `.mcp.json` (project scope) or `~/.claude.json` (p
 
 ### Core Infrastructure
 
-| Server | Purpose | Transport | Best For |
-|--------|---------|-----------|----------|
-| **prisma** | Database migrations, Prisma Studio | HTTP | Schema changes, data browsing |
-| **postgres** | Direct SQL queries | Stdio | Complex queries, data analysis |
-| **redis** | Cache operations | Stdio | Cache debugging, key inspection |
-| **aws-s3** | S3 bucket management | Stdio | Image storage, file operations |
+| Server       | Purpose                            | Transport | Best For                        |
+| ------------ | ---------------------------------- | --------- | ------------------------------- |
+| **prisma**   | Database migrations, Prisma Studio | HTTP      | Schema changes, data browsing   |
+| **postgres** | Direct SQL queries                 | Stdio     | Complex queries, data analysis  |
+| **redis**    | Cache operations                   | Stdio     | Cache debugging, key inspection |
+| **aws-s3**   | S3 bucket management               | Stdio     | Image storage, file operations  |
 
 ### Development Tools
 
-| Server | Purpose | Transport | Best For |
-|--------|---------|-----------|----------|
-| **github** | Issues, PRs, workflows | HTTP | Code review, issue management |
-| **sentry** | Error tracking | HTTP | Debugging production errors |
-| **stripe** | Payment operations | HTTP | Customer data, subscriptions |
+| Server     | Purpose                | Transport | Best For                      |
+| ---------- | ---------------------- | --------- | ----------------------------- |
+| **github** | Issues, PRs, workflows | HTTP      | Code review, issue management |
+| **sentry** | Error tracking         | HTTP      | Debugging production errors   |
+| **stripe** | Payment operations     | HTTP      | Customer data, subscriptions  |
 
 ### Additional Options
 
-| Server | Purpose | Install Command |
-|--------|---------|-----------------|
-| **filesystem** | Local file access | `npx -y @modelcontextprotocol/server-filesystem` |
-| **memory** | Persistent memory | `npx -y @modelcontextprotocol/server-memory` |
-| **puppeteer** | Browser automation | `npx -y @modelcontextprotocol/server-puppeteer` |
-| **fetch** | HTTP requests | `npx -y @modelcontextprotocol/server-fetch` |
+| Server         | Purpose            | Install Command                                  |
+| -------------- | ------------------ | ------------------------------------------------ |
+| **filesystem** | Local file access  | `npx -y @modelcontextprotocol/server-filesystem` |
+| **memory**     | Persistent memory  | `npx -y @modelcontextprotocol/server-memory`     |
+| **puppeteer**  | Browser automation | `npx -y @modelcontextprotocol/server-puppeteer`  |
+| **fetch**      | HTTP requests      | `npx -y @modelcontextprotocol/server-fetch`      |
 
 ## Configuration Scopes
 
 ### Project Scope (Shared with Team)
+
 ```bash
 # Stored in .mcp.json (commit to git)
 claude mcp add --transport http github --scope project https://api.githubcopilot.com/mcp/
 ```
 
 ### Local Scope (Personal, Not Committed)
+
 ```bash
 # Stored in ~/.claude.json for this project only
 claude mcp add --transport stdio postgres --scope local \
@@ -131,6 +133,7 @@ claude mcp add --transport stdio postgres --scope local \
 ```
 
 ### User Scope (Global, All Projects)
+
 ```bash
 # Stored in ~/.claude.json globally
 claude mcp add --transport http notion --scope user https://mcp.notion.com/mcp
@@ -164,12 +167,14 @@ Use `${VAR}` syntax for environment variable expansion:
 ## Using MCP in Claude Code
 
 ### Check Server Status
+
 ```bash
 > /mcp
 # Shows connected servers and their tools
 ```
 
 ### Reference MCP Resources
+
 ```bash
 # Reference database schema
 > Analyze @postgres:schema://users table
@@ -179,6 +184,7 @@ Use `${VAR}` syntax for environment variable expansion:
 ```
 
 ### Use MCP Tools
+
 ```bash
 # Claude automatically uses appropriate MCP tools
 > "What are the last 10 images created?"
@@ -197,6 +203,7 @@ claude mcp add --transport http github --scope project https://api.githubcopilot
 ```
 
 Then authenticate:
+
 ```bash
 claude
 > /mcp
@@ -204,6 +211,7 @@ claude
 ```
 
 **Capabilities**:
+
 - Create/read/update issues
 - Manage pull requests
 - Trigger workflows
@@ -216,6 +224,7 @@ claude mcp add --transport http prisma --scope project https://mcp.prisma.io/mcp
 ```
 
 **Capabilities**:
+
 - `migrate-status` - Check migration status
 - `migrate-dev` - Create and run migrations
 - `migrate-reset` - Reset database
@@ -230,6 +239,7 @@ claude mcp add --transport stdio postgres --scope local \
 ```
 
 **Capabilities**:
+
 - Execute SELECT queries
 - Analyze query performance
 - Inspect table structures
@@ -245,6 +255,7 @@ claude mcp add --transport stdio aws-s3 --scope project \
 ```
 
 **Capabilities**:
+
 - List bucket contents
 - Upload/download files
 - Manage object metadata
@@ -257,6 +268,7 @@ claude mcp add --transport http sentry --scope project https://mcp.sentry.dev/mc
 ```
 
 **Capabilities**:
+
 - Query recent errors
 - Analyze error trends
 - Find error sources
@@ -271,6 +283,7 @@ claude mcp add --transport http stripe --scope project \
 ```
 
 **Capabilities**:
+
 - Query customers
 - View subscriptions
 - Analyze revenue
@@ -279,6 +292,7 @@ claude mcp add --transport http stripe --scope project \
 ## Security Best Practices
 
 ### 1. Never Commit Secrets
+
 ```bash
 # WRONG - in .mcp.json
 "env": { "API_KEY": "sk_live_xxx" }
@@ -288,6 +302,7 @@ claude mcp add --transport http stripe --scope project \
 ```
 
 ### 2. Use Read-Only Where Possible
+
 ```json
 {
   "env": {
@@ -297,11 +312,13 @@ claude mcp add --transport http stripe --scope project \
 ```
 
 ### 3. Scope Appropriately
+
 - **Project scope**: Shared, non-sensitive servers (GitHub, Sentry)
 - **Local scope**: Database connections with credentials
 - **User scope**: Personal utilities
 
 ### 4. Validate Before Sharing
+
 ```bash
 # Test locally first
 claude mcp add --transport stdio test --scope local -- npx -y package
@@ -368,24 +385,28 @@ claude
 ## Example Workflows
 
 ### Database Analysis
+
 ```
 > "Analyze the Image table schema and suggest indexes for common queries"
 # Uses postgres MCP to inspect schema and query patterns
 ```
 
 ### Bug Investigation
+
 ```
 > "Check Sentry for errors related to image generation in the last 24 hours"
 # Uses sentry MCP to query recent errors
 ```
 
 ### S3 Cleanup
+
 ```
 > "Find orphaned images in S3 that aren't referenced in the database"
 # Uses both postgres and aws-s3 MCPs
 ```
 
 ### Release Preparation
+
 ```
 > "Create a PR summary for all commits since last release"
 # Uses github MCP to analyze commits and generate summary

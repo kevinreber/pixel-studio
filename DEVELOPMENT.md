@@ -10,6 +10,7 @@ Quick-start guide for setting up and running Pixel Studio locally.
 - **Git**
 
 Optional (for full feature set):
+
 - Docker (for local Kafka)
 - AWS account (for S3 storage)
 - Stripe account (for payments)
@@ -87,48 +88,48 @@ See `env.example` for the complete list with descriptions.
 
 ### Development
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server (port 5173) |
-| `npm run build` | Create production build |
-| `npm run start` | Run production server |
-| `npm run typecheck` | Run TypeScript type checking |
-| `npm run lint` | Run ESLint |
+| Command             | Description                          |
+| ------------------- | ------------------------------------ |
+| `npm run dev`       | Start development server (port 5173) |
+| `npm run build`     | Create production build              |
+| `npm run start`     | Run production server                |
+| `npm run typecheck` | Run TypeScript type checking         |
+| `npm run lint`      | Run ESLint                           |
 
 ### Testing
 
-| Command | Description |
-|---------|-------------|
-| `npm run test` | Run Vitest in watch mode |
-| `npm run test:run` | Run tests once |
+| Command                 | Description                    |
+| ----------------------- | ------------------------------ |
+| `npm run test`          | Run Vitest in watch mode       |
+| `npm run test:run`      | Run tests once                 |
 | `npm run test:coverage` | Run tests with coverage report |
-| `npm run test:e2e` | Run Playwright E2E tests |
-| `npm run test:e2e:ui` | Run E2E tests with UI |
+| `npm run test:e2e`      | Run Playwright E2E tests       |
+| `npm run test:e2e:ui`   | Run E2E tests with UI          |
 
 ### Database
 
-| Command | Description |
-|---------|-------------|
-| `npx prisma studio` | Open visual database browser |
-| `npx prisma db push` | Push schema changes to database |
-| `npx prisma generate` | Regenerate Prisma client |
-| `npx prisma migrate dev` | Create a new migration |
-| `npx prisma migrate reset` | Reset database (destructive!) |
+| Command                    | Description                     |
+| -------------------------- | ------------------------------- |
+| `npx prisma studio`        | Open visual database browser    |
+| `npx prisma db push`       | Push schema changes to database |
+| `npx prisma generate`      | Regenerate Prisma client        |
+| `npx prisma migrate dev`   | Create a new migration          |
+| `npx prisma migrate reset` | Reset database (destructive!)   |
 
 ### Async Processing (Kafka)
 
-| Command | Description |
-|---------|-------------|
-| `npm run kafka:create-topics` | Initialize Kafka topics |
-| `npm run kafka:consumer` | Start background workers |
-| `npm run kafka:websocket` | Start WebSocket server |
-| `npm run kafka:health` | Check Kafka cluster health |
-| `npm run kafka:monitor` | Monitor Kafka topics |
+| Command                       | Description                |
+| ----------------------------- | -------------------------- |
+| `npm run kafka:create-topics` | Initialize Kafka topics    |
+| `npm run kafka:consumer`      | Start background workers   |
+| `npm run kafka:websocket`     | Start WebSocket server     |
+| `npm run kafka:health`        | Check Kafka cluster health |
+| `npm run kafka:monitor`       | Monitor Kafka topics       |
 
 ### Payments
 
-| Command | Description |
-|---------|-------------|
+| Command                 | Description                     |
+| ----------------------- | ------------------------------- |
 | `npm run stripe:listen` | Forward Stripe webhooks locally |
 
 ## Project Structure
@@ -158,10 +159,10 @@ pixel-studio/
 Use these TypeScript path aliases in imports:
 
 ```typescript
-import { something } from "~/utils/something";     // app/
-import { Button } from "components/ui/button";     // app/components/
-import { getUser } from "server/auth.server";      // app/server/
-import { imageService } from "services/image";     // app/services/
+import { something } from "~/utils/something"; // app/
+import { Button } from "components/ui/button"; // app/components/
+import { getUser } from "server/auth.server"; // app/server/
+import { imageService } from "services/image"; // app/services/
 ```
 
 ## Database Setup
@@ -192,6 +193,7 @@ docker run --name pixel-studio-db \
 ### Cloud Databases
 
 The project works with:
+
 - **Supabase** (recommended for quick start)
 - **Railway**
 - **Neon**
@@ -254,6 +256,7 @@ npm run kafka:websocket
 ### VS Code
 
 Recommended extensions:
+
 - ESLint
 - Prettier
 - Tailwind CSS IntelliSense
@@ -261,6 +264,7 @@ Recommended extensions:
 - ES7+ React/Redux/React-Native snippets
 
 Settings (`.vscode/settings.json`):
+
 ```json
 {
   "editor.formatOnSave": true,
@@ -274,6 +278,7 @@ Settings (`.vscode/settings.json`):
 ### Cursor / Other Editors
 
 The project uses:
+
 - ESLint for linting
 - Prettier for formatting
 - TypeScript strict mode

@@ -27,7 +27,11 @@ api.resource.$id.action.ts # Action on single resource
 ## Standard Structure
 
 ```typescript
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
+import {
+  json,
+  type ActionFunctionArgs,
+  type LoaderFunctionArgs,
+} from "@remix-run/node";
 import { z } from "zod";
 import { requireUserLogin } from "~/server/auth.server";
 import { prisma } from "~/services/prisma.server";
@@ -121,7 +125,7 @@ import { getCachedDataWithRevalidate, cacheDelete } from "~/utils/redis-cache";
 const data = await getCachedDataWithRevalidate(
   `resource:${userId}`,
   () => prisma.resource.findMany({ where: { userId } }),
-  60 * 5 // 5 minutes TTL
+  60 * 5, // 5 minutes TTL
 );
 
 // In action - invalidate cache after mutations

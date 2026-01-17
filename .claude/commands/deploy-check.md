@@ -35,27 +35,32 @@ npx prisma validate
 ## Manual Review Checklist
 
 ### Code Quality
+
 - [ ] No `console.log` statements left in production code
 - [ ] No `any` types (search: `as any`, `: any`)
 - [ ] No TODO/FIXME comments for critical issues
 - [ ] Error handling in place for API calls
 
 ### Security
+
 - [ ] No secrets in code (API keys, passwords)
 - [ ] All user inputs validated with Zod
 - [ ] Protected routes use `requireUserLogin`
 - [ ] No SQL injection vulnerabilities
 
 ### Database
+
 - [ ] Migrations up to date
 - [ ] No breaking schema changes without migration
 - [ ] Indexes added for frequently queried fields
 
 ### Environment
+
 - [ ] All required env vars documented in `env.example`
 - [ ] No hardcoded URLs or config values
 
 ### Performance
+
 - [ ] Images optimized
 - [ ] No N+1 database queries
 - [ ] Proper caching with Redis where needed

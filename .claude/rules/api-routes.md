@@ -10,6 +10,7 @@ When working on API routes (`app/routes/api.*`):
 ## Authentication
 
 Always check authentication for protected endpoints:
+
 ```typescript
 import { requireUserLogin } from "~/server/auth.server";
 
@@ -22,6 +23,7 @@ export async function action({ request }: ActionFunctionArgs) {
 ## Input Validation
 
 Always validate inputs with Zod:
+
 ```typescript
 import { z } from "zod";
 
@@ -39,6 +41,7 @@ if (!result.success) {
 ## Response Format
 
 Use consistent response structure:
+
 ```typescript
 // Success
 return json({ success: true, data: result });
@@ -56,6 +59,7 @@ return json({ error: "Internal server error" }, { status: 500 });
 ## Cache Invalidation
 
 Invalidate Redis cache after mutations:
+
 ```typescript
 import { cacheDelete } from "~/services/redis.server";
 
@@ -66,6 +70,7 @@ await cacheDelete(`user-data:${userId}`);
 ## Method Handling
 
 Use `request.method` for multi-method endpoints:
+
 ```typescript
 export async function action({ request }: ActionFunctionArgs) {
   if (request.method === "DELETE") {

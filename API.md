@@ -40,6 +40,7 @@ Returns all collections for the authenticated user.
 | `imageId` | string | Optional. Check if image exists in collections |
 
 **Response:**
+
 ```json
 {
   "collections": [
@@ -65,6 +66,7 @@ POST /api/collections
 | `title` | string | Yes | Collection name |
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -82,6 +84,7 @@ GET /api/collections/:collectionId
 ```
 
 **Response:**
+
 ```json
 {
   "collection": {
@@ -112,6 +115,7 @@ DELETE /api/collections/:collectionId
 ```
 
 **Response:**
+
 ```json
 {
   "success": true
@@ -131,6 +135,7 @@ POST /api/collections/add-image
 | `collectionId` | string | Yes |
 
 **Response:**
+
 ```json
 {
   "success": true
@@ -138,6 +143,7 @@ POST /api/collections/add-image
 ```
 
 **Errors:**
+
 - `400` - Image already in collection
 - `404` - Collection or image not found
 
@@ -174,6 +180,7 @@ POST /api/images/:imageId/like
 Like an image.
 
 **Response:**
+
 ```json
 {
   "success": true
@@ -204,6 +211,7 @@ POST /api/images/:imageId/comments
 | `comment` | string | Yes | Comment text |
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -262,6 +270,7 @@ POST /api/users/:userId/follow
 Follow a user.
 
 **Response:**
+
 ```json
 {
   "success": true
@@ -269,6 +278,7 @@ Follow a user.
 ```
 
 **Errors:**
+
 - `400` - Cannot follow yourself
 
 ### Unfollow User
@@ -284,6 +294,7 @@ GET /api/users/:userId/followers
 ```
 
 **Response:**
+
 ```json
 {
   "followers": [
@@ -304,6 +315,7 @@ GET /api/users/:userId/following
 ```
 
 **Response:**
+
 ```json
 {
   "following": [
@@ -330,6 +342,7 @@ GET /api/processing/:requestId
 Get the status of an image generation request.
 
 **Response:**
+
 ```json
 {
   "status": "processing",
@@ -376,6 +389,7 @@ POST /webhook
 Handles Stripe payment events. Requires Stripe signature verification.
 
 **Handled Events:**
+
 - `checkout.session.completed` - Process successful payment
 - `customer.subscription.updated` - Update subscription status
 - `customer.subscription.deleted` - Handle cancellation
@@ -423,15 +437,15 @@ All endpoints return consistent error responses:
 
 ### HTTP Status Codes
 
-| Code | Description |
-|------|-------------|
-| `200` | Success |
-| `400` | Bad Request - Invalid input |
+| Code  | Description                  |
+| ----- | ---------------------------- |
+| `200` | Success                      |
+| `400` | Bad Request - Invalid input  |
 | `401` | Unauthorized - Not logged in |
-| `403` | Forbidden - No permission |
-| `404` | Not Found |
-| `405` | Method Not Allowed |
-| `500` | Internal Server Error |
+| `403` | Forbidden - No permission    |
+| `404` | Not Found                    |
+| `405` | Method Not Allowed           |
+| `500` | Internal Server Error        |
 
 ---
 
@@ -445,6 +459,7 @@ RATE_LIMIT_WINDOW_MS="900000"  # 15 minute window
 ```
 
 When rate limited, the API returns:
+
 ```json
 {
   "error": "Too many requests. Please try again later."
@@ -458,7 +473,7 @@ When rate limited, the API returns:
 For real-time processing updates, connect to the WebSocket server:
 
 ```javascript
-const ws = new WebSocket('ws://localhost:3001');
+const ws = new WebSocket("ws://localhost:3001");
 
 ws.onmessage = (event) => {
   const data = JSON.parse(event.data);
@@ -466,15 +481,18 @@ ws.onmessage = (event) => {
 };
 
 // Subscribe to a request
-ws.send(JSON.stringify({
-  type: 'subscribe',
-  requestId: 'request-id-here'
-}));
+ws.send(
+  JSON.stringify({
+    type: "subscribe",
+    requestId: "request-id-here",
+  }),
+);
 ```
 
 ### Message Types
 
 **Processing Update:**
+
 ```json
 {
   "type": "processing_update",
@@ -486,6 +504,7 @@ ws.send(JSON.stringify({
 ```
 
 **Completion:**
+
 ```json
 {
   "type": "processing_update",
@@ -504,12 +523,14 @@ ws.send(JSON.stringify({
 ### cURL Examples
 
 **List collections:**
+
 ```bash
 curl -X GET http://localhost:5173/api/collections \
   -H "Cookie: session=..."
 ```
 
 **Create collection:**
+
 ```bash
 curl -X POST http://localhost:5173/api/collections \
   -H "Cookie: session=..." \
@@ -517,12 +538,14 @@ curl -X POST http://localhost:5173/api/collections \
 ```
 
 **Like an image:**
+
 ```bash
 curl -X POST http://localhost:5173/api/images/IMAGE_ID/like \
   -H "Cookie: session=..."
 ```
 
 **Follow a user:**
+
 ```bash
 curl -X POST http://localhost:5173/api/users/USER_ID/follow \
   -H "Cookie: session=..."
@@ -532,24 +555,24 @@ curl -X POST http://localhost:5173/api/users/USER_ID/follow \
 
 ```javascript
 // List collections
-const response = await fetch('/api/collections', {
-  credentials: 'include'
+const response = await fetch("/api/collections", {
+  credentials: "include",
 });
 const data = await response.json();
 
 // Create collection
 const formData = new FormData();
-formData.append('title', 'My Collection');
+formData.append("title", "My Collection");
 
-await fetch('/api/collections', {
-  method: 'POST',
+await fetch("/api/collections", {
+  method: "POST",
   body: formData,
-  credentials: 'include'
+  credentials: "include",
 });
 
 // Like an image
 await fetch(`/api/images/${imageId}/like`, {
-  method: 'POST',
-  credentials: 'include'
+  method: "POST",
+  credentials: "include",
 });
 ```

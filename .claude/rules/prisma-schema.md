@@ -10,6 +10,7 @@ When editing the Prisma schema:
 ## Model Structure
 
 Follow this standard structure:
+
 ```prisma
 model Example {
   // Primary key
@@ -78,6 +79,7 @@ status    Status   @default(PENDING)
 ## Relations
 
 ### One-to-Many
+
 ```prisma
 model User {
   id     String  @id
@@ -94,6 +96,7 @@ model Image {
 ```
 
 ### Many-to-Many (Explicit)
+
 ```prisma
 model Image {
   id          String            @id
@@ -118,6 +121,7 @@ model CollectionImage {
 ## After Schema Changes
 
 Always run:
+
 ```bash
 npx prisma format
 npx prisma generate

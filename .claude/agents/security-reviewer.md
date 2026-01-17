@@ -16,12 +16,14 @@ You specialize in identifying security vulnerabilities in Pixel Studio.
 ### 1. Authentication
 
 **Check**: All protected routes use proper auth
+
 ```typescript
 // REQUIRED for protected routes
 const user = await requireUserLogin(request);
 ```
 
 **Search for unprotected routes**:
+
 ```bash
 grep -L "requireUserLogin\|requireAnonymous" app/routes/*.tsx
 ```
@@ -29,6 +31,7 @@ grep -L "requireUserLogin\|requireAnonymous" app/routes/*.tsx
 ### 2. Authorization
 
 **Check**: Users can only access their own resources
+
 ```typescript
 // GOOD: Verify ownership
 const resource = await prisma.resource.findFirst({
@@ -44,6 +47,7 @@ const resource = await prisma.resource.findUnique({
 ### 3. Input Validation
 
 **Check**: All inputs validated with Zod
+
 ```typescript
 // REQUIRED
 const schema = z.object({
@@ -53,6 +57,7 @@ const result = schema.safeParse(data);
 ```
 
 **Search for missing validation**:
+
 ```bash
 grep -L "z\." app/routes/api.*.ts
 ```
@@ -60,6 +65,7 @@ grep -L "z\." app/routes/api.*.ts
 ### 4. SQL Injection
 
 **Check**: Using Prisma (safe) not raw queries
+
 ```typescript
 // SAFE: Prisma handles escaping
 await prisma.user.findMany({ where: { name } });
@@ -71,6 +77,7 @@ await prisma.$queryRaw`SELECT * FROM users WHERE name = ${name}`;
 ### 5. XSS Prevention
 
 **Check**: User content properly escaped
+
 - React auto-escapes in JSX (safe by default)
 - Watch for `dangerouslySetInnerHTML`
 
@@ -81,12 +88,14 @@ grep -r "dangerouslySetInnerHTML" app/
 ### 6. Sensitive Data
 
 **Check**: No secrets in code
+
 ```bash
 # Search for potential secrets
 grep -ri "api_key\|apikey\|secret\|password" app/ --include="*.ts" --include="*.tsx"
 ```
 
 **Check**: Env vars not exposed to client
+
 - Server-only code in `.server.ts` files
 - No secrets in loader returns to client
 
@@ -97,6 +106,7 @@ Remix provides CSRF protection via form tokens. Ensure using `<Form>` component.
 ### 8. Rate Limiting
 
 **Check**: API endpoints have rate limiting
+
 - Redis-based rate limiting in `app/services/redis.server.ts`
 
 ## Vulnerable Patterns to Find
@@ -120,9 +130,9 @@ grep -ri "http://\|https://.*key=" app/
 
 ## Key Security Files
 
-| Area | File |
-|------|------|
-| Auth config | `app/services/auth.server.ts` |
-| Session handling | `app/server/auth.server.ts` |
-| Validation schemas | `app/schemas/` |
-| Rate limiting | `app/services/redis.server.ts` |
+| Area               | File                           |
+| ------------------ | ------------------------------ |
+| Auth config        | `app/services/auth.server.ts`  |
+| Session handling   | `app/server/auth.server.ts`    |
+| Validation schemas | `app/schemas/`                 |
+| Rate limiting      | `app/services/redis.server.ts` |

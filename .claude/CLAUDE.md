@@ -8,19 +8,19 @@ This file provides context for Claude Code to work effectively with the Pixel St
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Framework | Remix 2.13 + React 18 + TypeScript |
-| Styling | TailwindCSS + Radix UI + shadcn/ui |
-| Database | PostgreSQL + Prisma ORM |
-| Auth | Remix Auth + Google OAuth + Supabase |
-| Queue | Apache Kafka (KafkaJS) |
-| Cache | Upstash Redis |
-| Storage | AWS S3 |
-| Real-time | Native WebSocket |
-| AI APIs | OpenAI (DALL-E), Hugging Face (SD, Flux) |
-| Payments | Stripe |
-| Monitoring | Sentry + Vercel Analytics |
+| Layer      | Technology                               |
+| ---------- | ---------------------------------------- |
+| Framework  | Remix 2.13 + React 18 + TypeScript       |
+| Styling    | TailwindCSS + Radix UI + shadcn/ui       |
+| Database   | PostgreSQL + Prisma ORM                  |
+| Auth       | Remix Auth + Google OAuth + Supabase     |
+| Queue      | Apache Kafka (KafkaJS)                   |
+| Cache      | Upstash Redis                            |
+| Storage    | AWS S3                                   |
+| Real-time  | Native WebSocket                         |
+| AI APIs    | OpenAI (DALL-E), Hugging Face (SD, Flux) |
+| Payments   | Stripe                                   |
+| Monitoring | Sentry + Vercel Analytics                |
 
 ## Project Structure
 
@@ -56,10 +56,10 @@ prisma/                # Database schema
 Use these TypeScript path aliases:
 
 ```typescript
-import { something } from "~/utils/something";     // app/
-import { Button } from "components/ui/button";     // app/components/
-import { getUser } from "server/auth.server";      // app/server/
-import { imageService } from "services/image";     // app/services/
+import { something } from "~/utils/something"; // app/
+import { Button } from "components/ui/button"; // app/components/
+import { getUser } from "server/auth.server"; // app/server/
+import { imageService } from "services/image"; // app/services/
 ```
 
 ## Common Commands
@@ -135,6 +135,7 @@ export async function getExampleById(id: string) {
 ### Server-Only Code
 
 Files with `.server.ts` suffix are server-only. Use for:
+
 - Database operations
 - External API calls
 - Authentication logic
@@ -156,24 +157,26 @@ import { Button } from "components/ui/button";
 
 ## Database Schema (Key Models)
 
-| Model | Purpose |
-|-------|---------|
-| User | User accounts with credits, follows |
-| Image | Generated images with metadata |
-| Collection | User-organized image groups |
-| Set | Batch of images from single prompt |
-| Comment | Image comments (nested) |
-| ImageLike | Like tracking |
-| Follow | User follow relationships |
+| Model      | Purpose                             |
+| ---------- | ----------------------------------- |
+| User       | User accounts with credits, follows |
+| Image      | Generated images with metadata      |
+| Collection | User-organized image groups         |
+| Set        | Batch of images from single prompt  |
+| Comment    | Image comments (nested)             |
+| ImageLike  | Like tracking                       |
+| Follow     | User follow relationships           |
 
 ## Processing Modes
 
 ### Synchronous (Legacy)
+
 - Set `ENABLE_KAFKA_IMAGE_GENERATION=false`
 - Direct API calls, user waits for completion
 - Simpler but slower UX
 
 ### Asynchronous (Recommended)
+
 - Set `ENABLE_KAFKA_IMAGE_GENERATION=true`
 - Kafka queue + WebSocket updates
 - Better UX with real-time progress
@@ -181,6 +184,7 @@ import { Button } from "components/ui/button";
 ## Environment Variables
 
 Required variables (see `env.example`):
+
 - `DATABASE_URL` - PostgreSQL connection
 - `GOOGLE_CLIENT_ID/SECRET` - OAuth
 - `OPENAI_API_KEY` - DALL-E access
@@ -215,14 +219,14 @@ Required variables (see `env.example`):
 
 ## Key Files Reference
 
-| File | Purpose |
-|------|---------|
-| `app/root.tsx` | Root layout, providers, theme |
-| `app/entry.server.tsx` | Server entry point |
-| `app/entry.client.tsx` | Client entry point |
-| `server.js` | Production Express server |
-| `vite.config.ts` | Build configuration |
-| `prisma/schema.prisma` | Database schema |
+| File                   | Purpose                       |
+| ---------------------- | ----------------------------- |
+| `app/root.tsx`         | Root layout, providers, theme |
+| `app/entry.server.tsx` | Server entry point            |
+| `app/entry.client.tsx` | Client entry point            |
+| `server.js`            | Production Express server     |
+| `vite.config.ts`       | Build configuration           |
+| `prisma/schema.prisma` | Database schema               |
 
 ## Documentation
 

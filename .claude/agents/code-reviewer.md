@@ -15,6 +15,7 @@ You specialize in reviewing code for quality and adherence to Pixel Studio patte
 ## Review Process
 
 ### 1. Understand the Change
+
 ```bash
 # See what changed
 git diff HEAD~1
@@ -26,6 +27,7 @@ git diff --cached
 ### 2. Check Code Quality
 
 **TypeScript**
+
 - [ ] No `any` types
 - [ ] Proper null handling
 - [ ] Correct return types
@@ -36,11 +38,13 @@ grep -r ": any\|as any" app/ --include="*.ts" --include="*.tsx"
 ```
 
 **Error Handling**
+
 - [ ] Async errors handled
 - [ ] User-friendly error messages
 - [ ] Errors logged appropriately
 
 **Naming**
+
 - [ ] Variables/functions use camelCase
 - [ ] Components use PascalCase
 - [ ] Clear, descriptive names
@@ -48,21 +52,25 @@ grep -r ": any\|as any" app/ --include="*.ts" --include="*.tsx"
 ### 3. Pattern Compliance
 
 **Routes**
+
 - [ ] Uses `loader` for GET, `action` for mutations
 - [ ] Returns `json()` or `redirect()`
 - [ ] Has proper authentication
 
 **Components**
+
 - [ ] Uses shadcn/ui components
 - [ ] Uses `cn()` for class merging
 - [ ] Accepts `className` prop
 
 **Database**
+
 - [ ] Uses Prisma singleton
 - [ ] Includes proper indexes
 - [ ] Uses transactions where needed
 
 **API**
+
 - [ ] Validates with Zod
 - [ ] Returns consistent format
 - [ ] Invalidates cache after mutations
@@ -83,11 +91,13 @@ npm run test:run
 ## Common Issues
 
 ### Unnecessary Complexity
+
 - Over-abstraction for one-time code
 - Premature optimization
 - Feature flags for simple changes
 
 ### Missing Validation
+
 ```typescript
 // BAD
 const title = formData.get("title") as string;
@@ -98,9 +108,12 @@ const { title } = schema.parse(Object.fromEntries(formData));
 ```
 
 ### Inconsistent Error Handling
+
 ```typescript
 // BAD: Silent failure
-try { await save(); } catch {}
+try {
+  await save();
+} catch {}
 
 // GOOD: Proper handling
 try {
@@ -111,6 +124,7 @@ try {
 ```
 
 ### Missing Loading States
+
 ```typescript
 // GOOD
 const navigation = useNavigation();

@@ -13,13 +13,16 @@ When writing or modifying tests:
 ## Unit Tests (Vitest)
 
 ### File Location
+
 Place tests next to the file being tested:
+
 ```
 app/utils/cn.ts
 app/utils/cn.test.ts
 ```
 
 ### Test Structure
+
 ```typescript
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
@@ -60,13 +63,16 @@ vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser);
 ## E2E Tests (Playwright)
 
 ### File Location
+
 Place in `tests/` directory:
+
 ```
 tests/pages.spec.ts
 tests/api.spec.ts
 ```
 
 ### Test Structure
+
 ```typescript
 import { test, expect } from "@playwright/test";
 
@@ -79,6 +85,7 @@ test.describe("Feature", () => {
 ```
 
 ### API Testing
+
 ```typescript
 test("API returns data", async ({ request }) => {
   const response = await request.get("/api/endpoint");
@@ -109,8 +116,8 @@ npm run test:e2e
 
 ```typescript
 // Equality
-expect(value).toBe(expected);        // Strict
-expect(value).toEqual(expected);     // Deep
+expect(value).toBe(expected); // Strict
+expect(value).toEqual(expected); // Deep
 
 // Truthiness
 expect(value).toBeTruthy();

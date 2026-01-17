@@ -1,9 +1,9 @@
 ---
 name: Bug Report
 about: Report a bug to help us improve Pixel Studio
-title: '[BUG] '
+title: "[BUG] "
 labels: bug
-assignees: ''
+assignees: ""
 ---
 
 ## Bug Description
@@ -47,6 +47,7 @@ If you have ideas on how to fix this, please share.
 ---
 
 **Checklist before submitting:**
+
 - [ ] I have searched existing issues to ensure this isn't a duplicate
 - [ ] I have provided clear steps to reproduce
 - [ ] I have included relevant environment information

@@ -25,11 +25,13 @@ Create a database migration for: $ARGUMENTS
    - Add proper relations and indexes
 
 3. **Generate Migration**
+
    ```bash
    npx prisma migrate dev --name <migration_name>
    ```
 
 4. **Update Prisma Client**
+
    ```bash
    npx prisma generate
    ```
@@ -55,6 +57,7 @@ model Example {
 ```
 
 ## Key Models Reference
+
 - User - User accounts with credits
 - Image - Generated images
 - Collection - User-organized groups

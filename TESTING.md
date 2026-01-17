@@ -6,12 +6,12 @@ Testing strategy and guidelines for Pixel Studio.
 
 Pixel Studio uses a comprehensive testing approach:
 
-| Type | Tool | Location | Purpose |
-|------|------|----------|---------|
-| Unit Tests | Vitest | `tests/`, `*.test.ts` | Test individual functions/components |
-| E2E Tests | Playwright | `tests/`, `*.spec.ts` | Test full user flows |
-| Type Checking | TypeScript | Everywhere | Compile-time type safety |
-| Linting | ESLint | Everywhere | Code quality |
+| Type          | Tool       | Location              | Purpose                              |
+| ------------- | ---------- | --------------------- | ------------------------------------ |
+| Unit Tests    | Vitest     | `tests/`, `*.test.ts` | Test individual functions/components |
+| E2E Tests     | Playwright | `tests/`, `*.spec.ts` | Test full user flows                 |
+| Type Checking | TypeScript | Everywhere            | Compile-time type safety             |
+| Linting       | ESLint     | Everywhere            | Code quality                         |
 
 ## Quick Commands
 
@@ -76,7 +76,7 @@ describe("createCollection", () => {
 
   it("should throw error for empty title", async () => {
     await expect(
-      createCollection({ title: "", userId: "user-123" })
+      createCollection({ title: "", userId: "user-123" }),
     ).rejects.toThrow("Title is required");
   });
 });
@@ -366,7 +366,9 @@ export const test = base.extend<AuthFixtures>({
 });
 
 // Usage
-test("authenticated user can create collection", async ({ authenticatedPage }) => {
+test("authenticated user can create collection", async ({
+  authenticatedPage,
+}) => {
   await authenticatedPage.goto("/collections");
   // ...
 });
@@ -377,6 +379,7 @@ test("authenticated user can create collection", async ({ authenticatedPage }) =
 ### What to Test
 
 **Unit Tests:**
+
 - Service functions
 - Utility functions
 - Zod schemas
@@ -384,6 +387,7 @@ test("authenticated user can create collection", async ({ authenticatedPage }) =
 - Business logic
 
 **E2E Tests:**
+
 - Critical user flows (login, image generation)
 - Form submissions
 - Navigation
@@ -424,8 +428,8 @@ tests/
 
 ```typescript
 // File names
-collection.test.ts      // Unit test
-auth.spec.ts           // E2E test
+collection.test.ts; // Unit test
+auth.spec.ts; // E2E test
 
 // Test descriptions
 describe("createCollection", () => {

@@ -61,7 +61,9 @@ describe("cn utility", () => {
   });
 
   it("handles conditional classes", () => {
-    expect(cn("base", false && "hidden", true && "visible")).toBe("base visible");
+    expect(cn("base", false && "hidden", true && "visible")).toBe(
+      "base visible",
+    );
   });
 
   it("handles undefined/null", () => {

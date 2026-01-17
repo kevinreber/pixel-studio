@@ -56,6 +56,7 @@ git checkout -b fix/bug-description
 ```
 
 Branch naming conventions:
+
 - `feature/` - New features
 - `fix/` - Bug fixes
 - `docs/` - Documentation changes
@@ -161,15 +162,15 @@ import { cn } from "~/utils/cn";
 
 ### File Organization
 
-| Type | Location | Naming |
-|------|----------|--------|
-| Routes | `app/routes/` | Remix conventions |
-| Components | `app/components/` | PascalCase.tsx |
-| Services | `app/services/` | camelCase.server.ts |
-| Server utils | `app/server/` | camelCase.server.ts |
-| Hooks | `app/hooks/` | useCamelCase.ts |
-| Types | `app/types/` | PascalCase.types.ts |
-| Schemas | `app/schemas/` | camelCase.ts |
+| Type         | Location          | Naming              |
+| ------------ | ----------------- | ------------------- |
+| Routes       | `app/routes/`     | Remix conventions   |
+| Components   | `app/components/` | PascalCase.tsx      |
+| Services     | `app/services/`   | camelCase.server.ts |
+| Server utils | `app/server/`     | camelCase.server.ts |
+| Hooks        | `app/hooks/`      | useCamelCase.ts     |
+| Types        | `app/types/`      | PascalCase.types.ts |
+| Schemas      | `app/schemas/`    | camelCase.ts        |
 
 ### Validation
 
@@ -204,7 +205,7 @@ try {
   console.error("Operation failed:", error);
   return json(
     { success: false, error: "Something went wrong" },
-    { status: 500 }
+    { status: 500 },
   );
 }
 ```
@@ -223,16 +224,16 @@ We use [Conventional Commits](https://www.conventionalcommits.org/):
 
 ### Types
 
-| Type | Description |
-|------|-------------|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `docs` | Documentation only |
-| `style` | Formatting, no code change |
+| Type       | Description                        |
+| ---------- | ---------------------------------- |
+| `feat`     | New feature                        |
+| `fix`      | Bug fix                            |
+| `docs`     | Documentation only                 |
+| `style`    | Formatting, no code change         |
 | `refactor` | Code change, no new feature or fix |
-| `perf` | Performance improvement |
-| `test` | Adding/updating tests |
-| `chore` | Maintenance tasks |
+| `perf`     | Performance improvement            |
+| `test`     | Adding/updating tests              |
+| `chore`    | Maintenance tasks                  |
 
 ### Examples
 
@@ -264,6 +265,7 @@ test(comments): add unit tests for comment service
 ### PR Title
 
 Follow the same format as commits:
+
 ```
 feat(component): add new image gallery view
 ```
@@ -271,6 +273,7 @@ feat(component): add new image gallery view
 ### PR Description
 
 Use the pull request template. Include:
+
 - **Summary**: What does this PR do?
 - **Changes**: List of changes made
 - **Testing**: How was this tested?
@@ -296,6 +299,7 @@ Use the pull request template. Include:
 ### Bug Reports
 
 Include:
+
 - Clear description of the bug
 - Steps to reproduce
 - Expected vs actual behavior
@@ -305,6 +309,7 @@ Include:
 ### Feature Requests
 
 Include:
+
 - Clear description of the feature
 - Use case / problem it solves
 - Proposed implementation (optional)
@@ -312,14 +317,14 @@ Include:
 
 ### Labels
 
-| Label | Description |
-|-------|-------------|
-| `bug` | Something isn't working |
-| `feature` | New feature request |
-| `enhancement` | Improvement to existing feature |
-| `documentation` | Documentation updates |
-| `good first issue` | Good for newcomers |
-| `help wanted` | Extra attention needed |
+| Label              | Description                     |
+| ------------------ | ------------------------------- |
+| `bug`              | Something isn't working         |
+| `feature`          | New feature request             |
+| `enhancement`      | Improvement to existing feature |
+| `documentation`    | Documentation updates           |
+| `good first issue` | Good for newcomers              |
+| `help wanted`      | Extra attention needed          |
 
 ## Questions?
 

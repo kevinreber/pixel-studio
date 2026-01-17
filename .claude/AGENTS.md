@@ -158,6 +158,7 @@ Use this workflow for database schema changes.
    - Check for breaking changes
 
 2. **Apply Changes**
+
    ```bash
    # Development
    npx prisma db push          # Quick push for dev
@@ -321,14 +322,14 @@ User Request → Kafka Producer → Topic → Consumer → AI API → S3 → DB 
 
 ### Key Files
 
-| File | Purpose |
-|------|---------|
-| `app/server/kafka.server.ts` | Kafka client setup |
+| File                                    | Purpose              |
+| --------------------------------------- | -------------------- |
+| `app/server/kafka.server.ts`            | Kafka client setup   |
 | `app/server/imageGenerationProducer.ts` | Queue job submission |
-| `app/server/imageGenerationWorker.ts` | Job processing |
-| `app/server/websocket.server.ts` | Real-time updates |
-| `scripts/startConsumers.ts` | Consumer startup |
-| `scripts/startWebSocketServer.ts` | WebSocket server |
+| `app/server/imageGenerationWorker.ts`   | Job processing       |
+| `app/server/websocket.server.ts`        | Real-time updates    |
+| `scripts/startConsumers.ts`             | Consumer startup     |
+| `scripts/startWebSocketServer.ts`       | WebSocket server     |
 
 ### Adding New Job Type
 
@@ -369,11 +370,11 @@ npm run lint               # Check style
 
 ### Environment-Specific Notes
 
-| Platform | Notes |
-|----------|-------|
-| Vercel | Set `ENABLE_KAFKA_IMAGE_GENERATION=false` |
-| Railway | Can use full async mode |
-| AWS | Use MSK for Kafka, RDS for Postgres |
+| Platform | Notes                                     |
+| -------- | ----------------------------------------- |
+| Vercel   | Set `ENABLE_KAFKA_IMAGE_GENERATION=false` |
+| Railway  | Can use full async mode                   |
+| AWS      | Use MSK for Kafka, RDS for Postgres       |
 
 ### Post-Deployment
 
@@ -437,13 +438,13 @@ Use this workflow when diagnosing issues.
 
 ### Common Issues
 
-| Issue | Check |
-|-------|-------|
-| DB connection fails | Verify `DATABASE_URL`, check Prisma client |
-| Auth not working | Check Google OAuth credentials, session secret |
-| Images not generating | Verify API keys, check Kafka if async |
-| WebSocket disconnects | Check `WS_PORT`, verify server running |
-| Styles broken | Run `npm run build`, check Tailwind config |
+| Issue                 | Check                                          |
+| --------------------- | ---------------------------------------------- |
+| DB connection fails   | Verify `DATABASE_URL`, check Prisma client     |
+| Auth not working      | Check Google OAuth credentials, session secret |
+| Images not generating | Verify API keys, check Kafka if async          |
+| WebSocket disconnects | Check `WS_PORT`, verify server running         |
+| Styles broken         | Run `npm run build`, check Tailwind config     |
 
 ### Debug Commands
 

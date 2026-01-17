@@ -49,23 +49,17 @@
     "PostToolUse": [
       {
         "matcher": "Edit(prisma/schema.prisma)",
-        "hooks": [
-          "npx prisma format"
-        ]
+        "hooks": ["npx prisma format"]
       }
     ],
     "Stop": [
       {
         "matcher": "Edit(app/**/*.ts)",
-        "hooks": [
-          "npm run typecheck --silent 2>&1 | head -20 || true"
-        ]
+        "hooks": ["npm run typecheck --silent 2>&1 | head -20 || true"]
       },
       {
         "matcher": "Edit(app/**/*.tsx)",
-        "hooks": [
-          "npm run typecheck --silent 2>&1 | head -20 || true"
-        ]
+        "hooks": ["npm run typecheck --silent 2>&1 | head -20 || true"]
       }
     ]
   }

@@ -63,6 +63,7 @@ app/
 ```
 
 **Key Patterns:**
+
 - Server-side rendering with Remix loaders
 - Progressive enhancement
 - Optimistic UI updates
@@ -86,6 +87,7 @@ app/
 ```
 
 **Key Patterns:**
+
 - Loaders for GET requests (data fetching)
 - Actions for mutations (POST, PUT, DELETE)
 - Server-only code in `.server.ts` files
@@ -100,14 +102,14 @@ prisma/
 
 **Key Models:**
 
-| Model | Purpose | Key Relations |
-|-------|---------|---------------|
-| User | User accounts | has many Images, Collections, Follows |
-| Image | Generated images | belongs to User, Set; has many Comments, Likes |
-| Collection | User collections | belongs to User; has many Images |
-| Set | Batch of images | belongs to User; has many Images |
-| Comment | Image comments | belongs to User, Image; self-referential for threads |
-| Follow | User follows | connects Users |
+| Model      | Purpose          | Key Relations                                        |
+| ---------- | ---------------- | ---------------------------------------------------- |
+| User       | User accounts    | has many Images, Collections, Follows                |
+| Image      | Generated images | belongs to User, Set; has many Comments, Likes       |
+| Collection | User collections | belongs to User; has many Images                     |
+| Set        | Batch of images  | belongs to User; has many Images                     |
+| Comment    | Image comments   | belongs to User, Image; self-referential for threads |
+| Follow     | User follows     | connects Users                                       |
 
 ### 4. Caching (Redis)
 
@@ -120,6 +122,7 @@ cache:liked-images:{userId}  // User's liked images
 ```
 
 **Cache Strategy:**
+
 - Cache-aside pattern
 - TTL-based expiration
 - Invalidation on mutations
@@ -129,11 +132,13 @@ cache:liked-images:{userId}  // User's liked images
 Two options supported:
 
 **QStash (Recommended for most cases)**
+
 ```
 User Request → QStash Queue → Webhook Endpoint → Process → Update DB
 ```
 
 **Kafka (High throughput)**
+
 ```
 User Request → Kafka Producer → Topic → Consumer Worker → Process → Update DB
                                                               ↓

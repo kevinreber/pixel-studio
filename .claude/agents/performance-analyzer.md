@@ -19,6 +19,7 @@ You specialize in identifying and fixing performance issues in Pixel Studio.
 **Symptoms**: Slow page loads, many database queries for single page
 
 **How to Find**:
+
 ```typescript
 // Look for loops that query inside
 for (const item of items) {
@@ -27,6 +28,7 @@ for (const item of items) {
 ```
 
 **Fix**: Use `include` or separate batch query
+
 ```typescript
 const items = await prisma.item.findMany({
   include: { related: true },
@@ -36,6 +38,7 @@ const items = await prisma.item.findMany({
 ### 2. Missing Database Indexes
 
 **Check** `prisma/schema.prisma` for `@@index`:
+
 ```prisma
 model Image {
   userId String
@@ -49,25 +52,28 @@ model Image {
 ### 3. Uncached Expensive Queries
 
 **Check** `app/services/redis.server.ts` for caching patterns:
+
 ```typescript
 import { getCachedDataWithRevalidate } from "~/services/redis.server";
 
 const data = await getCachedDataWithRevalidate(
   `cache-key:${id}`,
   () => expensiveQuery(),
-  300 // TTL in seconds
+  300, // TTL in seconds
 );
 ```
 
 ### 4. Large Bundle Size
 
 **Analyze**:
+
 ```bash
 npm run build
 # Check output for large chunks
 ```
 
 **Common causes**:
+
 - Importing entire libraries instead of specific functions
 - Large images/assets in bundle
 - Unused dependencies
@@ -75,11 +81,13 @@ npm run build
 ### 5. Slow Loaders
 
 **Check** route loaders for:
+
 - Sequential queries that could be parallel
 - Unnecessary data fetching
 - Missing pagination
 
 **Fix with Promise.all**:
+
 ```typescript
 const [users, images, stats] = await Promise.all([
   getUsers(),
@@ -100,12 +108,12 @@ const [users, images, stats] = await Promise.all([
 
 ## Key Files to Review
 
-| Area | Files |
-|------|-------|
-| Database queries | `app/server/*.ts` |
-| Caching | `app/services/redis.server.ts` |
-| Route loaders | `app/routes/*.tsx` |
-| Prisma schema | `prisma/schema.prisma` |
+| Area             | Files                          |
+| ---------------- | ------------------------------ |
+| Database queries | `app/server/*.ts`              |
+| Caching          | `app/services/redis.server.ts` |
+| Route loaders    | `app/routes/*.tsx`             |
+| Prisma schema    | `prisma/schema.prisma`         |
 
 ## Profiling Commands
 

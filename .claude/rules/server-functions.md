@@ -11,6 +11,7 @@ When working on server functions (`app/server/`):
 ## File Naming
 
 Use `.server.ts` suffix to ensure server-only code:
+
 ```
 app/server/getImages.server.ts
 app/server/createCollection.server.ts
@@ -19,6 +20,7 @@ app/server/createCollection.server.ts
 ## Prisma Import
 
 Always import from the singleton:
+
 ```typescript
 import { prisma } from "~/services/prisma.server";
 ```
@@ -28,7 +30,7 @@ import { prisma } from "~/services/prisma.server";
 ```typescript
 export async function getResourceById(
   id: string,
-  userId?: string
+  userId?: string,
 ): Promise<Resource | null> {
   // 1. Validate inputs if needed
   if (!id) return null;
@@ -57,6 +59,7 @@ export async function getResourceById(
 ## Common Patterns
 
 ### Pagination
+
 ```typescript
 const pageSize = 20;
 const skip = (page - 1) * pageSize;
@@ -72,6 +75,7 @@ const [items, total] = await Promise.all([
 ```
 
 ### With User Check
+
 ```typescript
 const resource = await prisma.resource.findFirst({
   where: {
@@ -82,6 +86,7 @@ const resource = await prisma.resource.findFirst({
 ```
 
 ### Include Counts
+
 ```typescript
 const resource = await prisma.resource.findUnique({
   where: { id },
@@ -96,6 +101,7 @@ const resource = await prisma.resource.findUnique({
 ## Error Handling
 
 Let errors bubble up to route handlers:
+
 ```typescript
 // DON'T catch and return null silently
 // DO let Prisma errors propagate

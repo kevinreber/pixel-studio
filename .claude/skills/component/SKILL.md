@@ -64,8 +64,19 @@ export { MyComponent };
 ```typescript
 import { Button } from "components/ui/button";
 import { Input } from "components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "components/ui/dialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "components/ui/tooltip";
 ```
 
 ## The cn() Utility
@@ -229,23 +240,23 @@ function MyComponent() {
 
 ```typescript
 // Card
-"rounded-lg border bg-card text-card-foreground shadow-sm"
+"rounded-lg border bg-card text-card-foreground shadow-sm";
 
 // Flex centering
-"flex items-center justify-center"
+"flex items-center justify-center";
 
 // Truncate text
-"truncate" // Single line
-"line-clamp-2" // Two lines
+"truncate"; // Single line
+"line-clamp-2"; // Two lines
 
 // Interactive states
-"hover:bg-accent hover:text-accent-foreground"
-"focus:outline-none focus:ring-2 focus:ring-ring"
-"disabled:pointer-events-none disabled:opacity-50"
+"hover:bg-accent hover:text-accent-foreground";
+"focus:outline-none focus:ring-2 focus:ring-ring";
+"disabled:pointer-events-none disabled:opacity-50";
 
 // Transitions
-"transition-colors duration-200"
-"transition-all duration-300 ease-in-out"
+"transition-colors duration-200";
+"transition-all duration-300 ease-in-out";
 ```
 
 ## Checklist
