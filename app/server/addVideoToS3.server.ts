@@ -8,14 +8,14 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const s3Client = new S3Client({
-  region: process.env.AWS_REGION || "us-east-1",
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+    accessKeyId: process.env.ACCESS_KEY_ID_AWS!,
+    secretAccessKey: process.env.SECRET_ACCESS_KEY_AWS!,
   },
+  region: process.env.REGION_AWS!,
 });
 
-const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME || "";
+const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME_AWS || "";
 
 export interface AddVideoToS3Params {
   videoId: string;
