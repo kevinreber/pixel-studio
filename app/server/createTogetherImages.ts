@@ -34,16 +34,10 @@ interface TogetherErrorResponse {
   };
 }
 
-// Model configurations for Together AI
+// Model configurations for Together AI (unique offerings only)
 const TOGETHER_MODELS: Record<string, { modelId: string }> = {
   "together-flux-schnell": {
     modelId: "black-forest-labs/FLUX.1-schnell-Free",
-  },
-  "together-flux-dev": {
-    modelId: "black-forest-labs/FLUX.1-dev",
-  },
-  "together-sdxl": {
-    modelId: "stabilityai/stable-diffusion-xl-base-1.0",
   },
   "together-sd-turbo": {
     modelId: "stabilityai/sdxl-turbo",

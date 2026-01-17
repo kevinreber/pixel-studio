@@ -157,34 +157,7 @@ export const MODEL_OPTIONS = [
     creditCost: 1,
   },
 
-  // Fal.ai Models
-  {
-    name: "Flux Schnell (Fal)",
-    value: "fal-flux-schnell",
-    image: "/assets/model-thumbs/fal-flux-schnell.jpg",
-    description: "Ultra-fast Flux model for rapid prototyping.",
-    company: "Fal.ai",
-    supportsStyles: false,
-    creditCost: 1,
-  },
-  {
-    name: "Flux Dev (Fal)",
-    value: "fal-flux-dev",
-    image: "/assets/model-thumbs/fal-flux-dev.jpg",
-    description: "Development Flux model with excellent quality.",
-    company: "Fal.ai",
-    supportsStyles: false,
-    creditCost: 2,
-  },
-  {
-    name: "Flux Pro (Fal)",
-    value: "fal-flux-pro",
-    image: "/assets/model-thumbs/fal-flux-pro.jpg",
-    description: "Professional Flux model via Fal.ai's fast infrastructure.",
-    company: "Fal.ai",
-    supportsStyles: false,
-    creditCost: 3,
-  },
+  // Fal.ai Models (unique offerings only)
   {
     name: "SDXL Lightning",
     value: "fal-sdxl-lightning",
@@ -204,7 +177,7 @@ export const MODEL_OPTIONS = [
     creditCost: 2,
   },
 
-  // Together AI Models
+  // Together AI Models (unique offerings only)
   {
     name: "Flux Schnell (Free)",
     value: "together-flux-schnell",
@@ -212,24 +185,6 @@ export const MODEL_OPTIONS = [
     description: "Free Flux Schnell model via Together AI.",
     company: "Together AI",
     supportsStyles: false,
-    creditCost: 1,
-  },
-  {
-    name: "Flux Dev (Together)",
-    value: "together-flux-dev",
-    image: "/assets/model-thumbs/together-flux-dev.jpg",
-    description: "Flux Dev model via Together AI's platform.",
-    company: "Together AI",
-    supportsStyles: false,
-    creditCost: 2,
-  },
-  {
-    name: "SDXL (Together)",
-    value: "together-sdxl",
-    image: "/assets/model-thumbs/together-sdxl.jpg",
-    description: "Stable Diffusion XL on Together AI.",
-    company: "Together AI",
-    supportsStyles: true,
     creditCost: 1,
   },
   {

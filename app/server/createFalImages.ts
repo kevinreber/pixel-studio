@@ -46,52 +46,8 @@ interface FalErrorResponse {
   detail: string | Array<{ msg: string }>;
 }
 
-// Model configurations for Fal.ai
+// Model configurations for Fal.ai (unique offerings only - no Flux duplicates)
 const FAL_MODELS: Record<string, { endpoint: string; inputMapper: (formData: CreateImagesFormData) => Record<string, unknown> }> = {
-  "fal-flux-schnell": {
-    endpoint: "fal-ai/flux/schnell",
-    inputMapper: (formData) => ({
-      prompt: formData.prompt,
-      image_size: {
-        width: formData.width || 1024,
-        height: formData.height || 1024,
-      },
-      num_inference_steps: 4, // Schnell is optimized for 4 steps
-      num_images: 1,
-      enable_safety_checker: true,
-      ...(formData.seed !== undefined && { seed: formData.seed }),
-    }),
-  },
-  "fal-flux-dev": {
-    endpoint: "fal-ai/flux/dev",
-    inputMapper: (formData) => ({
-      prompt: formData.prompt,
-      image_size: {
-        width: formData.width || 1024,
-        height: formData.height || 1024,
-      },
-      num_inference_steps: formData.steps || 28,
-      guidance_scale: formData.cfgScale || 3.5,
-      num_images: 1,
-      enable_safety_checker: true,
-      ...(formData.seed !== undefined && { seed: formData.seed }),
-    }),
-  },
-  "fal-flux-pro": {
-    endpoint: "fal-ai/flux-pro",
-    inputMapper: (formData) => ({
-      prompt: formData.prompt,
-      image_size: {
-        width: formData.width || 1024,
-        height: formData.height || 1024,
-      },
-      num_inference_steps: formData.steps || 25,
-      guidance_scale: formData.cfgScale || 3,
-      num_images: 1,
-      safety_tolerance: "2",
-      ...(formData.seed !== undefined && { seed: formData.seed }),
-    }),
-  },
   "fal-sdxl-lightning": {
     endpoint: "fal-ai/fast-lightning-sdxl",
     inputMapper: (formData) => ({

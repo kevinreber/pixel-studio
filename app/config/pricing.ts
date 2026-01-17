@@ -99,22 +99,7 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     apiCostEstimate: 0.015,
   },
 
-  // Fal.ai Models
-  "fal-flux-schnell": {
-    credits: 1,
-    tier: "budget",
-    apiCostEstimate: 0.003,
-  },
-  "fal-flux-dev": {
-    credits: 2,
-    tier: "standard",
-    apiCostEstimate: 0.025,
-  },
-  "fal-flux-pro": {
-    credits: 3,
-    tier: "standard",
-    apiCostEstimate: 0.035,
-  },
+  // Fal.ai Models (unique offerings only)
   "fal-sdxl-lightning": {
     credits: 1,
     tier: "budget",
@@ -126,21 +111,11 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     apiCostEstimate: 0.02,
   },
 
-  // Together AI Models
+  // Together AI Models (unique offerings only)
   "together-flux-schnell": {
     credits: 1,
     tier: "budget",
     apiCostEstimate: 0.003,
-  },
-  "together-flux-dev": {
-    credits: 2,
-    tier: "standard",
-    apiCostEstimate: 0.025,
-  },
-  "together-sdxl": {
-    credits: 1,
-    tier: "budget",
-    apiCostEstimate: 0.01,
   },
   "together-sd-turbo": {
     credits: 1,
