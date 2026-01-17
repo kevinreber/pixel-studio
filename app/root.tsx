@@ -8,6 +8,7 @@ import {
   ScrollRestoration,
   useLoaderData,
   useLocation,
+  ShouldRevalidateFunctionArgs,
   // useRouteLoaderData,
 } from "@remix-run/react";
 import { LoaderFunctionArgs } from "@remix-run/node";
@@ -34,6 +35,20 @@ import {
 import "./tailwind.css";
 import "./globals.css";
 import { getCachedDataWithRevalidate } from "~/utils/cache.server";
+
+// Prevent revalidation after fetcher actions (like follow/unfollow)
+// The UI handles optimistic updates, so we don't need to refetch all data
+export const shouldRevalidate = ({
+  formAction,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) => {
+  // Don't revalidate after follow/unfollow actions - UI handles optimistic updates
+  if (formAction?.includes("/follow")) {
+    return false;
+  }
+  return defaultShouldRevalidate;
+};
+
 export async function loader({ request }: LoaderFunctionArgs) {
   const [csrfToken, csrfCookieHeader] = await csrf.commitToken(request);
   const honeyProps = honeypot.getInputProps();
@@ -135,7 +150,7 @@ function Document({
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const loaderData = useLoaderData<typeof loader>();
-  console.log(loaderData);
+  console.log("loaderData in Layout:", loaderData);
   const location = useLocation();
   const isHome = location.pathname === "/";
 

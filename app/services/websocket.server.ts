@@ -331,7 +331,7 @@ export class ProcessingWebSocketServer {
 
   private handleClientMessage(
     ws: WebSocket,
-    _requestId: string,
+    requestId: string,
     message: { type: string }
   ): void {
     // Handle client messages (e.g., ping, status request, etc.)
