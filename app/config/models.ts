@@ -12,6 +12,7 @@ export const MODEL_OPTIONS = [
     company: "Stability AI",
     supportsStyles: true,
     creditCost: 1,
+    recommended: true,
   },
   {
     name: "Stable Diffusion XL",
@@ -21,6 +22,7 @@ export const MODEL_OPTIONS = [
     company: "Stability AI",
     supportsStyles: true,
     creditCost: 2,
+    recommended: true,
   },
   {
     name: "Flux Pro",
@@ -30,6 +32,7 @@ export const MODEL_OPTIONS = [
     company: "Black Forest Labs",
     supportsStyles: false,
     creditCost: 2,
+    recommended: true,
   },
   {
     name: "Flux Pro 1.1",
@@ -40,6 +43,7 @@ export const MODEL_OPTIONS = [
     company: "Black Forest Labs",
     supportsStyles: false,
     creditCost: 4,
+    recommended: true,
   },
   {
     name: "Flux Dev",
@@ -50,6 +54,7 @@ export const MODEL_OPTIONS = [
     company: "Black Forest Labs",
     supportsStyles: false,
     creditCost: 2,
+    recommended: true,
   },
   {
     name: "DALL-E 3",
@@ -59,6 +64,7 @@ export const MODEL_OPTIONS = [
     company: "OpenAI",
     supportsStyles: false,
     creditCost: 6,
+    recommended: true,
   },
   {
     name: "DALL-E 2",
@@ -68,6 +74,7 @@ export const MODEL_OPTIONS = [
     company: "OpenAI",
     supportsStyles: false,
     creditCost: 1,
+    recommended: true,
   },
 
   // Replicate Models
@@ -79,6 +86,7 @@ export const MODEL_OPTIONS = [
     company: "Replicate",
     supportsStyles: false,
     creditCost: 2,
+    recommended: false,
   },
   {
     name: "Kandinsky 2.2",
@@ -88,6 +96,7 @@ export const MODEL_OPTIONS = [
     company: "Replicate",
     supportsStyles: false,
     creditCost: 2,
+    recommended: false,
   },
 
   // Ideogram Models
@@ -99,6 +108,7 @@ export const MODEL_OPTIONS = [
     company: "Ideogram",
     supportsStyles: false,
     creditCost: 4,
+    recommended: true,
   },
   {
     name: "Ideogram V2 Turbo",
@@ -108,6 +118,7 @@ export const MODEL_OPTIONS = [
     company: "Ideogram",
     supportsStyles: false,
     creditCost: 2,
+    recommended: true,
   },
   {
     name: "Ideogram V1",
@@ -117,6 +128,7 @@ export const MODEL_OPTIONS = [
     company: "Ideogram",
     supportsStyles: false,
     creditCost: 2,
+    recommended: false,
   },
   {
     name: "Ideogram V1 Turbo",
@@ -126,6 +138,7 @@ export const MODEL_OPTIONS = [
     company: "Ideogram",
     supportsStyles: false,
     creditCost: 1,
+    recommended: false,
   },
 
   // Fal.ai Models (unique offerings only)
@@ -137,6 +150,7 @@ export const MODEL_OPTIONS = [
     company: "Fal.ai",
     supportsStyles: true,
     creditCost: 1,
+    recommended: false,
   },
   {
     name: "Stable Cascade",
@@ -146,6 +160,7 @@ export const MODEL_OPTIONS = [
     company: "Fal.ai",
     supportsStyles: false,
     creditCost: 2,
+    recommended: false,
   },
 
   // Together AI Models (unique offerings only)
@@ -157,6 +172,7 @@ export const MODEL_OPTIONS = [
     company: "Together AI",
     supportsStyles: false,
     creditCost: 2,
+    recommended: false,
   },
 ] as const;
 
