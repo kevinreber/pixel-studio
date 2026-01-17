@@ -40,7 +40,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { convertUtcDateToLocalDateString } from "~/client";
-import { Cpu, Clock, Images, NotepadText, Trash2 } from "lucide-react";
+import { Cpu, Clock, Images, NotepadText, Trash2, Video } from "lucide-react";
 import { getUserSets, type Set } from "~/server/getUserSets";
 import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 import { Input } from "@/components/ui/input";
@@ -140,39 +140,56 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 }
 
-const ImagePreviewGrid = ({ images }: { images: Set["images"] }) => {
-  if (images.length === 0) return null;
+const MediaPreviewGrid = ({
+  images,
+  videos,
+}: {
+  images: Set["images"];
+  videos: Set["videos"];
+}) => {
+  // Combine images and videos for preview, prioritizing images
+  const allMedia = [
+    ...images.map((img) => ({ ...img, type: "image" as const })),
+    ...videos.map((vid) => ({ ...vid, type: "video" as const })),
+  ];
 
-  // Different grid layouts based on number of images
+  if (allMedia.length === 0) return null;
+
+  // Different grid layouts based on number of items
   const gridClassName =
-    images.length === 1
-      ? "grid-cols-1" // Single image takes full space
-      : images.length <= 3
-      ? "grid-rows-1 grid-cols-2" // 2 images side by side, full height
-      : "grid-cols-2"; // 4 images in 2x2 grid
+    allMedia.length === 1
+      ? "grid-cols-1" // Single item takes full space
+      : allMedia.length <= 3
+      ? "grid-rows-1 grid-cols-2" // 2 items side by side, full height
+      : "grid-cols-2"; // 4 items in 2x2 grid
 
-  // Determine how many images to show
-  const imagesToShow = images.length === 1 ? 1 : images.length <= 3 ? 2 : 4;
+  // Determine how many items to show
+  const itemsToShow = allMedia.length === 1 ? 1 : allMedia.length <= 3 ? 2 : 4;
 
   return (
     <div
       className={`grid ${gridClassName} gap-0.5 w-32 h-32 rounded-md overflow-hidden bg-muted`}
     >
-      {images.slice(0, imagesToShow).map((image) => (
+      {allMedia.slice(0, itemsToShow).map((item) => (
         <div
-          key={image.id}
+          key={item.id}
           className={`relative ${
-            images.length <= 3 && images.length > 1 ? "h-32" : "aspect-square"
+            allMedia.length <= 3 && allMedia.length > 1 ? "h-32" : "aspect-square"
           } overflow-hidden bg-muted`}
         >
           <div
             className="w-full h-full bg-muted"
             style={{
-              backgroundImage: `url(${image.thumbnailUrl})`,
+              backgroundImage: `url(${item.thumbnailUrl})`,
               backgroundSize: "cover",
               backgroundPosition: "center",
             }}
           />
+          {item.type === "video" && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+              <Video className="w-6 h-6 text-white" />
+            </div>
+          )}
         </div>
       ))}
     </div>
@@ -182,11 +199,22 @@ const ImagePreviewGrid = ({ images }: { images: Set["images"] }) => {
 const DeleteSetDialog = ({
   setId,
   imagesCount,
+  videosCount,
 }: {
   setId: string;
   imagesCount: number;
+  videosCount: number;
 }) => {
   const [open, setOpen] = React.useState(false);
+
+  // Build description text
+  const itemsDescription: string[] = [];
+  if (imagesCount > 0) {
+    itemsDescription.push(`${imagesCount} ${imagesCount === 1 ? "image" : "images"}`);
+  }
+  if (videosCount > 0) {
+    itemsDescription.push(`${videosCount} ${videosCount === 1 ? "video" : "videos"}`);
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -203,8 +231,7 @@ const DeleteSetDialog = ({
           <DialogTitle>Delete Set</DialogTitle>
           <DialogDescription>
             Are you sure you want to delete this set? This will permanently
-            delete this set and {imagesCount}{" "}
-            {imagesCount === 1 ? "image" : "images"} associated with it. This
+            delete this set and {itemsDescription.join(" and ")} associated with it. This
             action cannot be undone.
           </DialogDescription>
         </DialogHeader>
@@ -225,6 +252,9 @@ const DeleteSetDialog = ({
 };
 
 const SetRow = ({ set }: { set: Set }) => {
+  // Get model from images first, then videos
+  const model = set.images[0]?.model || set.videos[0]?.model || "Unknown";
+
   return (
     <TableRow>
       <td className="p-4 w-[160px]">
@@ -234,7 +264,7 @@ const SetRow = ({ set }: { set: Set }) => {
             prefetch="intent"
             className="text-foreground hover:text-blue-500 transition-colors line-clamp-2"
           >
-            <ImagePreviewGrid images={set.images} />
+            <MediaPreviewGrid images={set.images} videos={set.videos} />
           </Link>
         </div>
       </td>
@@ -242,9 +272,7 @@ const SetRow = ({ set }: { set: Set }) => {
         <div className="flex flex-col items-start gap-1">
           <div className="text-sm flex items-center gap-1">
             <Cpu className="w-4 h-4 opacity-90" />
-            <span className="text-muted-foreground">
-              {set.images[0]?.model || "Unknown"}
-            </span>
+            <span className="text-muted-foreground">{model}</span>
           </div>
           <div className="w-full overflow-hidden flex items-center gap-1">
             <NotepadText className="w-4 h-4 flex-shrink-0 opacity-90" />
@@ -258,12 +286,22 @@ const SetRow = ({ set }: { set: Set }) => {
               <CopyToClipboardButton stringToCopy={set.prompt} />
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <Images className="w-4 h-4 opacity-90" />
-            <p className="text-sm text-muted-foreground">
-              {set.totalImages} total image(s)
-            </p>
-          </div>
+          {set.totalImages > 0 && (
+            <div className="flex items-center gap-1">
+              <Images className="w-4 h-4 opacity-90" />
+              <p className="text-sm text-muted-foreground">
+                {set.totalImages} image{set.totalImages !== 1 ? "s" : ""}
+              </p>
+            </div>
+          )}
+          {set.totalVideos > 0 && (
+            <div className="flex items-center gap-1">
+              <Video className="w-4 h-4 opacity-90" />
+              <p className="text-sm text-muted-foreground">
+                {set.totalVideos} video{set.totalVideos !== 1 ? "s" : ""}
+              </p>
+            </div>
+          )}
           <div className="text-sm flex items-center gap-1">
             <Clock className="w-4 h-4 opacity-90" />
             <span className="text-muted-foreground">
@@ -273,7 +311,11 @@ const SetRow = ({ set }: { set: Set }) => {
         </div>
       </td>
       <td className="p-4 flex items-center justify-end">
-        <DeleteSetDialog setId={set.id} imagesCount={set.totalImages} />
+        <DeleteSetDialog
+          setId={set.id}
+          imagesCount={set.totalImages}
+          videosCount={set.totalVideos}
+        />
       </td>
     </TableRow>
   );
