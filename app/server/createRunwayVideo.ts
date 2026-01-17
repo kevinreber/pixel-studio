@@ -66,13 +66,13 @@ async function startRunwayGeneration(
 
   const body: Record<string, unknown> = {
     model: request.model.includes("turbo") ? "gen3a_turbo" : "gen3a",
-    prompt_text: request.prompt,
+    promptText: request.prompt,
     duration: request.duration || 5,
     ratio: request.aspectRatio || "16:9",
   };
 
   if (request.sourceImageUrl) {
-    body.prompt_image = request.sourceImageUrl;
+    body.promptImage = request.sourceImageUrl;
   }
 
   if (request.seed !== undefined) {
