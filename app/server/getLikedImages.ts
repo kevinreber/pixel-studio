@@ -19,7 +19,9 @@ export const getLikedImages = async (userId: string) => {
           createdAt: true,
           user: {
             select: {
+              id: true,
               username: true,
+              image: true,
             },
           },
           _count: {

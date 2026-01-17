@@ -17,7 +17,7 @@ import { Loader2 } from "lucide-react";
 import { ImageDetail } from "~/server/getImage";
 import ImageModal from "~/components/ImageModal";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getLikedImages } from "~/server/getLikedImages";
 import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 
@@ -136,8 +136,11 @@ const LikePageAccessor = () => {
           <DialogContent
             className="w-full md:max-w-[90%] md:h-[90vh] h-[100vh] p-0 gap-0 dark:bg-zinc-900 overflow-hidden z-[100] [&>button]:absolute [&>button]:right-4 [&>button]:top-4 [&>button]:z-10 [&>button_span]:hidden"
             onInteractOutside={(e) => e.preventDefault()}
+            aria-describedby={undefined}
           >
-            <VisuallyHidden asChild></VisuallyHidden>
+            <VisuallyHidden>
+              <DialogTitle>Image Details</DialogTitle>
+            </VisuallyHidden>
             <ImageModal
               imageData={currentImage}
               // onNext={handleNext}

@@ -1,7 +1,6 @@
 import {
   Await,
   useLoaderData,
-  useAsyncValue,
   Link,
   useNavigation,
 } from "@remix-run/react";
@@ -13,10 +12,17 @@ import {
   ImageCard,
   ErrorList,
   ImageGridSkeleton,
+  FollowButton,
+  FollowListModal,
 } from "~/components";
 import type { UserProfilePageLoader } from "~/routes/profile.$userId";
 import { Grid, User, Loader2 } from "lucide-react";
 import React from "react";
+
+interface FollowStats {
+  followersCount: number;
+  followingCount: number;
+}
 
 const UserDoesNotExist = () => {
   return (
@@ -74,17 +80,56 @@ const UserDoesNotExist = () => {
   );
 };
 
-const UserProfileAccessor = () => {
-  const resolvedData = useAsyncValue() as Awaited<
-    Awaited<ReturnType<UserProfilePageLoader>>["userData"]
-  >;
-  const userData = resolvedData.user || {};
+interface UserProfileAccessorProps {
+  userData: Awaited<Awaited<ReturnType<UserProfilePageLoader>>["userData"]>;
+  followStats: FollowStats;
+  isFollowing: boolean;
+  profileUserId: string;
+}
+
+const UserProfileAccessor = ({
+  userData: resolvedData,
+  followStats,
+  isFollowing: initialIsFollowing,
+  profileUserId,
+}: UserProfileAccessorProps) => {
+  const userData = resolvedData.user;
   const userImages = resolvedData.images || [];
+
+  const [followersCount, setFollowersCount] = React.useState(
+    followStats.followersCount
+  );
+  const [followListModalOpen, setFollowListModalOpen] = React.useState(false);
+  const [followListTab, setFollowListTab] = React.useState<"followers" | "following">("followers");
 
   if (!userData) return <UserDoesNotExist />;
 
+  const handleFollowChange = (isNowFollowing: boolean) => {
+    setFollowersCount((prev) => (isNowFollowing ? prev + 1 : prev - 1));
+  };
+
+  const openFollowersModal = () => {
+    setFollowListTab("followers");
+    setFollowListModalOpen(true);
+  };
+
+  const openFollowingModal = () => {
+    setFollowListTab("following");
+    setFollowListModalOpen(true);
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
+      {/* Follow List Modal */}
+      <FollowListModal
+        isOpen={followListModalOpen}
+        onClose={() => setFollowListModalOpen(false)}
+        userId={profileUserId}
+        initialTab={followListTab}
+        followersCount={followersCount}
+        followingCount={followStats.followingCount}
+      />
+
       {/* Sticky Header */}
       <div className="pb-4">
         {/* Profile Header */}
@@ -103,6 +148,11 @@ const UserProfileAccessor = () => {
           <div className="flex-1">
             <div className="flex items-center gap-4 mb-4">
               <h1 className="text-xl">{userData.username}</h1>
+              <FollowButton
+                targetUserId={profileUserId}
+                isFollowing={initialIsFollowing}
+                onFollowChange={handleFollowChange}
+              />
             </div>
 
             <div className="flex gap-8 mb-4">
@@ -110,14 +160,20 @@ const UserProfileAccessor = () => {
                 <span className="font-semibold">{userImages.length}</span>{" "}
                 <span className="text-zinc-500">posts</span>
               </div>
-              <div>
-                <span className="font-semibold">0</span>{" "}
+              <button
+                onClick={openFollowersModal}
+                className="hover:opacity-70 transition-opacity text-left"
+              >
+                <span className="font-semibold">{followersCount}</span>{" "}
                 <span className="text-zinc-500">followers</span>
-              </div>
-              <div>
-                <span className="font-semibold">0</span>{" "}
+              </button>
+              <button
+                onClick={openFollowingModal}
+                className="hover:opacity-70 transition-opacity text-left"
+              >
+                <span className="font-semibold">{followStats.followingCount}</span>{" "}
                 <span className="text-zinc-500">following</span>
-              </div>
+              </button>
             </div>
           </div>
         </div>
@@ -166,10 +222,57 @@ const UserProfileAccessor = () => {
   );
 };
 
+const UserProfileWrapper = ({
+  userData,
+  followStats,
+  isFollowing,
+  profileUserId,
+  isNavigating,
+}: {
+  userData: Awaited<Awaited<ReturnType<UserProfilePageLoader>>["userData"]>;
+  followStats: FollowStats;
+  isFollowing: boolean;
+  profileUserId: string;
+  isNavigating: boolean;
+}) => {
+  return (
+    <div className="relative">
+      {isNavigating && (
+        <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        </div>
+      )}
+      <UserProfileAccessor
+        userData={userData}
+        followStats={followStats}
+        isFollowing={isFollowing}
+        profileUserId={profileUserId}
+      />
+    </div>
+  );
+};
+
 export default function UserProfilePage() {
   const data = useLoaderData<UserProfilePageLoader>();
   const navigation = useNavigation();
   const isNavigating = navigation.state !== "idle";
+
+  // Resolve all promises together
+  // Use profileUserId as dependency - promises only need to change when viewing a different profile
+  const combinedPromise = React.useMemo(
+    () =>
+      Promise.all([data.userData, data.followStats, data.isFollowing]).then(
+        ([userData, followStats, isFollowing]) => ({
+          userData,
+          followStats,
+          isFollowing,
+        })
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.profileUserId]
+  );
 
   return (
     <PageContainer>
@@ -194,23 +297,22 @@ export default function UserProfilePage() {
         }
       >
         <Await
-          resolve={data.userData}
+          resolve={combinedPromise}
           errorElement={
             <ErrorList
               errors={["There was an error loading the user profile"]}
             />
           }
         >
-          <div className="relative">
-            {isNavigating && (
-              <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="h-8 w-8 animate-spin" />
-                </div>
-              </div>
-            )}
-            <UserProfileAccessor />
-          </div>
+          {(resolvedData) => (
+            <UserProfileWrapper
+              userData={resolvedData.userData}
+              followStats={resolvedData.followStats}
+              isFollowing={resolvedData.isFollowing}
+              profileUserId={data.profileUserId}
+              isNavigating={isNavigating}
+            />
+          )}
         </Await>
       </React.Suspense>
     </PageContainer>

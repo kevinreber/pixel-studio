@@ -3,19 +3,35 @@
 import "dotenv/config";
 import { startWebSocketServer } from "../app/services/websocket.server.js";
 
+/**
+ * Check if async queue processing is enabled (QStash or Kafka)
+ */
+function isAsyncQueueEnabled(): boolean {
+  return (
+    process.env.ENABLE_ASYNC_QUEUE === "true" ||
+    !!process.env.QSTASH_TOKEN ||
+    process.env.ENABLE_KAFKA_IMAGE_GENERATION === "true"
+  );
+}
+
 async function main() {
   console.log(
     "🚀 Starting WebSocket server for real-time processing updates..."
   );
 
   try {
-    // Check if feature is enabled
-    if (process.env.ENABLE_KAFKA_IMAGE_GENERATION !== "true") {
+    // Check if async queue feature is enabled (QStash or Kafka)
+    if (!isAsyncQueueEnabled()) {
       console.log(
-        "⏸️  Kafka image generation is disabled. WebSocket server not needed."
+        "⏸️  Async queue is disabled. Set ENABLE_ASYNC_QUEUE=true or add QSTASH_TOKEN to enable."
       );
+      console.log("   WebSocket server not needed for synchronous processing.");
       process.exit(0);
     }
+
+    // Log which backend is being used
+    const backend = process.env.QUEUE_BACKEND || "qstash";
+    console.log(`📡 Queue backend: ${backend.toUpperCase()}`);
 
     // Start the WebSocket server
     const server = await startWebSocketServer();
