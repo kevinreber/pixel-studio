@@ -51,18 +51,44 @@ export interface CreateVideoFormData {
 }
 
 /**
- * Map our model values to Runway API model names
- * Valid Runway API models: gen3a_turbo, gen4.5, veo3, veo3.1, veo3.1_fast
+ * Convert aspect ratio from UI format to Runway API format
+ * Valid Runway ratios: 1280:720, 720:1280, 1104:832, 832:1104, 960:960
  */
-function getRunwayApiModel(modelValue: string): string {
-  const modelMap: Record<string, string> = {
-    "runway-gen4-turbo": "gen3a_turbo",
-    "runway-gen4-aleph": "gen4.5",
-    // Legacy mappings (in case old values are used)
-    "runway-gen3": "gen4.5",
-    "runway-gen3-turbo": "gen3a_turbo",
+function convertAspectRatio(aspectRatio: string): string {
+  const ratioMap: Record<string, string> = {
+    "16:9": "1280:720",
+    "9:16": "720:1280",
+    "1:1": "960:960",
+    // Direct pixel ratios pass through
+    "1280:720": "1280:720",
+    "720:1280": "720:1280",
+    "960:960": "960:960",
+    "1104:832": "1104:832",
+    "832:1104": "832:1104",
   };
-  return modelMap[modelValue] || "gen3a_turbo";
+  return ratioMap[aspectRatio] || "1280:720";
+}
+
+/**
+ * Get the appropriate Runway API model based on generation type
+ *
+ * Image-to-Video models: gen4_turbo, gen3a_turbo, veo3.1, veo3.1_fast, veo3
+ * Text-to-Video models: veo3.1, veo3.1_fast, veo3
+ */
+function getRunwayApiModel(modelValue: string, isImageToVideo: boolean): string {
+  if (isImageToVideo) {
+    // Image-to-video models
+    const imageModelMap: Record<string, string> = {
+      "runway-gen4-turbo": "gen3a_turbo",
+      "runway-gen4-aleph": "gen3a_turbo", // Use gen3a_turbo for image-to-video
+      "runway-gen3": "gen3a_turbo",
+      "runway-gen3-turbo": "gen3a_turbo",
+    };
+    return imageModelMap[modelValue] || "gen3a_turbo";
+  } else {
+    // Text-to-video models (only veo3 family supported)
+    return "veo3.1";
+  }
 }
 
 /**
@@ -75,28 +101,39 @@ async function startRunwayGeneration(
     throw new Error("RUNWAY_API_KEY is not configured");
   }
 
-  const apiModel = getRunwayApiModel(request.model);
+  const isImageToVideo = Boolean(request.sourceImageUrl);
+  const apiModel = getRunwayApiModel(request.model, isImageToVideo);
+  const apiRatio = convertAspectRatio(request.aspectRatio || "16:9");
 
-  // Gen4 turbo only supports image-to-video
-  // Gen4 aleph supports both text-to-video and image-to-video
-  const endpoint = request.sourceImageUrl
+  const endpoint = isImageToVideo
     ? `${RUNWAY_API_URL}/image_to_video`
     : `${RUNWAY_API_URL}/text_to_video`;
 
   const body: Record<string, unknown> = {
     model: apiModel,
     promptText: request.prompt,
-    duration: request.duration || 5,
-    ratio: request.aspectRatio || "16:9",
+    ratio: apiRatio,
   };
 
-  if (request.sourceImageUrl) {
+  // Duration varies by endpoint
+  if (isImageToVideo) {
+    // Image-to-video: 2-10 seconds
+    body.duration = Math.min(Math.max(request.duration || 5, 2), 10);
+  } else {
+    // Text-to-video: only 4, 6, or 8 seconds
+    const duration = request.duration || 6;
+    body.duration = duration <= 4 ? 4 : duration <= 6 ? 6 : 8;
+  }
+
+  if (isImageToVideo && request.sourceImageUrl) {
     body.promptImage = request.sourceImageUrl;
   }
 
   if (request.seed !== undefined) {
     body.seed = request.seed;
   }
+
+  console.log(`Calling Runway API: ${endpoint}`, { model: apiModel, ratio: apiRatio, duration: body.duration });
 
   const response = await fetch(endpoint, {
     method: "POST",

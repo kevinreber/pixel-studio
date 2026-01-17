@@ -22,7 +22,7 @@ export const VIDEO_MODEL_OPTIONS: VideoModelOption[] = [
     value: "runway-gen4-turbo",
     image: "/assets/model-thumbs/runway-gen3-turbo.jpg",
     description:
-      "Fast image-to-video generation. Converts images to video efficiently.",
+      "Fast image-to-video generation. Converts images to video efficiently (2-10 seconds).",
     company: "Runway",
     creditCost: 10,
     supportedModes: ["image-to-video"],
@@ -30,16 +30,16 @@ export const VIDEO_MODEL_OPTIONS: VideoModelOption[] = [
     apiModel: "gen3a_turbo",
   },
   {
-    name: "Runway Gen-4.5",
+    name: "Runway Veo 3.1",
     value: "runway-gen4-aleph",
     image: "/assets/model-thumbs/runway-gen3.jpg",
     description:
-      "Advanced video generation with text and image inputs. Premium quality output.",
+      "Advanced video generation from text prompts. Premium quality output (4-8 seconds).",
     company: "Runway",
     creditCost: 25,
     supportedModes: ["text-to-video", "image-to-video"],
-    maxDuration: 10,
-    apiModel: "gen4.5",
+    maxDuration: 8,
+    apiModel: "veo3.1",
   },
   {
     name: "Luma Dream Machine",
@@ -72,6 +72,8 @@ export const ASPECT_RATIO_OPTIONS = [
 ] as const;
 
 export const DURATION_OPTIONS = [
-  { label: "5 seconds", value: 5 },
+  { label: "4 seconds", value: 4 },
+  { label: "6 seconds", value: 6 },
+  { label: "8 seconds", value: 8 },
   { label: "10 seconds", value: 10 },
 ] as const;
