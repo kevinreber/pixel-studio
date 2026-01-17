@@ -107,10 +107,10 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
 
   // Together AI Models (unique offerings only)
-  "together-sd-turbo": {
-    credits: 1,
-    tier: "budget",
-    apiCostEstimate: 0.005,
+  "together-sd3": {
+    credits: 2,
+    tier: "standard",
+    apiCostEstimate: 0.035,
   },
 } as const;
 

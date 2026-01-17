@@ -150,13 +150,13 @@ export const MODEL_OPTIONS = [
 
   // Together AI Models (unique offerings only)
   {
-    name: "SDXL Turbo",
-    value: "together-sd-turbo",
-    image: "/assets/model-thumbs/sdxl-lcm.jpg",
-    description: "Distilled SDXL for instant generation.",
+    name: "Stable Diffusion 3",
+    value: "together-sd3",
+    image: "/assets/model-thumbs/diffusion.jpg",
+    description: "Latest Stable Diffusion with improved quality and prompt following.",
     company: "Together AI",
     supportsStyles: false,
-    creditCost: 1,
+    creditCost: 2,
   },
 ] as const;
 

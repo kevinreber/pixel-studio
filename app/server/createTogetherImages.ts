@@ -36,8 +36,8 @@ interface TogetherErrorResponse {
 
 // Model configurations for Together AI (unique offerings only)
 const TOGETHER_MODELS: Record<string, { modelId: string }> = {
-  "together-sd-turbo": {
-    modelId: "stabilityai/sdxl-turbo",
+  "together-sd3": {
+    modelId: "stabilityai/stable-diffusion-3-medium",
   },
 };
 
