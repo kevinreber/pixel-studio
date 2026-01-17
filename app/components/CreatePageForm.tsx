@@ -19,12 +19,9 @@ import {
   DialogOverlay,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ChevronDown, Check, Loader2, Sparkles, Coins, Settings2 } from "lucide-react";
-import {
-  CreatePageLoader,
-  STYLE_OPTIONS,
-  MODEL_OPTIONS,
-} from "~/routes/create";
+import { ChevronDown, Check, Loader2, Sparkles, Coins, Settings2, Star } from "lucide-react";
+import { CreatePageLoader } from "~/routes/create";
+import { MODEL_OPTIONS, STYLE_OPTIONS } from "~/config/models";
 import { toast } from "sonner";
 import type { ActionData } from "~/routes/create";
 import { ProviderBadge } from "./ModelBadge";
@@ -98,6 +95,7 @@ type ModelOption = {
   company: string;
   supportsStyles: boolean;
   creditCost: number;
+  recommended: boolean;
 };
 
 type StyleOption = {
@@ -446,6 +444,12 @@ const CreatePageForm = () => {
                         <Coins className="w-3 h-3" />
                         {model.creditCost} credit{model.creditCost !== 1 ? "s" : ""}
                       </span>
+                      {model.recommended && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-emerald-600/20 text-emerald-400 border border-emerald-600/30">
+                          <Star className="w-3 h-3 fill-current" />
+                          Recommended
+                        </span>
+                      )}
                     </div>
                     <p className="mt-2 text-sm text-gray-300">
                       {model.description}
@@ -936,6 +940,12 @@ const CreatePageForm = () => {
                           <Coins className="w-3 h-3" />
                           {model.creditCost} credit{model.creditCost !== 1 ? "s" : ""}
                         </span>
+                        {model.recommended && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-emerald-600/20 text-emerald-400 border border-emerald-600/30">
+                            <Star className="w-3 h-3 fill-current" />
+                            Recommended
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm mt-2 text-gray-300">
                         {model.description}
