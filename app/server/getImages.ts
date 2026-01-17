@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "services/prisma.server";
-import { getS3BucketThumbnailURL, getS3BucketURL } from "utils/s3Utils";
+import { getS3BucketBlurURL, getS3BucketThumbnailURL, getS3BucketURL } from "utils/s3Utils";
 
 const DEFAULT_CURRENT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 50;
@@ -27,7 +27,7 @@ type Image = {
   createdAt: Date;
 };
 
-export type ImageTagType = Image & { url: string; thumbnailURL: string };
+export type ImageTagType = Image & { url: string; thumbnailURL: string; blurURL: string };
 
 export interface GetImagesResponse {
   status: "idle" | "error";
@@ -97,6 +97,7 @@ export const getImages = async (
       ...image,
       url: getS3BucketURL(image.id),
       thumbnailURL: getS3BucketThumbnailURL(image.id),
+      blurURL: getS3BucketBlurURL(image.id),
     }));
 
     return {

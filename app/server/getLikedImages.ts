@@ -1,5 +1,5 @@
 import { prisma } from "~/services/prisma.server";
-import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
+import { getS3BucketBlurURL, getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
 
 export const getLikedImages = async (userId: string) => {
   const likedImages = await prisma.imageLike.findMany({
@@ -69,6 +69,7 @@ export const getLikedImages = async (userId: string) => {
     ...like.image,
     thumbnailURL: getS3BucketThumbnailURL(like.image.id),
     url: getS3BucketURL(like.image.id),
+    blurURL: getS3BucketBlurURL(like.image.id),
   }));
 
   return formattedImages;
