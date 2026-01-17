@@ -52,16 +52,17 @@ export interface CreateVideoFormData {
 
 /**
  * Map our model values to Runway API model names
+ * Valid Runway API models: gen3a_turbo, gen4.5, veo3, veo3.1, veo3.1_fast
  */
 function getRunwayApiModel(modelValue: string): string {
   const modelMap: Record<string, string> = {
-    "runway-gen4-turbo": "gen4_turbo",
-    "runway-gen4-aleph": "gen4_aleph",
+    "runway-gen4-turbo": "gen3a_turbo",
+    "runway-gen4-aleph": "gen4.5",
     // Legacy mappings (in case old values are used)
-    "runway-gen3": "gen4_aleph",
-    "runway-gen3-turbo": "gen4_turbo",
+    "runway-gen3": "gen4.5",
+    "runway-gen3-turbo": "gen3a_turbo",
   };
-  return modelMap[modelValue] || "gen4_turbo";
+  return modelMap[modelValue] || "gen3a_turbo";
 }
 
 /**

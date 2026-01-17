@@ -18,28 +18,28 @@ export interface VideoModelOption {
 
 export const VIDEO_MODEL_OPTIONS: VideoModelOption[] = [
   {
-    name: "Runway Gen-4 Turbo",
+    name: "Runway Gen-3 Turbo",
     value: "runway-gen4-turbo",
     image: "/assets/model-thumbs/runway-gen3-turbo.jpg",
     description:
-      "Fast image-to-video generation. Converts images to video efficiently at 5 credits/second.",
+      "Fast image-to-video generation. Converts images to video efficiently.",
     company: "Runway",
     creditCost: 10,
     supportedModes: ["image-to-video"],
     maxDuration: 10,
-    apiModel: "gen4_turbo",
+    apiModel: "gen3a_turbo",
   },
   {
-    name: "Runway Gen-4 Aleph",
+    name: "Runway Gen-4.5",
     value: "runway-gen4-aleph",
     image: "/assets/model-thumbs/runway-gen3.jpg",
     description:
-      "Advanced video generation with text and image inputs. Premium quality at 15 credits/second.",
+      "Advanced video generation with text and image inputs. Premium quality output.",
     company: "Runway",
     creditCost: 25,
     supportedModes: ["text-to-video", "image-to-video"],
     maxDuration: 10,
-    apiModel: "gen4_aleph",
+    apiModel: "gen4.5",
   },
   {
     name: "Luma Dream Machine",
