@@ -30,7 +30,7 @@ export interface RunwayVideoRequest {
 
 export interface RunwayVideoResponse {
   id: string;
-  status: "pending" | "processing" | "succeeded" | "failed";
+  status: "pending" | "processing" | "succeeded" | "failed" | "throttled" | "running";
   progress?: number;
   output?: {
     url: string;

@@ -18,6 +18,7 @@ import {
   NotepadText,
   Clock,
   Coins,
+  Video,
 } from "lucide-react";
 import { getModelCreditCost } from "~/config/pricing";
 
@@ -36,8 +37,26 @@ interface SetImage {
   thumbnailURL: string;
 }
 
+interface SetVideo {
+  id: string;
+  model: string | null;
+  prompt: string;
+  title: string | null;
+  private: boolean | null;
+  createdAt: Date;
+  updatedAt: Date | null;
+  userId: string;
+  setId: string | null;
+  url: string;
+  thumbnailURL: string;
+  duration: number | null;
+  aspectRatio: string | null;
+  status: string | null;
+}
+
 interface SetData {
   images: SetImage[];
+  videos: SetVideo[];
   prompt: string;
   createdAt: Date | string;
   user: {
@@ -51,20 +70,26 @@ const SetDetailsAccessor = () => {
   const isError = Array.isArray(asyncValue);
 
   const setData = isError
-    ? { images: [], prompt: "", createdAt: "", user: { id: "", username: "" } }
+    ? { images: [], videos: [], prompt: "", createdAt: "", user: { id: "", username: "" } }
     : asyncValue;
 
   const {
     images: setImages,
+    videos: setVideos,
     prompt: setPrompt,
     createdAt: setCreatedAt,
     user: setUser,
   } = setData;
-  const model = setImages?.[0]?.model || "";
+  const model = setImages?.[0]?.model || setVideos?.[0]?.model || "";
   const style = setImages?.[0]?.stylePreset || "";
   const imageCount = setImages?.length || 0;
+  const videoCount = setVideos?.length || 0;
   const creditCostPerImage = model ? getModelCreditCost(model) : 0;
-  const totalCost = creditCostPerImage * imageCount;
+  const imageCost = creditCostPerImage * imageCount;
+  // Videos typically cost more - use video model cost or default
+  const creditCostPerVideo = setVideos?.[0]?.model ? getModelCreditCost(setVideos[0].model) : 0;
+  const videoCost = creditCostPerVideo * videoCount;
+  const totalCost = imageCost + videoCost;
   const [formattedDate, setFormattedDate] = React.useState(
     typeof setCreatedAt === "string"
       ? setCreatedAt
@@ -131,37 +156,83 @@ const SetDetailsAccessor = () => {
             <Coins className="w-4 h-4" />
             Cost
           </div>
-          <div className="text-sm text-zinc-300 flex items-center gap-2">
+          <div className="text-sm text-zinc-300 flex flex-col gap-1">
             <span className="text-amber-400 font-medium">
               {totalCost} credit{totalCost !== 1 ? "s" : ""}
             </span>
-            <span className="text-zinc-500">
-              ({creditCostPerImage} per image × {imageCount} image
-              {imageCount !== 1 ? "s" : ""})
-            </span>
+            {imageCount > 0 && (
+              <span className="text-zinc-500">
+                {creditCostPerImage} per image × {imageCount} image
+                {imageCount !== 1 ? "s" : ""}
+              </span>
+            )}
+            {videoCount > 0 && (
+              <span className="text-zinc-500">
+                {creditCostPerVideo} per video × {videoCount} video
+                {videoCount !== 1 ? "s" : ""}
+              </span>
+            )}
           </div>
         </div>
-        <div>
-          <div className="text-xl mb-2 flex items-center gap-2">
-            <Images className="w-4 h-4" />
-            Images
+        {videoCount > 0 && (
+          <div>
+            <div className="text-xl mb-2 flex items-center gap-2">
+              <Video className="w-4 h-4" />
+              Videos
+            </div>
+            <ul className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              {setVideos.map((video) => (
+                <li key={video.id} className="relative">
+                  <div className="rounded-lg overflow-hidden bg-zinc-900 border border-zinc-800">
+                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                    <video
+                      src={video.url}
+                      controls
+                      className="w-full aspect-video"
+                      poster={video.thumbnailURL}
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                    <div className="p-3">
+                      <div className="text-sm text-zinc-400 flex items-center gap-4">
+                        {video.duration && (
+                          <span>{video.duration}s</span>
+                        )}
+                        {video.aspectRatio && (
+                          <span>{video.aspectRatio}</span>
+                        )}
+                        <ModelBadge model={video.model || ""} size="sm" />
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
-          <ul className="grid grid-cols-2 md:grid-cols-3 gap-1 md:gap-4 lg:gap-6">
-            {setImages.map((image) => (
-              <li key={image.id} className="hover:!opacity-60">
-                <ImageCard
-                  imageData={{
-                    ...image,
-                    blurURL: "",
-                    user: setUser as { id: string; username: string; image: string | null },
-                    comments: [],
-                    likes: [],
-                  }}
-                />
-              </li>
-            ))}
-          </ul>
-        </div>
+        )}
+        {imageCount > 0 && (
+          <div>
+            <div className="text-xl mb-2 flex items-center gap-2">
+              <Images className="w-4 h-4" />
+              Images
+            </div>
+            <ul className="grid grid-cols-2 md:grid-cols-3 gap-1 md:gap-4 lg:gap-6">
+              {setImages.map((image) => (
+                <li key={image.id} className="hover:!opacity-60">
+                  <ImageCard
+                    imageData={{
+                      ...image,
+                      blurURL: "",
+                      user: setUser as { id: string; username: string; image: string | null },
+                      comments: [],
+                      likes: [],
+                    }}
+                  />
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
