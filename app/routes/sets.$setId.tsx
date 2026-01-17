@@ -7,7 +7,7 @@ import { PageContainer, GeneralErrorBoundary } from "~/components";
 import SetDetailsPage from "~/pages/SetDetailsPage";
 import { getSet } from "~/server/getSet";
 import { requireUserLogin } from "~/services";
-import { getCachedDataWithRevalidate } from "~/utils/cache.server";
+import { getCachedDataWithRevalidate, invalidateCache } from "~/utils/cache.server";
 
 export const meta: MetaFunction = () => {
   // ! TODO: In Remix we currently cannot get deferred data in meta tags.
@@ -31,6 +31,12 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const setId = params.setId;
   if (!setId) return redirect("/");
   const cacheKey = `set:${setId}`;
+
+  // Allow cache bypass with ?refresh=1 query param
+  const url = new URL(request.url);
+  if (url.searchParams.get("refresh") === "1") {
+    await invalidateCache(cacheKey);
+  }
 
   const setDataPromise = getCachedDataWithRevalidate(cacheKey, () =>
     getSet({ setId })
