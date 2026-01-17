@@ -4,14 +4,14 @@
  * This module handles video generation using Runway's Gen-3 API.
  * Runway offers both text-to-video and image-to-video capabilities.
  *
- * API Documentation: https://docs.runwayml.com/
+ * API Documentation: https://docs.dev.runwayml.com/
  */
 
 import { createNewVideo, updateVideoStatus } from "./createNewVideo";
 import { createNewSet, deleteSet } from "~/server";
 import { addVideoToS3 } from "./addVideoToS3.server";
 
-const RUNWAY_API_URL = process.env.RUNWAY_API_URL || "https://api.runwayml.com/v1";
+const RUNWAY_API_URL = process.env.RUNWAY_API_URL || "https://api.dev.runwayml.com/v1";
 const RUNWAY_API_KEY = process.env.RUNWAY_API_KEY;
 
 // Polling configuration
