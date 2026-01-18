@@ -19,15 +19,13 @@ import {
   DialogOverlay,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ChevronDown, Check, Loader2, Sparkles, Coins, Settings2 } from "lucide-react";
-import {
-  CreatePageLoader,
-  STYLE_OPTIONS,
-  MODEL_OPTIONS,
-} from "~/routes/create";
+import { ChevronDown, Check, Loader2, Sparkles, Coins, Settings2, Star } from "lucide-react";
+import { CreatePageLoader } from "~/routes/create";
+import { MODEL_OPTIONS, STYLE_OPTIONS } from "~/config/models";
 import { toast } from "sonner";
 import type { ActionData } from "~/routes/create";
 import { ProviderBadge } from "./ModelBadge";
+import { useGenerationProgress } from "~/contexts/GenerationProgressContext";
 
 // Size options per model type
 type SizeOption = { label: string; ratio: string; width: number; height: number };
@@ -69,9 +67,13 @@ const isFluxModel = (modelValue: string): boolean => {
   return modelValue.includes("flux");
 };
 
-// Helper to check if model is Stable Diffusion
-const isStableDiffusionModel = (modelValue: string): boolean => {
-  return modelValue.includes("stable-diffusion");
+// Helper to check if model is a Stability AI model (supports negative prompts, CFG scale, steps)
+const isStabilityAIModel = (modelValue: string): boolean => {
+  return (
+    modelValue.includes("stable-diffusion") ||
+    modelValue.startsWith("sd") ||
+    modelValue.startsWith("stable-image")
+  );
 };
 
 // Helper to check if model is DALL-E 3
@@ -98,6 +100,7 @@ type ModelOption = {
   company: string;
   supportsStyles: boolean;
   creditCost: number;
+  recommended: boolean;
 };
 
 type StyleOption = {
@@ -210,9 +213,13 @@ const CreatePageForm = () => {
   const styleOptions = (loaderData.styleOptions || []) as StyleOption[];
   const modelOptions = (loaderData.modelOptions || []) as ModelOption[];
   const actionData = useActionData<ActionData>();
+  const { addJob } = useGenerationProgress();
 
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
+
+  // Track which requestIds we've already added to prevent duplicates
+  const processedRequestIdsRef = React.useRef<Set<string>>(new Set());
 
   const [isMobile, setIsMobile] = React.useState(false);
   const [modelDialogOpen, setModelDialogOpen] = React.useState(false);
@@ -256,6 +263,26 @@ const CreatePageForm = () => {
     if (actionData) {
       console.log("actionData", actionData);
     }
+
+    // Handle async generation response - show progress toast
+    if (actionData?.async && actionData?.requestId) {
+      // Prevent adding duplicate jobs
+      if (!processedRequestIdsRef.current.has(actionData.requestId)) {
+        processedRequestIdsRef.current.add(actionData.requestId);
+        addJob({
+          requestId: actionData.requestId,
+          type: "image",
+          status: "queued",
+          progress: 0,
+          message: "Starting image generation...",
+          prompt: actionData.prompt,
+        });
+        // Reset the prompt after successful submission
+        setPrompt("");
+      }
+      return;
+    }
+
     // Show error toast if we get an error from the action
     if (actionData?.error) {
       let errorMessage: string;
@@ -283,7 +310,7 @@ const CreatePageForm = () => {
         description: errorMessage || actionData.message || "Please try again",
       });
     }
-  }, [actionData]);
+  }, [actionData, addJob]);
 
   const handleModelClick = () => {
     if (isMobile) {
@@ -446,6 +473,12 @@ const CreatePageForm = () => {
                         <Coins className="w-3 h-3" />
                         {model.creditCost} credit{model.creditCost !== 1 ? "s" : ""}
                       </span>
+                      {model.recommended && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-emerald-600/20 text-emerald-400 border border-emerald-600/30">
+                          <Star className="w-3 h-3 fill-current" />
+                          Recommended
+                        </span>
+                      )}
                     </div>
                     <p className="mt-2 text-sm text-gray-300">
                       {model.description}
@@ -729,7 +762,7 @@ const CreatePageForm = () => {
                     <input type="hidden" name="promptUpsampling" value={promptUpsampling.toString()} />
 
                     {/* Negative Prompt - Stable Diffusion only */}
-                    {isStableDiffusionModel(selectedModel.value) && (
+                    {isStabilityAIModel(selectedModel.value) && (
                       <div>
                         <Label htmlFor="negativePrompt">Negative Prompt</Label>
                         <Textarea
@@ -779,7 +812,7 @@ const CreatePageForm = () => {
                     </div>
 
                     {/* CFG Scale - Stable Diffusion only */}
-                    {isStableDiffusionModel(selectedModel.value) && (
+                    {isStabilityAIModel(selectedModel.value) && (
                       <div>
                         <div className="flex justify-between items-center mb-3">
                           <Label>CFG Scale</Label>
@@ -807,7 +840,7 @@ const CreatePageForm = () => {
                     )}
 
                     {/* Steps - Stable Diffusion only */}
-                    {isStableDiffusionModel(selectedModel.value) && (
+                    {isStabilityAIModel(selectedModel.value) && (
                       <div>
                         <div className="flex justify-between items-center mb-3">
                           <Label>Steps</Label>
@@ -936,6 +969,12 @@ const CreatePageForm = () => {
                           <Coins className="w-3 h-3" />
                           {model.creditCost} credit{model.creditCost !== 1 ? "s" : ""}
                         </span>
+                        {model.recommended && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-emerald-600/20 text-emerald-400 border border-emerald-600/30">
+                            <Star className="w-3 h-3 fill-current" />
+                            Recommended
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm mt-2 text-gray-300">
                         {model.description}

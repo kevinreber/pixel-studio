@@ -1,5 +1,5 @@
 import { json, type ActionFunctionArgs } from "@remix-run/node";
-import { Form, useActionData } from "@remix-run/react";
+import { Form, useActionData, Link, Outlet, useLocation } from "@remix-run/react";
 import { prisma } from "~/services/prisma.server";
 import { requireUserLogin } from "~/services/auth.server";
 import { z } from "zod";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLoggedInUser } from "~/hooks";
 import { invalidateCache } from "~/utils/cache.server";
+import { History, Wallet } from "lucide-react";
 
 const UsernameSchema = z
   .string()
@@ -84,10 +85,37 @@ export async function action({ request }: ActionFunctionArgs) {
 export default function Index() {
   const user = useLoggedInUser();
   const actionData = useActionData<typeof action>();
+  const location = useLocation();
+
+  // Check if we're on a child route
+  const isChildRoute = location.pathname !== "/settings";
+
+  // If on a child route, render the Outlet
+  if (isChildRoute) {
+    return <Outlet />;
+  }
 
   return (
     <PageContainer>
       <div className="max-w-2xl mx-auto py-10">
+        {/* Settings Navigation */}
+        <div className="mb-6 flex flex-wrap gap-4">
+          <Link
+            to="/settings/generation-history"
+            className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            <History className="w-4 h-4" />
+            View Generation History
+          </Link>
+          <Link
+            to="/settings/credit-history"
+            className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            <Wallet className="w-4 h-4" />
+            View Credit History
+          </Link>
+        </div>
+
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl font-bold">

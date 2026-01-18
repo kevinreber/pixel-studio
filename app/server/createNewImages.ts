@@ -6,6 +6,10 @@ import {
   createHuggingFaceImages,
   createBlackForestImages,
 } from "~/server";
+import { createReplicateImages, isValidReplicateModel } from "./createReplicateImages";
+import { createIdeogramImages, isValidIdeogramModel } from "./createIdeogramImages";
+import { createFalImages, isValidFalModel } from "./createFalImages";
+import { createTogetherImages, isValidTogetherModel } from "./createTogetherImages";
 import { invariantResponse } from "~/utils/invariantResponse";
 
 const DEFAULT_NUMBER_OF_IMAGES_CREATED = 1;
@@ -30,12 +34,28 @@ const VALID_HUGGING_FACE_MODELS = [
 
 const VALID_BLACK_FOREST_LABS_MODELS = ["flux-pro-1.1", "flux-pro", "flux-dev"];
 
+// Stability AI v2beta models
+const VALID_STABILITY_AI_MODELS = [
+  "sd3-medium",
+  "sd3-large",
+  "sd3-large-turbo",
+  "sd3.5-medium",
+  "sd3.5-large",
+  "sd3.5-large-turbo",
+  "stable-image-core",
+  "stable-image-ultra",
+];
+
 const isValidHuggingFaceModel = (model: string) => {
   return VALID_HUGGING_FACE_MODELS.includes(model);
 };
 
 const isValidBlackForestLabsModel = (model: string) => {
   return VALID_BLACK_FOREST_LABS_MODELS.includes(model);
+};
+
+const isValidStabilityAIModel = (model: string) => {
+  return VALID_STABILITY_AI_MODELS.includes(model);
 };
 
 /**
@@ -61,7 +81,8 @@ export const createNewImages = async (
       setId = data.setId || "";
 
       return data;
-    } else if (AILanguageModelToUse.includes("stable-diffusion")) {
+    } else if (isValidStabilityAIModel(AILanguageModelToUse)) {
+      // Stability AI v2beta models (SD3, SD3.5, Core, Ultra)
       const data = await createNewStableDiffusionImages(formData, userId);
 
       setId = data.setId || "";
@@ -74,6 +95,26 @@ export const createNewImages = async (
       return data;
     } else if (isValidHuggingFaceModel(AILanguageModelToUse)) {
       const data = await createHuggingFaceImages(formData, userId);
+
+      setId = data.setId || "";
+      return data;
+    } else if (isValidReplicateModel(AILanguageModelToUse)) {
+      const data = await createReplicateImages(formData, userId);
+
+      setId = data.setId || "";
+      return data;
+    } else if (isValidIdeogramModel(AILanguageModelToUse)) {
+      const data = await createIdeogramImages(formData, userId);
+
+      setId = data.setId || "";
+      return data;
+    } else if (isValidFalModel(AILanguageModelToUse)) {
+      const data = await createFalImages(formData, userId);
+
+      setId = data.setId || "";
+      return data;
+    } else if (isValidTogetherModel(AILanguageModelToUse)) {
+      const data = await createTogetherImages(formData, userId);
 
       setId = data.setId || "";
       return data;

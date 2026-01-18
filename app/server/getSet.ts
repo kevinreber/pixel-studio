@@ -1,5 +1,10 @@
 import { prisma } from "~/services/prisma.server";
-import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
+import {
+  getS3BucketThumbnailURL,
+  getS3BucketURL,
+  getS3VideoURL,
+  getS3VideoThumbnailURL,
+} from "~/utils/s3Utils";
 
 /**
  * @description
@@ -16,6 +21,7 @@ export const getSet = async ({ setId }: { setId: string }) => {
       },
       select: {
         images: true,
+        videos: true,
         prompt: true,
         createdAt: true,
         user: {
@@ -30,7 +36,6 @@ export const getSet = async ({ setId }: { setId: string }) => {
     if (!set) {
       throw new Error("Set not found");
     }
-    // return set;
     // Append Images source URL since we cannot use `env` variables in our UI
     const formattedImages = set.images.map((image) => ({
       ...image,
@@ -38,9 +43,17 @@ export const getSet = async ({ setId }: { setId: string }) => {
       thumbnailURL: getS3BucketThumbnailURL(image.id),
     }));
 
+    // Append Video source URLs
+    const formattedVideos = set.videos.map((video) => ({
+      ...video,
+      url: getS3VideoURL(video.id),
+      thumbnailURL: getS3VideoThumbnailURL(video.id),
+    }));
+
     return {
       ...set,
       images: formattedImages,
+      videos: formattedVideos,
     };
   } catch (error) {
     console.error(error);
