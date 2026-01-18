@@ -318,3 +318,35 @@ Request → Check Redis Cache
 ### Error Handling
 
 The caching layer gracefully falls back to database queries if Redis fails. Errors are logged but don't break the application. However, this means cache invalidation failures are silent - data may remain stale without any indication.
+
+---
+
+## Features Without Caching
+
+Some features intentionally do not use Redis caching:
+
+### Notifications System
+**Files:** `api.notifications.ts`, `server/notifications/`
+
+**Why no caching:**
+- Notifications are highly dynamic and user-specific
+- The UI uses client-side polling (every 30 seconds) for real-time updates
+- Optimistic updates handle UI responsiveness without server-side caching
+- Short-lived data that changes frequently makes caching less beneficial
+
+**Current Implementation:**
+- `NotificationDropdown.tsx` polls `/api/notifications?countOnly=true` every 30 seconds
+- Full notification list is fetched on-demand when dropdown opens
+- Uses optimistic updates for mark-read and delete operations
+
+**Consideration:** If notification queries become a database bottleneck, consider:
+- Short TTL caching (30-60 seconds) for unread count
+- Or moving to WebSocket-based real-time updates instead of polling
+
+### Processing Status
+**File:** `processingStatus.server.ts`
+
+While this does use Redis, it's for state management rather than traditional caching:
+- Stores real-time image/video generation progress
+- Uses atomic operations (`SET NX`) for claim tracking
+- Has automatic cleanup for stale entries (24 hours)
