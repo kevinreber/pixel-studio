@@ -22,6 +22,7 @@
     "kafka:websocket": "tsx scripts/startWebSocketServer.ts",
     "kafka:health": "tsx scripts/checkKafkaHealth.ts",
     "kafka:monitor": "tsx scripts/monitorKafka.ts",
+    "video:backfill-thumbnails": "tsx scripts/backfillVideoThumbnails.ts",
     "prepare": "husky"
   },
   "dependencies": {
