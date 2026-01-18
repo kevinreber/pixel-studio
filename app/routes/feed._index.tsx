@@ -23,6 +23,9 @@ import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
+// 10 minutes TTL for fresher social content in feed
+const FEED_CACHE_TTL = 600;
+
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
 
@@ -31,8 +34,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const pageSize = Number(searchParams.get("page_size")) || 20;
 
   const cacheKey = `following-feed:${user.id}:${currentPage}:${pageSize}`;
-  const feedData = getCachedDataWithRevalidate(cacheKey, () =>
-    getFollowingFeed(user.id, currentPage, pageSize)
+  const feedData = getCachedDataWithRevalidate(
+    cacheKey,
+    () => getFollowingFeed(user.id, currentPage, pageSize),
+    FEED_CACHE_TTL
   );
 
   return { feedData, currentPage };

@@ -12,7 +12,7 @@ Pixel Studio uses **Upstash Redis** for caching with a default TTL of **1 hour (
 |---|---|---|---|
 | `user-login:${userId}` | 1 hour | `root.tsx`, `settings.tsx` | Logged-in user data (credits, profile) |
 | `explore-images?q=...&page=...` | **5 min** | `explore._index.tsx:12` | Explore page search results |
-| `following-feed:${userId}:${page}:${pageSize}` | 1 hour | `feed._index.tsx:33` | User's following feed |
+| `following-feed:${userId}:${page}:${pageSize}` | **10 min** | `feed._index.tsx:33` | User's following feed |
 | `user-profile:${userId}:${page}:${pageSize}` | 1 hour | `profile.$userId.tsx:58` | User profile with pagination |
 | `user-follow-stats:${userId}` | 1 hour | `profile.$userId.tsx:64` | Follow/follower counts |
 | `image-details:${imageId}` | 1 hour | `explore.$imageId.tsx:27` | Image details with comments |
@@ -217,18 +217,21 @@ Does operation modify data displayed elsewhere?
 
 ## Implementation Checklist
 
-### Immediate Fixes (Critical)
+### Immediate Fixes (Critical) - COMPLETED
 
-- [ ] **`api.collections.add-image.ts`**: Add `cacheDelete(`user-collections:${user.id}`)` after successful add
-- [ ] **`api.collections.remove-image.ts`**: Add `cacheDelete(`user-collections:${user.id}`)` after successful remove
-- [ ] **`api.collections.create.ts`**: Add `cacheDelete(`user-collections:${user.id}`)` after successful create
-- [ ] **`api.collections.$collectionId.ts`**: Add `cacheDelete(`user-collections:${user.id}`)` after successful update/delete
-- [ ] **`server/deleteSet.ts`**: Change to `cacheDeletePattern(`sets:user:${set.userId}:*`)`
-- [ ] **`settings.tsx`**: Add `cacheDeletePattern(`user-profile:${user.id}:*`)` after username update
+- [x] **`api.collections.add-image.ts`**: Add `cacheDelete(`user-collections:${user.id}`)` after successful add
+- [x] **`api.collections.remove-image.ts`**: Add `cacheDelete(`user-collections:${user.id}`)` after successful remove
+- [x] **`api.collections.create.ts`**: Add `cacheDelete(`user-collections:${user.id}`)` after successful create
+- [x] **`api.collections.$collectionId.ts`**: Add `cacheDelete(`user-collections:${user.id}`)` after successful update/delete
+- [x] **`server/deleteSet.ts`**: Change to `cacheDeletePattern(`sets:user:${set.userId}:*`)`
+- [x] **`settings.tsx`**: Add `cacheDeletePattern(`user-profile:${user.id}:*`)` after username update
 
-### Recommended Improvements
+### Recommended Improvements - COMPLETED
 
-- [ ] Reduce `following-feed` TTL to 10-15 minutes for fresher content
+- [x] Reduce `following-feed` TTL to 10 minutes for fresher content (was 1 hour)
+
+### Future Improvements
+
 - [ ] Add logging for cache invalidation failures (currently silent)
 - [ ] Consider adding cache invalidation metrics for monitoring
 - [ ] Document cache key patterns in code comments
@@ -276,17 +279,17 @@ Consider adding integration tests that:
 
 ---
 
-## TTL Strategy Recommendations
+## TTL Strategy
 
-| Data Type | Current TTL | Recommended TTL | Rationale |
-|---|---|---|---|
-| User login data | 1 hour | 1 hour | Stable, good for credits |
-| Explore images | 5 min | 5 min | Good balance for discovery |
-| Following feed | 1 hour | **10-15 min** | Fresher social content |
-| User profile | 1 hour | 30 min | Balance freshness/performance |
-| Image details | 1 hour | 1 hour | Good with event-based invalidation |
-| Collections | 1 hour | 1 hour | Good with event-based invalidation |
-| Sets | 1 hour | 1 hour | Good with event-based invalidation |
+| Data Type | TTL | Rationale |
+|---|---|---|
+| User login data | 1 hour | Stable, good for credits |
+| Explore images | 5 min | Good balance for discovery |
+| Following feed | **10 min** | Fresher social content |
+| User profile | 1 hour | Event-based invalidation handles updates |
+| Image details | 1 hour | Event-based invalidation handles updates |
+| Collections | 1 hour | Event-based invalidation handles updates |
+| Sets | 1 hour | Event-based invalidation handles updates |
 
 ---
 
