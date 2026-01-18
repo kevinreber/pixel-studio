@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   PageContainer,
   ImageCard,
+  VideoCard,
   ErrorList,
   ImageGridSkeleton,
   FollowButton,
@@ -18,6 +19,9 @@ import {
 import type { UserProfilePageLoader } from "~/routes/profile.$userId";
 import { Grid, User, Loader2 } from "lucide-react";
 import React from "react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import type { ProfileMediaItem, ProfileVideo } from "~/server/getUserDataByUserId";
 
 interface FollowStats {
   followersCount: number;
@@ -94,13 +98,15 @@ const UserProfileAccessor = ({
   profileUserId,
 }: UserProfileAccessorProps) => {
   const userData = resolvedData.user;
-  const userImages = resolvedData.images || [];
+  const userItems = resolvedData.items || [];
+  const totalCount = resolvedData.count || 0;
 
   const [followersCount, setFollowersCount] = React.useState(
     followStats.followersCount
   );
   const [followListModalOpen, setFollowListModalOpen] = React.useState(false);
   const [followListTab, setFollowListTab] = React.useState<"followers" | "following">("followers");
+  const [selectedVideo, setSelectedVideo] = React.useState<ProfileVideo | null>(null);
 
   if (!userData) return <UserDoesNotExist />;
 
@@ -118,6 +124,16 @@ const UserProfileAccessor = ({
     setFollowListModalOpen(true);
   };
 
+  const handleVideoClick = (item: ProfileMediaItem) => {
+    if (item.type === "video") {
+      setSelectedVideo(item);
+    }
+  };
+
+  const handleCloseVideo = () => {
+    setSelectedVideo(null);
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
       {/* Follow List Modal */}
@@ -129,6 +145,52 @@ const UserProfileAccessor = ({
         followersCount={followersCount}
         followingCount={followStats.followingCount}
       />
+
+      {/* Video Modal */}
+      {selectedVideo !== null && (
+        <Dialog open={true} onOpenChange={handleCloseVideo}>
+          <DialogContent
+            className="w-full md:max-w-[90%] md:h-[90vh] h-[100vh] p-0 gap-0 dark:bg-zinc-900 overflow-hidden z-[100] [&>button]:absolute [&>button]:right-4 [&>button]:top-4 [&>button]:z-10 [&>button_span]:hidden"
+            onInteractOutside={(e) => e.preventDefault()}
+            aria-describedby={undefined}
+          >
+            <VisuallyHidden>
+              <DialogTitle>Video Details</DialogTitle>
+            </VisuallyHidden>
+            <div className="flex flex-col h-full">
+              <div className="flex-1 flex items-center justify-center bg-black">
+                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                <video
+                  src={selectedVideo.url}
+                  controls
+                  autoPlay
+                  className="max-w-full max-h-full"
+                  poster={selectedVideo.thumbnailURL}
+                >
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+              <div className="p-4 bg-zinc-900">
+                <div className="flex items-center gap-3 mb-3">
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src={selectedVideo.user.image || undefined} alt={selectedVideo.user.username} />
+                    <AvatarFallback className="text-xs">
+                      {selectedVideo.user.username.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-medium">{selectedVideo.user.username}</span>
+                </div>
+                <p className="text-sm text-zinc-300">{selectedVideo.prompt}</p>
+                {selectedVideo.duration && (
+                  <p className="text-xs text-zinc-500 mt-2">
+                    Duration: {Math.floor(selectedVideo.duration / 60)}:{(selectedVideo.duration % 60).toString().padStart(2, "0")}
+                  </p>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Sticky Header */}
       <div className="pb-4">
@@ -157,7 +219,7 @@ const UserProfileAccessor = ({
 
             <div className="flex gap-8 mb-4">
               <div>
-                <span className="font-semibold">{userImages.length}</span>{" "}
+                <span className="font-semibold">{totalCount}</span>{" "}
                 <span className="text-zinc-500">posts</span>
               </div>
               <button
@@ -190,19 +252,31 @@ const UserProfileAccessor = ({
           {/* Scrollable Content */}
           <div className="mt-4">
             <TabsContent value="posts">
-              {userImages.length > 0 ? (
+              {userItems.length > 0 ? (
                 <ul className="grid grid-cols-2 md:grid-cols-3 gap-1 md:gap-4 lg:gap-6">
-                  {userImages.map((image) => (
-                    <li key={image.id} className="hover:!opacity-60">
-                      <ImageCard imageData={image} />
-                    </li>
-                  ))}
+                  {userItems.map((item) =>
+                    item.type === "image" ? (
+                      <li key={item.id} className="hover:!opacity-60">
+                        <ImageCard imageData={item} />
+                      </li>
+                    ) : (
+                      <li key={item.id} className="hover:!opacity-60">
+                        <button
+                          type="button"
+                          className="w-full text-left"
+                          onClick={() => handleVideoClick(item)}
+                        >
+                          <VideoCard videoData={item} onClickRedirectTo="#" />
+                        </button>
+                      </li>
+                    )
+                  )}
                 </ul>
               ) : (
                 <div className="text-center py-12">
                   <h2 className="font-semibold text-lg mb-2">No Posts Yet</h2>
                   <p className="text-zinc-500">
-                    When you create images, they will appear here.
+                    When you create images or videos, they will appear here.
                   </p>
                   <Button
                     className="mt-4 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
