@@ -144,6 +144,7 @@ export async function logCreditSpend(params: {
 
 /**
  * Log credit refund (failed generation)
+ * This actually restores credits to the user's account and logs the transaction
  */
 export async function logCreditRefund(params: {
   userId: string;
@@ -153,13 +154,34 @@ export async function logCreditRefund(params: {
 }): Promise<void> {
   const { userId, amount, generationLogId, description } = params;
 
-  await logCreditTransaction({
-    userId,
-    type: "refund",
-    amount: Math.abs(amount), // Ensure positive for refund
-    description: description || `Refunded ${amount} credits for failed generation`,
-    generationLogId,
-  });
+  const refundAmount = Math.abs(amount);
+
+  try {
+    // Actually increment the user's credits
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        credits: {
+          increment: refundAmount,
+        },
+      },
+    });
+
+    // Then log the transaction
+    await logCreditTransaction({
+      userId,
+      type: "refund",
+      amount: refundAmount,
+      description: description || `Refunded ${amount} credits for failed generation`,
+      generationLogId,
+    });
+  } catch (error) {
+    console.error(
+      `[CreditTransaction] Failed to refund credits for user ${userId}:`,
+      error
+    );
+    throw error; // Re-throw so callers know the refund failed
+  }
 }
 
 /**

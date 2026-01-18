@@ -67,9 +67,13 @@ const isFluxModel = (modelValue: string): boolean => {
   return modelValue.includes("flux");
 };
 
-// Helper to check if model is Stable Diffusion
-const isStableDiffusionModel = (modelValue: string): boolean => {
-  return modelValue.includes("stable-diffusion");
+// Helper to check if model is a Stability AI model (supports negative prompts, CFG scale, steps)
+const isStabilityAIModel = (modelValue: string): boolean => {
+  return (
+    modelValue.includes("stable-diffusion") ||
+    modelValue.startsWith("sd") ||
+    modelValue.startsWith("stable-image")
+  );
 };
 
 // Helper to check if model is DALL-E 3
@@ -758,7 +762,7 @@ const CreatePageForm = () => {
                     <input type="hidden" name="promptUpsampling" value={promptUpsampling.toString()} />
 
                     {/* Negative Prompt - Stable Diffusion only */}
-                    {isStableDiffusionModel(selectedModel.value) && (
+                    {isStabilityAIModel(selectedModel.value) && (
                       <div>
                         <Label htmlFor="negativePrompt">Negative Prompt</Label>
                         <Textarea
@@ -808,7 +812,7 @@ const CreatePageForm = () => {
                     </div>
 
                     {/* CFG Scale - Stable Diffusion only */}
-                    {isStableDiffusionModel(selectedModel.value) && (
+                    {isStabilityAIModel(selectedModel.value) && (
                       <div>
                         <div className="flex justify-between items-center mb-3">
                           <Label>CFG Scale</Label>
@@ -836,7 +840,7 @@ const CreatePageForm = () => {
                     )}
 
                     {/* Steps - Stable Diffusion only */}
-                    {isStableDiffusionModel(selectedModel.value) && (
+                    {isStabilityAIModel(selectedModel.value) && (
                       <div>
                         <div className="flex justify-between items-center mb-3">
                           <Label>Steps</Label>
