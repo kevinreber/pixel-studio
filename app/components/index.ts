@@ -9,6 +9,7 @@ export { default as CopyToClipboardButton } from "./CopyToClipboardButton";
 export * from "./GeneralErrorBoundary";
 export { default as ImageGridSkeleton } from "./ImageGridSkeleton";
 export * from "./ImageCard";
+export * from "./VideoCard";
 export * from "./ModelBadge";
 export { default as PaginationControls } from "./PaginationControls";
 export * from "./FollowButton";

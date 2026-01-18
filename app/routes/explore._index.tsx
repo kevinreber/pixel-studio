@@ -6,7 +6,7 @@ import { requireUserLogin } from "~/services";
 import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 
 export const meta: MetaFunction = () => {
-  return [{ title: "Explore AI Generated Images" }];
+  return [{ title: "Explore AI Generated Images & Videos" }];
 };
 
 const CACHE_TTL_5_MINUTES = 300;

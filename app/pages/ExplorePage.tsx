@@ -6,18 +6,22 @@ import {
   Await,
   useNavigation,
   useAsyncValue,
+  Link,
 } from "@remix-run/react";
 import { type ExplorePageLoader } from "../routes/explore._index";
-import { Loader2, Search as MagnifyingGlassIcon } from "lucide-react";
+import { Loader2, Search as MagnifyingGlassIcon, Play } from "lucide-react";
 import {
   PageContainer,
   ImageCard,
+  VideoCard,
   ErrorList,
   ImageGridSkeleton,
   PaginationControls,
 } from "~/components";
-import { type GetImagesResponse } from "~/server/getImages";
+import { type GetImagesResponse, type MediaItem } from "~/server/getImages";
 import type { ImageDetail } from "~/server/getImage";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 const LoadingSkeleton = () => {
   return (
@@ -38,10 +42,12 @@ const LoadingSkeleton = () => {
   );
 };
 
-const ImageGrid = ({
+const MediaGrid = ({
   imagesData,
+  onVideoClick,
 }: {
   imagesData: GetImagesResponse | undefined;
+  onVideoClick: (video: MediaItem) => void;
 }) => {
   if (!imagesData) {
     return <ImageGridSkeleton />;
@@ -50,7 +56,7 @@ const ImageGrid = ({
   if (imagesData.status === "error") {
     return (
       <div className="text-center w-full block">
-        <p className="text-red-500 mb-2">Error loading images</p>
+        <p className="text-red-500 mb-2">Error loading content</p>
         {imagesData.error && (
           <p className="text-sm text-gray-400">{imagesData.error}</p>
         )}
@@ -58,36 +64,51 @@ const ImageGrid = ({
     );
   }
 
-  if (!imagesData.images || imagesData.images.length === 0) {
+  if (!imagesData.items || imagesData.items.length === 0) {
     return (
       <p className="text-center w-full block italic font-light">
-        No images found
+        No images or videos found
       </p>
     );
   }
 
   return (
     <ul className="grid grid-cols-2 md:grid-cols-3 gap-1 md:gap-4 lg:gap-6">
-      {imagesData.images.map(
-        (image) =>
-          image && (
-            <li key={image.id} className="hover:!opacity-60">
-              <ImageCard
-                imageData={
-                  {
-                    ...image,
-                    createdAt: image.createdAt,
-                    private: null,
-                    user: { id: image.userId, username: "", image: null },
-                    comments: [],
-                    likes: [],
-                    setId: null,
-                    blurURL: "",
-                  } as ImageDetail
-                }
-              />
-            </li>
-          )
+      {imagesData.items.map((item) =>
+        item.type === "image" ? (
+          <li key={item.id} className="hover:!opacity-60">
+            <ImageCard
+              imageData={
+                {
+                  ...item,
+                  createdAt: item.createdAt,
+                  private: null,
+                  user: { id: item.userId, username: "", image: null },
+                  comments: [],
+                  likes: [],
+                  setId: null,
+                  blurURL: "",
+                } as ImageDetail
+              }
+            />
+          </li>
+        ) : (
+          <li
+            key={item.id}
+            className="hover:!opacity-60 cursor-pointer"
+            onClick={() => onVideoClick(item)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onVideoClick(item);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+          >
+            <VideoCard videoData={item} onClickRedirectTo="#" />
+          </li>
+        )
       )}
     </ul>
   );
@@ -99,7 +120,18 @@ const ExplorePageAccessor = () => {
   const [searchParams] = useSearchParams();
   const initialSearchTerm = searchParams.get("q") || "";
   const [searchTerm, setSearchTerm] = React.useState(initialSearchTerm);
+  const [selectedVideo, setSelectedVideo] = React.useState<MediaItem | null>(null);
   const isLoading = navigation.state !== "idle";
+
+  const handleVideoClick = (video: MediaItem) => {
+    if (video.type === "video") {
+      setSelectedVideo(video);
+    }
+  };
+
+  const handleCloseVideo = () => {
+    setSelectedVideo(null);
+  };
 
   return (
     <div className="flex flex-col h-[calc(100vh-6rem)]">
@@ -113,7 +145,7 @@ const ExplorePageAccessor = () => {
                 name="q"
                 id="q"
                 className="bg-inherit block w-full rounded-l-md border-0 py-1.5 px-2 text-white ring-1 ring-inset ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6"
-                placeholder="Search"
+                placeholder="Search images and videos"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -151,7 +183,7 @@ const ExplorePageAccessor = () => {
                       imagesData.pagination.pageSize,
                     imagesData.pagination.totalCount
                   )}{" "}
-                  of {imagesData.pagination.totalCount.toLocaleString()} images
+                  of {imagesData.pagination.totalCount.toLocaleString()} items
                   {initialSearchTerm && (
                     <span className="ml-2">
                       for &ldquo;
@@ -161,23 +193,59 @@ const ExplorePageAccessor = () => {
                   )}
                 </>
               ) : (
-                <>No images found</>
+                <>No content found</>
               )}
             </div>
           </div>
         )}
       </div>
 
-      {/* Scrollable Images Container */}
+      {/* Scrollable Content Container */}
       <div className="flex-1 overflow-y-auto min-h-0 px-2 scroll-smooth">
         <div className="max-w-5xl mx-auto pb-4">
           {isLoading ? (
             <ImageGridSkeleton />
           ) : (
-            <ImageGrid imagesData={imagesData} />
+            <MediaGrid imagesData={imagesData} onVideoClick={handleVideoClick} />
           )}
         </div>
       </div>
+
+      {/* Video Modal */}
+      {selectedVideo !== null && selectedVideo.type === "video" && (
+        <Dialog open={true} onOpenChange={handleCloseVideo}>
+          <DialogContent
+            className="w-full md:max-w-[90%] md:h-[90vh] h-[100vh] p-0 gap-0 dark:bg-zinc-900 overflow-hidden z-[100] [&>button]:absolute [&>button]:right-4 [&>button]:top-4 [&>button]:z-10 [&>button_span]:hidden"
+            onInteractOutside={(e) => e.preventDefault()}
+            aria-describedby={undefined}
+          >
+            <VisuallyHidden>
+              <DialogTitle>Video Details</DialogTitle>
+            </VisuallyHidden>
+            <div className="flex flex-col h-full">
+              <div className="flex-1 flex items-center justify-center bg-black">
+                <video
+                  src={selectedVideo.url}
+                  controls
+                  autoPlay
+                  className="max-w-full max-h-full"
+                  poster={selectedVideo.thumbnailURL}
+                >
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+              <div className="p-4 bg-zinc-900">
+                <p className="text-sm text-zinc-300">{selectedVideo.prompt}</p>
+                {selectedVideo.duration && (
+                  <p className="text-xs text-zinc-500 mt-2">
+                    Duration: {Math.floor(selectedVideo.duration / 60)}:{(selectedVideo.duration % 60).toString().padStart(2, "0")}
+                  </p>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Fixed Pagination at Bottom */}
       {!isLoading && imagesData?.pagination && (
