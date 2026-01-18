@@ -17,7 +17,7 @@ import {
   FollowListModal,
 } from "~/components";
 import type { UserProfilePageLoader } from "~/routes/profile.$userId";
-import { Grid, User, Loader2, Play } from "lucide-react";
+import { Grid, User, Loader2 } from "lucide-react";
 import React from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";

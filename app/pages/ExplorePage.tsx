@@ -6,10 +6,9 @@ import {
   Await,
   useNavigation,
   useAsyncValue,
-  Link,
 } from "@remix-run/react";
 import { type ExplorePageLoader } from "../routes/explore._index";
-import { Loader2, Search as MagnifyingGlassIcon, Play } from "lucide-react";
+import { Loader2, Search as MagnifyingGlassIcon } from "lucide-react";
 import {
   PageContainer,
   ImageCard,
