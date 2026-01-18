@@ -71,6 +71,8 @@ model User {
   roles        Role[]
   followedBy   Follow[]      @relation("FollowedBy")
   following    Follow[]      @relation("Following")
+  generationLogs GenerationLog[]
+  creditTransactions CreditTransaction[]
 }
 
 model Password {
@@ -123,6 +125,7 @@ model Set {
   videos      Video[]
   userId      String
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generationLogs GenerationLog[]
 
   @@index([userId])
 }
@@ -252,6 +255,71 @@ model CollectionHasImage {
   @@index([collectionId, imageId])
   @@index([collectionId])
   @@index([imageId])
+}
+
+model GenerationLog {
+  id           String    @id @default(cuid())
+  requestId    String    @unique
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type         String    // "image" or "video"
+  status       String    // "complete" or "failed"
+
+  // Request details
+  prompt       String
+  model        String
+  metadata     Json?     // Store all generation params (numberOfImages, style, aspectRatio, duration, etc.)
+
+  // Result
+  setId        String?   // Link to Set if successful
+  set          Set?      @relation(fields: [setId], references: [id], onDelete: SetNull)
+  errorMessage String?   // Error details if failed
+
+  // Cost tracking
+  creditCost   Int
+  creditsRefunded Boolean @default(false) // Track if credits were refunded for failures
+
+  // Tracking
+  createdAt    DateTime  @default(now())
+  completedAt  DateTime? // When generation finished (success or failure)
+  duration     Int?      // Generation duration in seconds
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@index([type])
+  @@index([requestId])
+}
+
+model CreditTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Transaction type
+  type        String   // "purchase", "spend", "refund", "admin_adjustment", "bonus"
+
+  // Amount (positive for additions, negative for deductions)
+  amount      Int
+
+  // Balance after transaction
+  balanceAfter Int
+
+  // Transaction details
+  description String?  // Human-readable description
+  metadata    Json?    // Additional data (Stripe session ID, generation request ID, etc.)
+
+  // References
+  stripeSessionId    String?  // Link to Stripe checkout session
+  generationLogId    String?  // Link to generation that spent credits
+
+  // Tracking
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([type])
+  @@index([stripeSessionId])
+  @@index([generationLogId])
 }
 
 model Follow {
