@@ -8,7 +8,11 @@ import {
 import { requireUserLogin } from "~/services";
 import CreateVideoPage from "~/pages/CreateVideoPage";
 import { createNewVideos, updateUserCredits, checkUserCredits } from "~/server";
-import { getVideoGenerationProducer } from "~/services/videoGenerationProducer.server";
+import {
+  queueVideoGeneration,
+  isVideoQueueEnabled,
+  getVideoQueueHealth,
+} from "~/services/videoQueue.server";
 import { z } from "zod";
 import { PageContainer, GeneralErrorBoundary } from "~/components";
 import { cacheDelete } from "~/utils/cache.server";
@@ -153,51 +157,56 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     );
   }
 
-  // Check if Kafka-based async generation is enabled
-  const isProduction = process.env.NODE_ENV === "production";
-  const isKafkaEnabled =
-    !isProduction && process.env.ENABLE_KAFKA_VIDEO_GENERATION === "true";
+  // Check if async queue processing is enabled (QStash or Kafka)
+  const asyncQueueEnabled = isVideoQueueEnabled();
 
   // Track if credits were already deducted
   let creditsAlreadyDeducted = false;
 
-  if (isKafkaEnabled) {
+  if (asyncQueueEnabled) {
     try {
-      console.log("Using Kafka for async video generation...");
+      // 🚀 Async Queue: Use QStash (default) or Kafka for async generation
+      console.log("[Create Video] Using async queue for video generation...");
 
-      const producer = await getVideoGenerationProducer();
-
-      // Health check
-      const isKafkaHealthy = await producer.healthCheck();
-      if (!isKafkaHealthy) {
-        throw new Error("Video generation service is temporarily unavailable");
+      // Health check - verify queue backend is available
+      const queueHealth = await getVideoQueueHealth();
+      if (!queueHealth.healthy) {
+        throw new Error(
+          `Video generation service is temporarily unavailable: ${queueHealth.message}`
+        );
       }
 
-      // Charge upfront for async processing
+      // Charge upfront since it's async
+      // The worker should handle refunds on failure
       await updateUserCredits(user.id, totalCreditCost);
       creditsAlreadyDeducted = true;
 
-      // Clear cache
+      // Clear cache for user
       const cacheKey = `user-login:${user.id}`;
       await cacheDelete(cacheKey);
 
-      // Queue the video generation request
-      const response = await producer.queueVideoGeneration(
-        validateFormData.data,
-        user.id
-      );
+      // Queue the video generation request (returns immediately!)
+      const response = await queueVideoGeneration(validateFormData.data, user.id);
 
       console.log(
-        `Successfully queued video generation request: ${response.requestId}`
+        `Successfully queued video generation request: ${response.requestId} via ${queueHealth.backend}`
       );
 
-      // Redirect to processing page
-      return redirect(response.processingUrl);
+      // Return JSON with requestId so client can track progress via toast
+      return json({
+        success: true,
+        async: true,
+        requestId: response.requestId,
+        processingUrl: response.processingUrl,
+        message: "Video generation started",
+        prompt: validateFormData.data.prompt,
+      });
     } catch (error) {
       console.error(
-        "Kafka video generation failed, falling back to synchronous:",
+        "Async video generation failed, falling back to synchronous:",
         error
       );
+      // Continue to synchronous fallback below
     }
   }
 
@@ -260,6 +269,11 @@ export type ActionData = {
   error?: string | { [key: string]: string[] };
   videos?: { id: string; url: string }[];
   setId?: string;
+  // Async generation fields
+  async?: boolean;
+  requestId?: string;
+  processingUrl?: string;
+  prompt?: string;
 };
 
 export type CreateVideoPageActionData = typeof action;

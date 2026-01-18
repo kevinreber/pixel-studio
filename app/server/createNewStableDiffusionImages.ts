@@ -38,12 +38,10 @@ export const getStableDiffusionMockDataResponse = (numberOfImages = 1) => {
   return mockData;
 };
 
-const IMAGE_HEIGHT = 1024;
-const IMAGE_WIDTH = 1024;
 const THREE_SECONDS_IN_MS = 1000 * 3;
 
 const DEFAULT_NUMBER_OF_IMAGES_CREATED = 1;
-const DEFAULT_AI_IMAGE_LANGUAGE_MODEL = "stable-diffusion-xl-1024-v1-0";
+const DEFAULT_AI_IMAGE_LANGUAGE_MODEL = "sd3-large";
 const DEFAULT_IMAGE_STYLE_PRESET = undefined;
 const DEFAULT_IS_IMAGE_PRIVATE = false;
 
@@ -55,14 +53,6 @@ const DEFAULT_PAYLOAD = {
   private: DEFAULT_IS_IMAGE_PRIVATE,
 };
 
-interface GenerationResponse {
-  artifacts: Array<{
-    base64: string;
-    seed: number;
-    finishReason: string;
-  }>;
-}
-
 interface StabilityAIError {
   id: string;
   name: string;
@@ -70,124 +60,160 @@ interface StabilityAIError {
 }
 
 /**
+ * Map model IDs to their v2beta API endpoints and model names
+ */
+const MODEL_CONFIG: Record<string, { endpoint: string; modelParam?: string }> = {
+  // SD3 models
+  "sd3-medium": { endpoint: "sd3", modelParam: "sd3-medium" },
+  "sd3-large": { endpoint: "sd3", modelParam: "sd3-large" },
+  "sd3-large-turbo": { endpoint: "sd3", modelParam: "sd3-large-turbo" },
+  "sd3.5-medium": { endpoint: "sd3", modelParam: "sd3.5-medium" },
+  "sd3.5-large": { endpoint: "sd3", modelParam: "sd3.5-large" },
+  "sd3.5-large-turbo": { endpoint: "sd3", modelParam: "sd3.5-large-turbo" },
+  // Stable Image Core and Ultra
+  "stable-image-core": { endpoint: "core" },
+  "stable-image-ultra": { endpoint: "ultra" },
+};
+
+/**
+ * Convert width/height to aspect ratio for v2beta API
+ */
+const getAspectRatio = (width?: number, height?: number): string => {
+  if (!width || !height) return "1:1";
+
+  const ratio = width / height;
+
+  // Map to supported aspect ratios
+  if (ratio >= 2.2) return "21:9";
+  if (ratio >= 1.7) return "16:9";
+  if (ratio >= 1.4) return "3:2";
+  if (ratio >= 1.2) return "5:4";
+  if (ratio >= 0.95) return "1:1";
+  if (ratio >= 0.75) return "4:5";
+  if (ratio >= 0.6) return "2:3";
+  if (ratio >= 0.5) return "9:16";
+  return "9:21";
+};
+
+/**
  * @description
- * This function makes a request to Stability AI's – Stable Diffusion API to fetch images generated using the prompt
+ * This function makes a request to Stability AI's v2beta API to generate images
  *
  * @reference
- * https://platform.stability.ai/docs/api-reference#tag/v1generation/operation/textToImage
+ * https://platform.stability.ai/docs/api-reference#tag/Generate
  */
 const createStableDiffusionImages = async ({
   prompt,
   numberOfImages = DEFAULT_NUMBER_OF_IMAGES_CREATED,
   model = DEFAULT_AI_IMAGE_LANGUAGE_MODEL,
   stylePreset = DEFAULT_IMAGE_STYLE_PRESET,
-  // New generation parameters
-  width = IMAGE_WIDTH,
-  height = IMAGE_HEIGHT,
-  cfgScale = 7,
-  steps = 40,
+  width,
+  height,
   negativePrompt,
+  seed,
 }: {
   prompt: string;
   numberOfImages: number;
   model: string;
   stylePreset?: string;
-  // New generation parameters
   width?: number;
   height?: number;
   cfgScale?: number;
   steps?: number;
   negativePrompt?: string;
-}) => {
+  seed?: number;
+}): Promise<{ artifacts: Array<{ base64: string; seed: number; finishReason: string }> }> => {
   Logger.info({
-    message: `Attempting to generate ${numberOfImages} Stable Diffusion images with ${model} model and style preset: ${stylePreset}`,
-    metadata: { width, height, cfgScale, steps, hasNegativePrompt: !!negativePrompt },
+    message: `Attempting to generate ${numberOfImages} Stable Diffusion images with ${model} model`,
+    metadata: { width, height, hasNegativePrompt: !!negativePrompt },
   });
 
-  const promptMessage = prompt;
-  const numberOfImagesToGenerate = Math.round(numberOfImages);
-  const engineId = model;
-
-  // Build text_prompts array with optional negative prompt
-  const textPrompts: Array<{ text: string; weight: number }> = [
-    {
-      text: promptMessage,
-      weight: 1,
-    },
-  ];
-
-  // Add negative prompt if provided (with negative weight)
-  if (negativePrompt && negativePrompt.trim()) {
-    textPrompts.push({
-      text: negativePrompt,
-      weight: -1,
-    });
+  const modelConfig = MODEL_CONFIG[model];
+  if (!modelConfig) {
+    throw new Error(`Unsupported Stability AI model: ${model}. Available models: ${Object.keys(MODEL_CONFIG).join(", ")}`);
   }
 
-  const body = {
-    /**
-     * `cfg_scale` is how strictly the diffusion process adheres to the prompt text.
-     * The higher values keep your image closer to your prompt (Ex: 1-35)
-     */
-    cfg_scale: cfgScale,
-    height: height,
-    width: width,
-    steps: steps,
-    style_preset: stylePreset,
-    samples: numberOfImagesToGenerate,
-    text_prompts: textPrompts,
-  };
+  const artifacts: Array<{ base64: string; seed: number; finishReason: string }> = [];
 
-  try {
-    const response = await fetch(
-      `${process.env.STABLE_DIFFUSION_API_ENDPOINT}/v1/generation/${engineId}/text-to-image`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${process.env.STABLE_DIFFUSION_API_KEY}`,
-        },
-        body: JSON.stringify(body),
-      }
-    );
+  // Generate images one at a time (v2beta API generates one image per request)
+  for (let i = 0; i < numberOfImages; i++) {
+    // Build form data for v2beta API (uses multipart/form-data)
+    const formData = new FormData();
+    formData.append("prompt", prompt);
+    formData.append("output_format", "png");
+    formData.append("aspect_ratio", getAspectRatio(width, height));
 
-    if (!response.ok) {
-      const errorDataText = await response.text();
-      Logger.error({
-        message: "Stability AI Error",
-        metadata: {
-          errorDataText,
-        },
-      });
-
-      // Parse the error response
-      try {
-        const errorData = JSON.parse(errorDataText) as StabilityAIError;
-        throw new Error(errorData.message);
-      } catch {
-        // If we can't parse the error JSON, throw the raw text
-        throw new Error(errorDataText);
-      }
+    if (negativePrompt && negativePrompt.trim()) {
+      formData.append("negative_prompt", negativePrompt);
     }
 
-    const responseJSON = (await response.json()) as GenerationResponse;
-    Logger.info({
-      message: "Successful response",
-      metadata: {
-        responseJSON,
-      },
-    });
+    if (modelConfig.modelParam) {
+      formData.append("model", modelConfig.modelParam);
+    }
 
-    return responseJSON;
-  } catch (error) {
-    Logger.error({
-      message: "Error creating image using language model",
-      error: error as Error,
-    });
-    // Just throw the error message directly
-    throw error;
+    if (stylePreset && stylePreset !== "none") {
+      formData.append("style_preset", stylePreset);
+    }
+
+    if (seed !== undefined) {
+      formData.append("seed", String(seed + i)); // Increment seed for each image
+    }
+
+    try {
+      const apiEndpoint = process.env.STABLE_DIFFUSION_API_ENDPOINT || "https://api.stability.ai";
+      const response = await fetch(
+        `${apiEndpoint}/v2beta/stable-image/generate/${modelConfig.endpoint}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.STABLE_DIFFUSION_API_KEY}`,
+            Accept: "image/*",
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const errorDataText = await response.text();
+        Logger.error({
+          message: "Stability AI v2beta Error",
+          metadata: { errorDataText, status: response.status },
+        });
+
+        try {
+          const errorData = JSON.parse(errorDataText) as StabilityAIError;
+          throw new Error(errorData.message || errorDataText);
+        } catch {
+          throw new Error(errorDataText || `API error: ${response.status}`);
+        }
+      }
+
+      // v2beta returns image directly as binary when Accept: image/*
+      const imageBuffer = await response.arrayBuffer();
+      const base64Image = Buffer.from(imageBuffer).toString("base64");
+
+      // Get seed from response headers if available
+      const responseSeed = response.headers.get("seed");
+
+      artifacts.push({
+        base64: base64Image,
+        seed: responseSeed ? parseInt(responseSeed, 10) : (seed || 0) + i,
+        finishReason: "SUCCESS",
+      });
+
+      Logger.info({
+        message: `Successfully generated image ${i + 1}/${numberOfImages}`,
+      });
+    } catch (error) {
+      Logger.error({
+        message: `Error generating image ${i + 1}/${numberOfImages}`,
+        error: error as Error,
+      });
+      throw error;
+    }
   }
+
+  return { artifacts };
 };
 
 /**
@@ -229,12 +255,10 @@ export const createNewStableDiffusionImages = async (
       numberOfImages,
       model,
       stylePreset,
-      // New generation parameters
       width: formData.width,
       height: formData.height,
-      cfgScale: formData.cfgScale,
-      steps: formData.steps,
       negativePrompt: formData.negativePrompt,
+      seed: formData.seed,
     });
 
     // Create a new set in our DB

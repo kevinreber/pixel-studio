@@ -4,6 +4,7 @@ import { Link } from "@remix-run/react";
 import { Search, PenTool, User, Images, Heart, Video, Rss } from "lucide-react";
 import { UserAvatarButton } from "./UserAvatarButton";
 import { useLoggedInUser } from "~/hooks";
+import { NotificationDropdown } from "./NotificationDropdown";
 
 const NavButton = ({
   title,
@@ -108,7 +109,8 @@ const NavigationSidebar = () => {
           ))}
         </nav>
         {isLoggedIn && (
-          <div className="mt-auto pt-4">
+          <div className="mt-auto pt-4 space-y-1">
+            <NotificationDropdown showLabel />
             <UserAvatarButton />
           </div>
         )}
@@ -131,7 +133,8 @@ const NavigationSidebar = () => {
             </Link>
           </div>
           {isLoggedIn && (
-            <div className="flex items-center">
+            <div className="flex items-center gap-2">
+              <NotificationDropdown />
               <UserAvatarButton />
             </div>
           )}
