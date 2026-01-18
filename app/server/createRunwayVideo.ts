@@ -9,7 +9,8 @@
 
 import { createNewVideo, updateVideoStatus } from "./createNewVideo";
 import { createNewSet, deleteSet } from "~/server";
-import { addVideoToS3 } from "./addVideoToS3.server";
+import { addVideoToS3, addVideoThumbnailToS3 } from "./addVideoToS3.server";
+import { extractVideoThumbnailSafe } from "./extractVideoThumbnail.server";
 
 const RUNWAY_API_URL = process.env.RUNWAY_API_URL || "https://api.dev.runwayml.com/v1";
 const RUNWAY_API_KEY = process.env.RUNWAY_API_KEY;
@@ -333,6 +334,19 @@ export const createRunwayVideo = async (
       videoBuffer,
       contentType: "video/mp4",
     });
+
+    // Extract and upload thumbnail
+    const thumbnailBuffer = await extractVideoThumbnailSafe(videoBuffer);
+    if (thumbnailBuffer) {
+      await addVideoThumbnailToS3({
+        videoId: video.id,
+        thumbnailBuffer,
+        contentType: "image/jpeg",
+      });
+      console.log(`Thumbnail generated for video ${video.id}`);
+    } else {
+      console.warn(`Failed to generate thumbnail for video ${video.id}`);
+    }
 
     // Update video as complete
     await updateVideoStatus({
