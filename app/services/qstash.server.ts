@@ -432,6 +432,26 @@ async function processImageGenerationLocally(
       timestamp: new Date(),
     });
 
+    // Create notification for image completion (non-blocking)
+    // Wrapped in try-catch to prevent notification failures from overwriting success status
+    const firstImageId = result.images[0]?.id;
+    if (firstImageId) {
+      try {
+        const { createNotification } = await import("~/server/notifications");
+        await createNotification({
+          type: "IMAGE_COMPLETED",
+          recipientId: userId,
+          imageId: firstImageId,
+        });
+      } catch (notificationError) {
+        console.error(
+          `[Local Worker] Failed to create notification for ${requestId}:`,
+          notificationError
+        );
+        // Don't rethrow - notification failure shouldn't affect image generation success
+      }
+    }
+
     // Log successful generation
     await logGenerationComplete({
       requestId,

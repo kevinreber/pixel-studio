@@ -55,16 +55,6 @@ export const MODEL_OPTIONS = [
     recommended: false,
   },
   {
-    name: "Flux Pro",
-    value: "flux-pro",
-    image: "/assets/model-thumbs/flux-schnell.jpg",
-    description: "High-quality image generation by Black Forest Labs.",
-    company: "Black Forest Labs",
-    supportsStyles: false,
-    creditCost: 2,
-    recommended: true,
-  },
-  {
     name: "Flux Pro 1.1",
     value: "flux-pro-1.1",
     image: "/assets/model-thumbs/flux-pro-1-1.jpg",

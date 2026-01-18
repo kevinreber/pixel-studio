@@ -32,7 +32,7 @@ const VALID_HUGGING_FACE_MODELS = [
   "RunDiffusion/Juggernaut-XL-v9",
 ];
 
-const VALID_BLACK_FOREST_LABS_MODELS = ["flux-pro-1.1", "flux-pro", "flux-dev"];
+const VALID_BLACK_FOREST_LABS_MODELS = ["flux-pro-1.1", "flux-dev"];
 
 // Stability AI v2beta models
 const VALID_STABILITY_AI_MODELS = [
