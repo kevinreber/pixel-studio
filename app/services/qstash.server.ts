@@ -32,8 +32,7 @@ import {
   logGenerationComplete,
   logGenerationFailed,
 } from "./generationLog.server";
-import { getModelCreditCost } from "~/config/pricing";
-import { getVideoModelCreditCost } from "~/config/pricing";
+import { getModelCreditCost , getVideoModelCreditCost } from "~/config/pricing";
 
 // Initialize QStash client
 const getQStashClient = () => {
