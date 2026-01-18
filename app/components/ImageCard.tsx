@@ -1,6 +1,7 @@
 import { Link } from "@remix-run/react";
-// import { Heart, MessageCircle } from "lucide-react";
 import { ImageDetail } from "~/server/getImage";
+import { OptimizedImage } from "./OptimizedImage";
+import { useImagePreload } from "~/hooks";
 import { fallbackImageSource } from "~/client";
 
 export const ImageGrid = ({ images }: { images: ImageDetail[] }) => {
@@ -34,20 +35,30 @@ export const ImageCard = ({
   onClickRedirectTo?: string;
 }) => {
   const redirectTo = onClickRedirectTo || `/explore/${imageData!.id}`;
+  const { preloadImage } = useImagePreload();
+
+  // Preload full image on hover for faster modal loading
+  const handleMouseEnter = () => {
+    preloadImage(imageData?.url);
+  };
 
   return (
-    <div className="relative w-full h-full pt-[100%]">
+    <div
+      className="relative w-full h-full pt-[100%]"
+      onMouseEnter={handleMouseEnter}
+    >
       <Link
         className="absolute inset-0 block"
         prefetch="intent"
         to={redirectTo}
       >
-        <img
-          loading="lazy"
+        <OptimizedImage
           src={imageData!.thumbnailURL}
           alt={imageData!.prompt}
+          blurSrc={imageData?.blurURL}
+          containerClassName="absolute inset-0 w-full h-full"
           className="inset-0 object-cover cursor-pointer absolute w-full h-full"
-          decoding="async"
+          rootMargin="300px"
           onError={(e) => {
             // Fallback chain: thumbnail -> original -> placeholder
             const target = e.currentTarget;
@@ -61,19 +72,6 @@ export const ImageCard = ({
           }}
         />
       </Link>
-      {/* Hover Overlay */}
-      {/* <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-        <div className="flex items-center gap-8 text-white">
-        <div className="flex items-center gap-2">
-        <Heart className="h-6 w-6 fill-white" />
-        <span className="font-semibold">0</span>
-        </div>
-        <div className="flex items-center gap-2">
-        <MessageCircle className="h-6 w-6 fill-white" />
-        <span className="font-semibold">0</span>
-        </div>
-        </div>
-        </div> */}
     </div>
   );
 };

@@ -14,3 +14,5 @@ export { default as PaginationControls } from "./PaginationControls";
 export * from "./FollowButton";
 export * from "./FollowListModal";
 export { GenerationQueue } from "./GenerationQueue";
+export * from "./OptimizedImage";
+export * from "./ProgressiveImage";

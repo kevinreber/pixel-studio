@@ -1,5 +1,5 @@
 import { prisma } from "~/services/prisma.server";
-import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
+import { getS3BucketBlurURL, getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
 
 /**
  * @description
@@ -69,11 +69,12 @@ export const getFollowingFeed = async (
     }),
   ]);
 
-  // Add thumbnailURL and url to each image
+  // Add thumbnailURL, blurURL and url to each image
   const imagesWithUrls = images.map((image) => ({
     ...image,
     url: getS3BucketURL(image.id),
     thumbnailURL: getS3BucketThumbnailURL(image.id),
+    blurURL: getS3BucketBlurURL(image.id),
   }));
 
   return {
