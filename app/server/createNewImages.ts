@@ -34,12 +34,28 @@ const VALID_HUGGING_FACE_MODELS = [
 
 const VALID_BLACK_FOREST_LABS_MODELS = ["flux-pro-1.1", "flux-pro", "flux-dev"];
 
+// Stability AI v2beta models
+const VALID_STABILITY_AI_MODELS = [
+  "sd3-medium",
+  "sd3-large",
+  "sd3-large-turbo",
+  "sd3.5-medium",
+  "sd3.5-large",
+  "sd3.5-large-turbo",
+  "stable-image-core",
+  "stable-image-ultra",
+];
+
 const isValidHuggingFaceModel = (model: string) => {
   return VALID_HUGGING_FACE_MODELS.includes(model);
 };
 
 const isValidBlackForestLabsModel = (model: string) => {
   return VALID_BLACK_FOREST_LABS_MODELS.includes(model);
+};
+
+const isValidStabilityAIModel = (model: string) => {
+  return VALID_STABILITY_AI_MODELS.includes(model);
 };
 
 /**
@@ -65,7 +81,8 @@ export const createNewImages = async (
       setId = data.setId || "";
 
       return data;
-    } else if (AILanguageModelToUse.includes("stable-diffusion")) {
+    } else if (isValidStabilityAIModel(AILanguageModelToUse)) {
+      // Stability AI v2beta models (SD3, SD3.5, Core, Ultra)
       const data = await createNewStableDiffusionImages(formData, userId);
 
       setId = data.setId || "";
