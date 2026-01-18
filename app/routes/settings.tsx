@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLoggedInUser } from "~/hooks";
-import { invalidateCache } from "~/utils/cache.server";
+import { invalidateCache, cacheDeletePattern } from "~/utils/cache.server";
 import { History, Wallet } from "lucide-react";
 
 const UsernameSchema = z
@@ -68,9 +68,11 @@ export async function action({ request }: ActionFunctionArgs) {
       where: { id: user.id },
       data: { username },
     });
-    // Need to invalidate the cache for the user
-    const cacheKey = `user-login:${user.id}`;
-    await invalidateCache(cacheKey);
+    // Invalidate both login and profile caches so new username appears everywhere
+    await Promise.all([
+      invalidateCache(`user-login:${user.id}`),
+      cacheDeletePattern(`user-profile:${user.id}:*`),
+    ]);
 
     return json({ success: true, user: updatedUser });
   } catch (error) {

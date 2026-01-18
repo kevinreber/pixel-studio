@@ -11,6 +11,7 @@ import {
   GeneralErrorBoundary,
   ErrorList,
   ImageGridSkeleton,
+  OptimizedImage,
 } from "~/components";
 import { requireUserLogin } from "~/services/auth.server";
 import { Loader2 } from "lucide-react";
@@ -20,6 +21,7 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { getLikedImages } from "~/server/getLikedImages";
 import { getCachedDataWithRevalidate } from "~/utils/cache.server";
+import { useImagePreload } from "~/hooks";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
@@ -49,32 +51,35 @@ const ImageCard = ({
   imageData: ImageDetail;
   onImageClick: () => void;
 }) => {
-  // console.log("imageData", imageData);
+  const { preloadImage } = useImagePreload();
+
+  // Preload full image on hover for faster modal loading
+  const handleMouseEnter = () => {
+    preloadImage(imageData?.url);
+  };
 
   return (
-    <>
-      <div
-        className="relative w-full h-full pt-[100%]"
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            onImageClick();
-          }
-        }}
-        onClick={onImageClick}
-      >
-        <div className="absolute inset-0 block">
-          <img
-            loading="lazy"
-            src={imageData!.thumbnailURL}
-            alt={imageData!.prompt}
-            className="inset-0 object-cover cursor-pointer absolute w-full h-full"
-            decoding="async"
-          />
-        </div>
-      </div>
-    </>
+    <div
+      className="relative w-full h-full pt-[100%]"
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          onImageClick();
+        }
+      }}
+      onClick={onImageClick}
+      onMouseEnter={handleMouseEnter}
+    >
+      <OptimizedImage
+        src={imageData!.thumbnailURL}
+        alt={imageData!.prompt}
+        blurSrc={imageData?.blurURL}
+        containerClassName="absolute inset-0 w-full h-full"
+        className="inset-0 object-cover cursor-pointer absolute w-full h-full"
+        rootMargin="300px"
+      />
+    </div>
   );
 };
 

@@ -12,6 +12,7 @@ import {
   GeneralErrorBoundary,
   ErrorList,
   ImageGridSkeleton,
+  OptimizedImage,
 } from "~/components";
 import { requireUserLogin } from "~/services/auth.server";
 import { Loader2, UserPlus, Play } from "lucide-react";
@@ -27,6 +28,10 @@ import {
 import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useImagePreload } from "~/hooks";
+
+// 10 minutes TTL for fresher social content in feed
+const FEED_CACHE_TTL = 600;
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
@@ -36,8 +41,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const pageSize = Number(searchParams.get("page_size")) || 20;
 
   const cacheKey = `following-feed:${user.id}:${currentPage}:${pageSize}`;
-  const feedData = getCachedDataWithRevalidate(cacheKey, () =>
-    getFollowingFeed(user.id, currentPage, pageSize)
+  const feedData = getCachedDataWithRevalidate(
+    cacheKey,
+    () => getFollowingFeed(user.id, currentPage, pageSize),
+    FEED_CACHE_TTL
   );
 
   return { feedData, currentPage };
@@ -60,8 +67,18 @@ const FeedImageCard = ({
   imageData: FeedImage;
   onImageClick: () => void;
 }) => {
+  const { preloadImage } = useImagePreload();
+
+  // Preload full image on hover for faster modal loading
+  const handleMouseEnter = () => {
+    preloadImage(imageData?.url);
+  };
+
   return (
-    <div className="bg-zinc-900 rounded-lg overflow-hidden">
+    <div
+      className="bg-zinc-900 rounded-lg overflow-hidden"
+      onMouseEnter={handleMouseEnter}
+    >
       {/* User info header */}
       <div className="flex items-center gap-3 p-3">
         <Link to={`/profile/${imageData.user.id}`} className="flex items-center gap-3 hover:opacity-80">
@@ -88,15 +105,14 @@ const FeedImageCard = ({
         }}
         onClick={onImageClick}
       >
-        <div className="absolute inset-0 block">
-          <img
-            loading="lazy"
-            src={imageData.thumbnailURL || `/images/${imageData.id}`}
-            alt={imageData.prompt}
-            className="inset-0 object-cover absolute w-full h-full"
-            decoding="async"
-          />
-        </div>
+        <OptimizedImage
+          src={imageData.thumbnailURL || `/images/${imageData.id}`}
+          alt={imageData.prompt}
+          blurSrc={imageData.blurURL}
+          containerClassName="absolute inset-0 w-full h-full"
+          className="inset-0 object-cover absolute w-full h-full"
+          rootMargin="300px"
+        />
       </div>
 
       {/* Engagement info */}

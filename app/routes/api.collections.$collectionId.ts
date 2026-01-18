@@ -2,6 +2,7 @@ import { ActionFunctionArgs, json } from "@remix-run/node";
 import { requireUserLogin } from "~/services";
 import { prisma } from "~/services/prisma.server";
 import { CollectionSchema } from "~/schemas/collection";
+import { cacheDelete } from "~/utils/cache.server";
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
@@ -37,12 +38,15 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       try {
         const validatedData = CollectionSchema.parse(data);
         const updatedCollection = await prisma.collection.update({
-          where: { 
+          where: {
             id: collectionId,
             userId: user.id, // Double check ownership
           },
           data: validatedData,
         });
+
+        // Invalidate user collections cache so updates appear immediately
+        await cacheDelete(`user-collections:${user.id}`);
 
         return json({ collection: updatedCollection });
       } catch (error) {
@@ -52,11 +56,14 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
     case "DELETE": {
       await prisma.collection.delete({
-        where: { 
+        where: {
           id: collectionId,
           userId: user.id, // Double check ownership
         },
       });
+
+      // Invalidate user collections cache so deletion reflects immediately
+      await cacheDelete(`user-collections:${user.id}`);
 
       return json({ success: true });
     }

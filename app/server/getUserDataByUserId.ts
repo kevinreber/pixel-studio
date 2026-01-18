@@ -1,5 +1,6 @@
 import { prisma } from "~/services/prisma.server";
 import {
+  getS3BucketBlurURL,
   getS3BucketThumbnailURL,
   getS3BucketURL,
   getS3VideoURL,
@@ -20,6 +21,7 @@ export type ProfileImage = {
   createdAt: Date;
   url: string;
   thumbnailURL: string;
+  blurURL: string;
   user: {
     id: string;
     username: string;
@@ -181,6 +183,7 @@ export const getUserDataByUserId = async (
       type: "image" as const,
       url: getS3BucketURL(image.id),
       thumbnailURL: getS3BucketThumbnailURL(image.id),
+      blurURL: getS3BucketBlurURL(image.id),
     })) || [];
 
   // Format videos with URLs and type

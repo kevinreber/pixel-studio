@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { prisma } from "services/prisma.server";
 import {
+  getS3BucketBlurURL,
   getS3BucketThumbnailURL,
   getS3BucketURL,
   getS3VideoURL,
@@ -62,6 +63,7 @@ export type ImageTagType = Image & {
   type: "image";
   url: string;
   thumbnailURL: string;
+  blurURL: string;
 };
 
 export type VideoTagType = Video & {
@@ -164,6 +166,7 @@ export const getImages = async (
       type: "image" as const,
       url: getS3BucketURL(image.id),
       thumbnailURL: getS3BucketThumbnailURL(image.id),
+      blurURL: getS3BucketBlurURL(image.id),
     }));
 
     // Format videos with URLs
