@@ -3,6 +3,7 @@ export * from "./UserAvatarButton";
 export * from "./LogOutButton";
 export * from "./PageContainer";
 export * from "./CreatePageForm";
+export * from "./CreateVideoPageForm";
 export { default as CopyToClipboardButton } from "./CopyToClipboardButton";
 // export { default as ImageCard } from "./ImageCard";
 export * from "./GeneralErrorBoundary";

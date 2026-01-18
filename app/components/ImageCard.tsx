@@ -2,6 +2,7 @@ import { Link } from "@remix-run/react";
 import { ImageDetail } from "~/server/getImage";
 import { OptimizedImage } from "./OptimizedImage";
 import { useImagePreload } from "~/hooks";
+import { fallbackImageSource } from "~/client";
 
 export const ImageGrid = ({ images }: { images: ImageDetail[] }) => {
   if (!images || images.length === 0) {
@@ -59,10 +60,14 @@ export const ImageCard = ({
           className="inset-0 object-cover cursor-pointer absolute w-full h-full"
           rootMargin="300px"
           onError={(e) => {
-            // Fallback to original image if thumbnail not ready yet
+            // Fallback chain: thumbnail -> original -> placeholder
             const target = e.currentTarget;
-            if (imageData?.url && target.src !== imageData.url) {
+            if (imageData?.url && target.src !== imageData.url && target.src !== fallbackImageSource) {
+              // First fallback: try original image if thumbnail fails
               target.src = imageData.url;
+            } else if (target.src !== fallbackImageSource) {
+              // Final fallback: use placeholder if original also fails
+              target.src = fallbackImageSource;
             }
           }}
         />

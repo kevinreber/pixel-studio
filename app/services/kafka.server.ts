@@ -56,6 +56,14 @@ export const IMAGE_TOPICS = {
   GENERATION_FAILED: "image.generation.failed",
 } as const;
 
+// Topic definitions for video generation pipeline
+export const VIDEO_TOPICS = {
+  GENERATION_REQUESTS: "video.generation.requests",
+  GENERATION_STATUS: "video.generation.status",
+  GENERATION_COMPLETE: "video.generation.complete",
+  GENERATION_FAILED: "video.generation.failed",
+} as const;
+
 // Producer instance with error handling
 export const createProducer = () => {
   const producer = kafka.producer({
@@ -110,7 +118,10 @@ export const createTopicsIfNotExists = async () => {
     await admin.connect();
 
     const existingTopics = await admin.listTopics();
-    const topicsToCreate = Object.values(IMAGE_TOPICS).filter(
+
+    // Combine image and video topics
+    const allTopics = [...Object.values(IMAGE_TOPICS), ...Object.values(VIDEO_TOPICS)];
+    const topicsToCreate = allTopics.filter(
       (topic) => !existingTopics.includes(topic)
     );
 
@@ -118,7 +129,11 @@ export const createTopicsIfNotExists = async () => {
       await admin.createTopics({
         topics: topicsToCreate.map((topic) => ({
           topic,
-          numPartitions: topic === IMAGE_TOPICS.GENERATION_REQUESTS ? 6 : 3,
+          numPartitions:
+            topic === IMAGE_TOPICS.GENERATION_REQUESTS ||
+            topic === VIDEO_TOPICS.GENERATION_REQUESTS
+              ? 6
+              : 3,
           replicationFactor: process.env.NODE_ENV === "production" ? 3 : 1,
           configEntries: [
             { name: "cleanup.policy", value: "delete" },

@@ -60,6 +60,7 @@ model User {
   accounts     Account[]
   sessions     Session[]
   images       Image[]
+  videos       Video[]
   sets         Set[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime?     @updatedAt
@@ -70,6 +71,10 @@ model User {
   roles        Role[]
   followedBy   Follow[]      @relation("FollowedBy")
   following    Follow[]      @relation("Following")
+  notificationsReceived Notification[] @relation("NotificationRecipient")
+  notificationsTriggered Notification[] @relation("NotificationActor")
+  generationLogs GenerationLog[]
+  creditTransactions CreditTransaction[]
 }
 
 model Password {
@@ -119,10 +124,47 @@ model Set {
   prompt      String
   createdAt   DateTime  @default(now())
   images      Image[]
-  userId      String       
+  videos      Video[]
+  userId      String
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generationLogs GenerationLog[]
 
   @@index([userId])
+}
+
+model Video {
+  id            String    @id @default(cuid())
+  title         String?   @default("Untitled")
+  prompt        String
+  model         String?   @default("runway-gen3")
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  private       Boolean?  @default(false)
+  set           Set?      @relation(fields: [setId], references: [id], onDelete: Cascade)
+  setId         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime? @updatedAt
+
+  // Video-specific parameters
+  duration      Int?      // Duration in seconds
+  fps           Int?      // Frames per second
+  aspectRatio   String?   // "16:9", "9:16", "1:1"
+  resolution    String?   // "720p", "1080p", "4K"
+
+  // Source image (for image-to-video generation)
+  sourceImageId String?
+  sourceImageUrl String?
+
+  // Generation status
+  status        String?   @default("pending") // "pending", "processing", "complete", "failed"
+  progress      Int?      @default(0)         // 0-100
+  errorMessage  String?
+
+  // External provider data
+  externalId    String?   // ID from video generation API
+
+  @@index([userId])
+  @@index([setId])
 }
 
 model Image {
@@ -137,6 +179,7 @@ model Image {
   comments    Comment[]
   likes       ImageLike[]
   collections CollectionHasImage[]
+  notifications Notification[]
   private     Boolean?             @default(false)
   // NOTE: To avoid DB being overwritten, I am setting "set" and "setId" as optional for now
   set         Set?                 @relation(fields: [setId], references: [id], onDelete: Cascade)
@@ -181,6 +224,7 @@ model Comment {
   children  Comment[]     @relation("ParentChild")
   parentId  String?
   likes     CommentLike[]
+  notifications Notification[]
 }
 
 model CommentLike {
@@ -217,6 +261,71 @@ model CollectionHasImage {
   @@index([imageId])
 }
 
+model GenerationLog {
+  id           String    @id @default(cuid())
+  requestId    String    @unique
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type         String    // "image" or "video"
+  status       String    // "complete" or "failed"
+
+  // Request details
+  prompt       String
+  model        String
+  metadata     Json?     // Store all generation params (numberOfImages, style, aspectRatio, duration, etc.)
+
+  // Result
+  setId        String?   // Link to Set if successful
+  set          Set?      @relation(fields: [setId], references: [id], onDelete: SetNull)
+  errorMessage String?   // Error details if failed
+
+  // Cost tracking
+  creditCost   Int
+  creditsRefunded Boolean @default(false) // Track if credits were refunded for failures
+
+  // Tracking
+  createdAt    DateTime  @default(now())
+  completedAt  DateTime? // When generation finished (success or failure)
+  duration     Int?      // Generation duration in seconds
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@index([type])
+  @@index([requestId])
+}
+
+model CreditTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Transaction type
+  type        String   // "purchase", "spend", "refund", "admin_adjustment", "bonus"
+
+  // Amount (positive for additions, negative for deductions)
+  amount      Int
+
+  // Balance after transaction
+  balanceAfter Int
+
+  // Transaction details
+  description String?  // Human-readable description
+  metadata    Json?    // Additional data (Stripe session ID, generation request ID, etc.)
+
+  // References
+  stripeSessionId    String?  // Link to Stripe checkout session
+  generationLogId    String?  // Link to generation that spent credits
+
+  // Tracking
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([type])
+  @@index([stripeSessionId])
+  @@index([generationLogId])
+}
+
 model Follow {
   follower    User   @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
   followerId  String
@@ -226,6 +335,39 @@ model Follow {
 
   @@id([followerId, followingId])
   @@index([followingId])
+}
+
+enum NotificationType {
+  NEW_FOLLOWER
+  IMAGE_LIKED
+  IMAGE_COMMENT
+  IMAGE_COMPLETED
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  // Recipient of the notification
+  recipient   User   @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientId String
+
+  // Actor who triggered the notification (optional - not applicable for IMAGE_COMPLETED)
+  actor   User?   @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+  actorId String?
+
+  // Related image (for IMAGE_LIKED, IMAGE_COMMENT, IMAGE_COMPLETED)
+  image   Image?  @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  imageId String?
+
+  // Related comment (for IMAGE_COMMENT)
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId String?
+
+  @@index([recipientId, read])
+  @@index([recipientId, createdAt])
 }
 
 // ! TODO: Add this to the schema
