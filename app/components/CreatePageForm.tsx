@@ -25,6 +25,7 @@ import { MODEL_OPTIONS, STYLE_OPTIONS } from "~/config/models";
 import { toast } from "sonner";
 import type { ActionData } from "~/routes/create";
 import { ProviderBadge } from "./ModelBadge";
+import { useGenerationProgress } from "~/contexts/GenerationProgressContext";
 
 // Size options per model type
 type SizeOption = { label: string; ratio: string; width: number; height: number };
@@ -208,9 +209,13 @@ const CreatePageForm = () => {
   const styleOptions = (loaderData.styleOptions || []) as StyleOption[];
   const modelOptions = (loaderData.modelOptions || []) as ModelOption[];
   const actionData = useActionData<ActionData>();
+  const { addJob } = useGenerationProgress();
 
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
+
+  // Track which requestIds we've already added to prevent duplicates
+  const processedRequestIdsRef = React.useRef<Set<string>>(new Set());
 
   const [isMobile, setIsMobile] = React.useState(false);
   const [modelDialogOpen, setModelDialogOpen] = React.useState(false);
@@ -254,6 +259,26 @@ const CreatePageForm = () => {
     if (actionData) {
       console.log("actionData", actionData);
     }
+
+    // Handle async generation response - show progress toast
+    if (actionData?.async && actionData?.requestId) {
+      // Prevent adding duplicate jobs
+      if (!processedRequestIdsRef.current.has(actionData.requestId)) {
+        processedRequestIdsRef.current.add(actionData.requestId);
+        addJob({
+          requestId: actionData.requestId,
+          type: "image",
+          status: "queued",
+          progress: 0,
+          message: "Starting image generation...",
+          prompt: actionData.prompt,
+        });
+        // Reset the prompt after successful submission
+        setPrompt("");
+      }
+      return;
+    }
+
     // Show error toast if we get an error from the action
     if (actionData?.error) {
       let errorMessage: string;
@@ -281,7 +306,7 @@ const CreatePageForm = () => {
         description: errorMessage || actionData.message || "Please try again",
       });
     }
-  }, [actionData]);
+  }, [actionData, addJob]);
 
   const handleModelClick = () => {
     if (isMobile) {

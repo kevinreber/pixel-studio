@@ -191,8 +191,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         `Successfully queued video generation request: ${response.requestId}`
       );
 
-      // Redirect to processing page
-      return redirect(response.processingUrl);
+      // Return JSON with requestId so client can track progress via toast
+      return json({
+        success: true,
+        async: true,
+        requestId: response.requestId,
+        processingUrl: response.processingUrl,
+        message: "Video generation started",
+        prompt: validateFormData.data.prompt,
+      });
     } catch (error) {
       console.error(
         "Kafka video generation failed, falling back to synchronous:",
@@ -260,6 +267,11 @@ export type ActionData = {
   error?: string | { [key: string]: string[] };
   videos?: { id: string; url: string }[];
   setId?: string;
+  // Async generation fields
+  async?: boolean;
+  requestId?: string;
+  processingUrl?: string;
+  prompt?: string;
 };
 
 export type CreateVideoPageActionData = typeof action;

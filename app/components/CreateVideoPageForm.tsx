@@ -36,6 +36,7 @@ import {
 import { toast } from "sonner";
 import type { ActionData, CreateVideoPageLoader } from "~/routes/create-video";
 import { ProviderBadge } from "./ModelBadge";
+import { useGenerationProgress } from "~/contexts/GenerationProgressContext";
 
 const PROMPT_EXAMPLES = [
   "A serene lake at dawn with mist rising from the water, cinematic camera movement",
@@ -89,9 +90,13 @@ const CreateVideoPageForm = () => {
   const loaderData = useLoaderData<CreateVideoPageLoader>();
   const modelOptions = (loaderData.modelOptions || []) as VideoModelOption[];
   const actionData = useActionData<ActionData>();
+  const { addJob } = useGenerationProgress();
 
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
+
+  // Track which requestIds we've already added to prevent duplicates
+  const processedRequestIdsRef = React.useRef<Set<string>>(new Set());
 
   const [isMobile, setIsMobile] = React.useState(false);
   const [modelDialogOpen, setModelDialogOpen] = React.useState(false);
@@ -137,6 +142,26 @@ const CreateVideoPageForm = () => {
   }, [selectedModel.maxDuration, selectedDuration]);
 
   React.useEffect(() => {
+    // Handle async generation response - show progress toast
+    if (actionData?.async && actionData?.requestId) {
+      // Prevent adding duplicate jobs
+      if (!processedRequestIdsRef.current.has(actionData.requestId)) {
+        processedRequestIdsRef.current.add(actionData.requestId);
+        addJob({
+          requestId: actionData.requestId,
+          type: "video",
+          status: "queued",
+          progress: 0,
+          message: "Starting video generation...",
+          prompt: actionData.prompt,
+        });
+        // Reset the prompt after successful submission
+        setPrompt("");
+      }
+      return;
+    }
+
+    // Show error toast if we get an error from the action
     if (actionData?.error) {
       let errorMessage: string;
 
@@ -160,7 +185,7 @@ const CreateVideoPageForm = () => {
         description: errorMessage || actionData.message || "Please try again",
       });
     }
-  }, [actionData]);
+  }, [actionData, addJob]);
 
   const handleModelClick = () => {
     setModelDialogOpen(true);
