@@ -35,6 +35,31 @@ export const isFollowing = async ({
 
 /**
  * @description
+ * Batch check which users from a list the current user is following.
+ * Returns a Set of user IDs that the current user follows.
+ * This is optimized to avoid N+1 queries when checking follow status for multiple users.
+ */
+export const getFollowingSet = async (
+  currentUserId: string,
+  userIds: string[]
+): Promise<Set<string>> => {
+  if (userIds.length === 0) {
+    return new Set();
+  }
+
+  const follows = await prisma.follow.findMany({
+    where: {
+      followerId: currentUserId,
+      followingId: { in: userIds },
+    },
+    select: { followingId: true },
+  });
+
+  return new Set(follows.map((f) => f.followingId));
+};
+
+/**
+ * @description
  * Get list of users who follow a specific user
  */
 export const getFollowers = async (userId: string, page = 1, pageSize = 20) => {

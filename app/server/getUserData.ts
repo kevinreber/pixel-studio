@@ -56,11 +56,7 @@ export const getUserData = async (
 ) => {
   const selectImageQuery = createImageSelectQuery();
 
-  const count = await prisma.image.count({
-    where: {
-      userId,
-    },
-  });
+  // Use _count to get total image count in a single query instead of separate count query
   const userData = await prisma.user.findUnique({
     where: {
       id: userId,
@@ -71,6 +67,9 @@ export const getUserData = async (
       username: true,
       image: true,
       createdAt: true,
+      _count: {
+        select: { images: true },
+      },
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
       images: {
@@ -83,6 +82,8 @@ export const getUserData = async (
       },
     },
   });
+
+  const count = userData?._count.images ?? 0;
 
   // Append images source URL since we cannot use `env` variables in our UI
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment

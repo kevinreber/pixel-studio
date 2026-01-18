@@ -10,15 +10,7 @@ export const getUserDataByUserId = async (
   pageSize = DEFAULT_PAGE_SIZE
 ) => {
   // If UserA is visiting UserB's profile, we do not want to show UserB's Private images to UserA
-  // const selectImageQuery = createImageSelectQuery();
-
-  const count = await prisma.image.count({
-    where: {
-      user: {
-        id: userId,
-      },
-    },
-  });
+  // Use _count to get total image count in a single query instead of separate count query
   const userData = await prisma.user.findUnique({
     where: {
       id: userId,
@@ -29,7 +21,9 @@ export const getUserDataByUserId = async (
       username: true,
       image: true,
       createdAt: true,
-
+      _count: {
+        select: { images: true },
+      },
       images: {
         take: pageSize,
         skip: (page - 1) * pageSize,
@@ -81,6 +75,8 @@ export const getUserDataByUserId = async (
       },
     },
   });
+
+  const count = userData?._count.images ?? 0;
 
   // Append images source URL since we cannot use `env` variables in our UI
   const formattedImages = userData?.images.map((image) => ({
