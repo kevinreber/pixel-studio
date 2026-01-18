@@ -20,6 +20,7 @@ import {
   verifyQStashSignature,
   type QStashImageGenerationRequest,
 } from "~/services/qstash.server";
+import { createNotification } from "~/server/notifications";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   // Only allow POST requests
@@ -135,6 +136,25 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       images: result.images,
       timestamp: new Date(),
     });
+
+    // Create notification for image completion (non-blocking)
+    // Wrapped in try-catch to prevent notification failures from overwriting success status
+    const firstImageId = result.images[0]?.id;
+    if (firstImageId) {
+      try {
+        await createNotification({
+          type: "IMAGE_COMPLETED",
+          recipientId: userId,
+          imageId: firstImageId,
+        });
+      } catch (notificationError) {
+        console.error(
+          `[QStash Worker] Failed to create notification for ${requestId}:`,
+          notificationError
+        );
+        // Don't rethrow - notification failure shouldn't affect image generation success
+      }
+    }
 
     console.log(
       `[QStash Worker] Completed request ${requestId}, setId: ${result.setId}`

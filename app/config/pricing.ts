@@ -42,11 +42,6 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     tier: "standard",
     apiCostEstimate: 0.025,
   },
-  "flux-pro": {
-    credits: 2,
-    tier: "standard",
-    apiCostEstimate: 0.025,
-  },
 
   // Premium Tier (4-6 credits) - Highest quality models
   "flux-pro-1.1": {
