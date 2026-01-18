@@ -99,11 +99,20 @@ export const NotificationDropdown = ({
   }, [fetcherLoad.data]);
 
   const handleMarkRead = (notificationId: string) => {
-    // Optimistic update
+    // Optimistic update - only decrement if notification was actually unread
+    let wasUnread = false;
     setNotifications((prev) =>
-      prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+      prev.map((n) => {
+        if (n.id === notificationId && !n.read) {
+          wasUnread = true;
+          return { ...n, read: true };
+        }
+        return n;
+      })
     );
-    setUnreadCount((prev) => Math.max(0, prev - 1));
+    if (wasUnread) {
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    }
 
     fetcherMarkRead.submit(
       {},
@@ -129,10 +138,16 @@ export const NotificationDropdown = ({
   };
 
   const handleDelete = (notificationId: string) => {
-    const notification = notifications.find((n) => n.id === notificationId);
-    // Optimistic update
-    setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
-    if (notification && !notification.read) {
+    // Optimistic update - use functional update to get current state
+    let wasUnread = false;
+    setNotifications((prev) => {
+      const notification = prev.find((n) => n.id === notificationId);
+      if (notification && !notification.read) {
+        wasUnread = true;
+      }
+      return prev.filter((n) => n.id !== notificationId);
+    });
+    if (wasUnread) {
       setUnreadCount((prev) => Math.max(0, prev - 1));
     }
 
