@@ -269,6 +269,7 @@ const FeedAccessor = () => {
             </VisuallyHidden>
             <div className="flex flex-col h-full">
               <div className="flex-1 flex items-center justify-center bg-black">
+                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                 <video
                   src={selectedItem.url}
                   controls

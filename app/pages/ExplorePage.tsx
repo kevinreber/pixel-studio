@@ -92,20 +92,14 @@ const MediaGrid = ({
             />
           </li>
         ) : (
-          <li
-            key={item.id}
-            className="hover:!opacity-60 cursor-pointer"
-            onClick={() => onVideoClick(item)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onVideoClick(item);
-              }
-            }}
-            role="button"
-            tabIndex={0}
-          >
-            <VideoCard videoData={item} onClickRedirectTo="#" />
+          <li key={item.id} className="hover:!opacity-60">
+            <button
+              type="button"
+              className="w-full text-left"
+              onClick={() => onVideoClick(item)}
+            >
+              <VideoCard videoData={item} onClickRedirectTo="#" />
+            </button>
           </li>
         )
       )}
@@ -223,6 +217,7 @@ const ExplorePageAccessor = () => {
             </VisuallyHidden>
             <div className="flex flex-col h-full">
               <div className="flex-1 flex items-center justify-center bg-black">
+{/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                 <video
                   src={selectedVideo.url}
                   controls
