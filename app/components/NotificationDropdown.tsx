@@ -40,7 +40,13 @@ interface NotificationsResponse {
   count?: number;
 }
 
-export const NotificationDropdown = () => {
+interface NotificationDropdownProps {
+  showLabel?: boolean;
+}
+
+export const NotificationDropdown = ({
+  showLabel = false,
+}: NotificationDropdownProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [notifications, setNotifications] = React.useState<
     SerializedNotification[]
@@ -143,15 +149,22 @@ export const NotificationDropdown = () => {
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <button
-          className="relative p-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-md transition-colors"
+          className={
+            showLabel
+              ? "w-full flex items-center px-3 py-2 rounded-md text-gray-300 hover:bg-gray-800 hover:text-white transition-colors font-medium"
+              : "relative p-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-md transition-colors"
+          }
           aria-label="Notifications"
         >
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-              {unreadCount > 99 ? "99+" : unreadCount}
-            </span>
-          )}
+          <span className="relative">
+            <Bell className={showLabel ? "md:h-4 md:w-4" : "h-5 w-5"} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </span>
+          {showLabel && <span className="ml-2">Notifications</span>}
         </button>
       </PopoverTrigger>
       <PopoverContent

@@ -109,11 +109,8 @@ const NavigationSidebar = () => {
           ))}
         </nav>
         {isLoggedIn && (
-          <div className="mt-auto pt-4 space-y-2">
-            <div className="flex items-center px-3 py-2">
-              <NotificationDropdown />
-              <span className="ml-2 text-gray-300 font-medium">Notifications</span>
-            </div>
+          <div className="mt-auto pt-4 space-y-1">
+            <NotificationDropdown showLabel />
             <UserAvatarButton />
           </div>
         )}
