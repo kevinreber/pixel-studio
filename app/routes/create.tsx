@@ -239,8 +239,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         `Successfully queued image generation request: ${response.requestId} via ${queueHealth.backend}`
       );
 
-      // Redirect immediately to processing page with real-time updates
-      return redirect(response.processingUrl);
+      // Return JSON with requestId so client can track progress via toast
+      return json({
+        success: true,
+        async: true,
+        requestId: response.requestId,
+        processingUrl: response.processingUrl,
+        message: "Image generation started",
+        prompt: validateFormData.data.prompt,
+      });
     } catch (error) {
       console.error(
         "Async queue image generation failed, falling back to synchronous:",
@@ -313,6 +320,11 @@ export type ActionData = {
   error?: string | { [key: string]: string[] };
   images?: { id: string; url: string }[];
   setId?: string;
+  // Async generation fields
+  async?: boolean;
+  requestId?: string;
+  processingUrl?: string;
+  prompt?: string;
 };
 
 export type CreatePageActionData = typeof action;

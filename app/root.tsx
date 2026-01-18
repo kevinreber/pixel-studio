@@ -22,6 +22,7 @@ import { combineHeaders } from "./utils/combineHeaders";
 import { AuthenticityTokenProvider } from "remix-utils/csrf/react";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
 import { honeypot } from "utils/honeypot.server";
+import { GenerationProgressProvider } from "~/contexts/GenerationProgressContext";
 // import { getToast, type Toast } from "utils/toast.server";
 import { getLoggedInUserData } from "./server";
 import { GeneralErrorBoundary } from "./components/GeneralErrorBoundary";
@@ -173,8 +174,10 @@ export default function App() {
   return (
     <HoneypotProvider {...loaderData.honeyProps}>
       <AuthenticityTokenProvider token={loaderData.csrfToken}>
-        <Outlet context={{ userData: loaderData.userData }} />
-        <Toaster richColors position="top-right" />
+        <GenerationProgressProvider>
+          <Outlet context={{ userData: loaderData.userData }} />
+          <Toaster richColors position="top-right" />
+        </GenerationProgressProvider>
       </AuthenticityTokenProvider>
     </HoneypotProvider>
   );
