@@ -52,6 +52,7 @@ export const NotificationDropdown = ({
     SerializedNotification[]
   >([]);
   const [unreadCount, setUnreadCount] = React.useState(0);
+  const [hasLoadedOnce, setHasLoadedOnce] = React.useState(false);
 
   const fetcherLoad = useFetcher<NotificationsResponse>();
   const fetcherCount = useFetcher<NotificationsResponse>();
@@ -90,6 +91,7 @@ export const NotificationDropdown = ({
   React.useEffect(() => {
     if (fetcherLoad.data?.success && fetcherLoad.data.notifications) {
       setNotifications(fetcherLoad.data.notifications);
+      setHasLoadedOnce(true);
       if (fetcherLoad.data.unreadCount !== undefined) {
         setUnreadCount(fetcherLoad.data.unreadCount);
       }
@@ -143,7 +145,8 @@ export const NotificationDropdown = ({
     );
   };
 
-  const isLoading = fetcherLoad.state === "loading";
+  // Only show loading spinner on initial load, not during background refreshes
+  const isInitialLoading = fetcherLoad.state === "loading" && !hasLoadedOnce;
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -190,7 +193,7 @@ export const NotificationDropdown = ({
 
         {/* Content */}
         <ScrollArea className="h-[400px]">
-          {isLoading ? (
+          {isInitialLoading ? (
             <div className="flex items-center justify-center h-32">
               <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
             </div>
