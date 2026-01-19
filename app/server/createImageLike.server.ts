@@ -20,22 +20,23 @@ export const createImageLike = async ({
 
   const data = { userId, imageId };
 
-  const response = await prisma.imageLike.create({ data });
-
-  // Fetch the image owner to send notification
-  const image = await prisma.image.findUnique({
-    where: { id: imageId },
-    select: { userId: true },
+  // Include image relation to get owner's userId in a single query
+  const response = await prisma.imageLike.create({
+    data,
+    include: {
+      image: {
+        select: { userId: true },
+      },
+    },
   });
 
-  if (image) {
-    await createNotification({
-      type: "IMAGE_LIKED",
-      recipientId: image.userId,
-      actorId: userId,
-      imageId,
-    });
-  }
+  // Create notification for image owner
+  await createNotification({
+    type: "IMAGE_LIKED",
+    recipientId: response.image.userId,
+    actorId: userId,
+    imageId,
+  });
 
   return response;
 };
