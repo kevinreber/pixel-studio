@@ -12,6 +12,7 @@ import { Loader2, Search as MagnifyingGlassIcon } from "lucide-react";
 import {
   PageContainer,
   ImageCard,
+  VideoCard,
   ErrorList,
   ImageGridSkeleton,
   PaginationControls,
@@ -38,7 +39,7 @@ const LoadingSkeleton = () => {
   );
 };
 
-const ImageGrid = ({
+const MediaGrid = ({
   imagesData,
 }: {
   imagesData: GetImagesResponse | undefined;
@@ -50,7 +51,7 @@ const ImageGrid = ({
   if (imagesData.status === "error") {
     return (
       <div className="text-center w-full block">
-        <p className="text-red-500 mb-2">Error loading images</p>
+        <p className="text-red-500 mb-2">Error loading content</p>
         {imagesData.error && (
           <p className="text-sm text-gray-400">{imagesData.error}</p>
         )}
@@ -58,35 +59,39 @@ const ImageGrid = ({
     );
   }
 
-  if (!imagesData.images || imagesData.images.length === 0) {
+  if (!imagesData.items || imagesData.items.length === 0) {
     return (
       <p className="text-center w-full block italic font-light">
-        No images found
+        No images or videos found
       </p>
     );
   }
 
   return (
     <ul className="grid grid-cols-2 md:grid-cols-3 gap-1 md:gap-4 lg:gap-6">
-      {imagesData.images.map(
-        (image) =>
-          image && (
-            <li key={image.id} className="hover:!opacity-60">
-              <ImageCard
-                imageData={
-                  {
-                    ...image,
-                    createdAt: image.createdAt,
-                    private: null,
-                    user: { id: image.userId, username: "", image: null },
-                    comments: [],
-                    likes: [],
-                    setId: null,
-                  } as ImageDetail
-                }
-              />
-            </li>
-          )
+      {imagesData.items.map((item) =>
+        item.type === "image" ? (
+          <li key={item.id} className="hover:!opacity-60">
+            <ImageCard
+              imageData={
+                {
+                  ...item,
+                  createdAt: item.createdAt,
+                  private: null,
+                  user: { id: item.userId, username: "", image: null },
+                  comments: [],
+                  likes: [],
+                  setId: null,
+                  blurURL: "",
+                } as ImageDetail
+              }
+            />
+          </li>
+        ) : (
+          <li key={item.id} className="hover:!opacity-60">
+            <VideoCard videoData={item} />
+          </li>
+        )
       )}
     </ul>
   );
@@ -112,7 +117,7 @@ const ExplorePageAccessor = () => {
                 name="q"
                 id="q"
                 className="bg-inherit block w-full rounded-l-md border-0 py-1.5 px-2 text-white ring-1 ring-inset ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6"
-                placeholder="Search"
+                placeholder="Search images and videos"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -150,7 +155,7 @@ const ExplorePageAccessor = () => {
                       imagesData.pagination.pageSize,
                     imagesData.pagination.totalCount
                   )}{" "}
-                  of {imagesData.pagination.totalCount.toLocaleString()} images
+                  of {imagesData.pagination.totalCount.toLocaleString()} items
                   {initialSearchTerm && (
                     <span className="ml-2">
                       for &ldquo;
@@ -160,20 +165,20 @@ const ExplorePageAccessor = () => {
                   )}
                 </>
               ) : (
-                <>No images found</>
+                <>No content found</>
               )}
             </div>
           </div>
         )}
       </div>
 
-      {/* Scrollable Images Container */}
+      {/* Scrollable Content Container */}
       <div className="flex-1 overflow-y-auto min-h-0 px-2 scroll-smooth">
         <div className="max-w-5xl mx-auto pb-4">
           {isLoading ? (
             <ImageGridSkeleton />
           ) : (
-            <ImageGrid imagesData={imagesData} />
+            <MediaGrid imagesData={imagesData} />
           )}
         </div>
       </div>

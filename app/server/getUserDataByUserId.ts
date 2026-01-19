@@ -1,8 +1,69 @@
 import { prisma } from "~/services/prisma.server";
-import { getS3BucketBlurURL, getS3BucketThumbnailURL, getS3BucketURL } from "utils/s3Utils";
+import {
+  getS3BucketBlurURL,
+  getS3BucketThumbnailURL,
+  getS3BucketURL,
+  getS3VideoURL,
+  getS3VideoThumbnailURL,
+} from "utils/s3Utils";
 
 const DEFAULT_CURRENT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 50;
+
+export type ProfileImage = {
+  type: "image";
+  id: string;
+  title: string | null;
+  prompt: string;
+  model: string | null;
+  stylePreset: string | null;
+  private: boolean | null;
+  createdAt: Date;
+  url: string;
+  thumbnailURL: string;
+  blurURL: string;
+  user: {
+    id: string;
+    username: string;
+    image: string | null;
+  };
+  comments: {
+    id: string;
+    message: string;
+    createdAt: Date;
+    updatedAt: Date | null;
+    user: {
+      id: string;
+      username: string;
+      image: string | null;
+    };
+    parentId: string | null;
+    likes: { userId: string }[];
+  }[];
+  likes: { userId: string }[];
+};
+
+export type ProfileVideo = {
+  type: "video";
+  id: string;
+  title: string | null;
+  prompt: string;
+  model: string | null;
+  private: boolean | null;
+  createdAt: Date;
+  url: string;
+  thumbnailURL: string;
+  duration: number | null;
+  aspectRatio: string | null;
+  status: string | null;
+  user: {
+    id: string;
+    username: string;
+    image: string | null;
+  };
+};
+
+export type ProfileMediaItem = ProfileImage | ProfileVideo;
 
 export const getUserDataByUserId = async (
   userId: string,
@@ -10,7 +71,7 @@ export const getUserDataByUserId = async (
   pageSize = DEFAULT_PAGE_SIZE
 ) => {
   // If UserA is visiting UserB's profile, we do not want to show UserB's Private images to UserA
-  // Use _count to get total image count in a single query instead of separate count query
+  // Use _count to get total counts in a single query instead of separate count queries
   const userData = await prisma.user.findUnique({
     where: {
       id: userId,
@@ -22,11 +83,12 @@ export const getUserDataByUserId = async (
       image: true,
       createdAt: true,
       _count: {
-        select: { images: true },
+        select: {
+          images: { where: { private: false } },
+          videos: { where: { private: false, status: "complete" } },
+        },
       },
       images: {
-        take: pageSize,
-        skip: (page - 1) * pageSize,
         orderBy: {
           createdAt: "desc",
         },
@@ -73,18 +135,77 @@ export const getUserDataByUserId = async (
           },
         },
       },
+
+      videos: {
+        orderBy: {
+          createdAt: "desc",
+        },
+        where: {
+          private: false,
+          status: "complete",
+        },
+        select: {
+          id: true,
+          title: true,
+          prompt: true,
+          model: true,
+          private: true,
+          duration: true,
+          aspectRatio: true,
+          status: true,
+          user: {
+            select: {
+              id: true,
+              username: true,
+              image: true,
+            },
+          },
+          createdAt: true,
+        },
+      },
     },
   });
 
-  const count = userData?._count.images ?? 0;
+  const imageCount = userData?._count.images ?? 0;
+  const videoCount = userData?._count.videos ?? 0;
 
-  // Append images source URL since we cannot use `env` variables in our UI
-  const formattedImages = userData?.images.map((image) => ({
-    ...image,
-    url: getS3BucketURL(image.id),
-    thumbnailURL: getS3BucketThumbnailURL(image.id),
-    blurURL: getS3BucketBlurURL(image.id),
-  }));
+  // Format images with URLs and type
+  const formattedImages: ProfileImage[] =
+    userData?.images.map((image) => ({
+      ...image,
+      type: "image" as const,
+      url: getS3BucketURL(image.id),
+      thumbnailURL: getS3BucketThumbnailURL(image.id),
+      blurURL: getS3BucketBlurURL(image.id),
+    })) || [];
 
-  return { user: userData, images: formattedImages, count };
+  // Format videos with URLs and type
+  const formattedVideos: ProfileVideo[] =
+    userData?.videos.map((video) => ({
+      ...video,
+      type: "video" as const,
+      url: getS3VideoURL(video.id),
+      thumbnailURL: getS3VideoThumbnailURL(video.id),
+    })) || [];
+
+  // Combine and sort by createdAt descending
+  const allItems: ProfileMediaItem[] = [
+    ...formattedImages,
+    ...formattedVideos,
+  ].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  // Apply pagination
+  const skip = (page - 1) * pageSize;
+  const paginatedItems = allItems.slice(skip, skip + pageSize);
+  const totalCount = imageCount + videoCount;
+
+  return {
+    user: userData,
+    images: formattedImages.slice(skip, skip + pageSize),
+    videos: formattedVideos.slice(skip, skip + pageSize),
+    items: paginatedItems,
+    count: totalCount,
+  };
 };
