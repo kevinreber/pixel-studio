@@ -152,7 +152,6 @@ function Document({
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const loaderData = useLoaderData<typeof loader>();
-  console.log("loaderData in Layout:", loaderData);
   const location = useLocation();
   const isHome = location.pathname === "/";
 
