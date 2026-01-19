@@ -502,8 +502,9 @@ async function processVideoGenerationLocally(
 
   console.log(`[Local Video Worker] Processing request: ${requestId}`);
 
-  // Calculate credit cost
-  const totalCreditCost = getVideoModelCreditCost(model);
+  // Calculate credit cost based on duration
+  const videoDuration = duration || 5;
+  const totalCreditCost = getVideoModelCreditCost(model, videoDuration);
 
   // Log generation start
   await logGenerationStart({
