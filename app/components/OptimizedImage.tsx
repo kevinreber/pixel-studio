@@ -129,7 +129,8 @@ export const OptimizedImage = ({
           src={loadSrc}
           alt={alt}
           decoding={priority ? "sync" : "async"}
-          fetchPriority={priority ? "high" : "auto"}
+          // Use spread to pass fetchpriority as lowercase (React doesn't recognize camelCase version)
+          {...{ fetchpriority: priority ? "high" : "auto" }}
           onLoad={handleLoad}
           onError={handleError}
           className={cn(
