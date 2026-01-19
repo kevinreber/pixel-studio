@@ -16,6 +16,10 @@ const s3Client = new S3Client({
 });
 
 const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME_AWS || "";
+// Thumbnail bucket - defaults to main bucket with "-resized" suffix if not specified
+const S3_THUMBNAIL_BUCKET_NAME =
+  process.env.S3_BUCKET_THUMBNAIL_NAME_AWS ||
+  (S3_BUCKET_NAME ? `${S3_BUCKET_NAME}-resized` : "");
 
 export interface AddVideoToS3Params {
   videoId: string;
@@ -78,10 +82,10 @@ export const addVideoThumbnailToS3 = async ({
   const key = `video-thumb-${videoId}`;
 
   try {
-    console.log(`Uploading video thumbnail ${videoId} to S3...`);
+    console.log(`Uploading video thumbnail ${videoId} to S3 bucket: ${S3_THUMBNAIL_BUCKET_NAME}...`);
 
     const command = new PutObjectCommand({
-      Bucket: S3_BUCKET_NAME,
+      Bucket: S3_THUMBNAIL_BUCKET_NAME,
       Key: key,
       Body: thumbnailBuffer,
       ContentType: contentType,

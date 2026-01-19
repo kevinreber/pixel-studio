@@ -43,7 +43,10 @@ const s3Client = new S3Client({
 
 const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME_AWS || "";
 const S3_BUCKET_URL = process.env.S3_BUCKET_URL_AWS || "";
-const S3_THUMBNAIL_BUCKET = process.env.S3_BUCKET_THUMBNAIL_URL_AWS || "";
+// Thumbnail bucket name - defaults to main bucket with "-resized" suffix
+const S3_THUMBNAIL_BUCKET_NAME =
+  process.env.S3_BUCKET_THUMBNAIL_NAME_AWS ||
+  (S3_BUCKET_NAME ? `${S3_BUCKET_NAME}-resized` : "");
 
 /**
  * Check if a thumbnail already exists in S3
@@ -52,7 +55,7 @@ async function thumbnailExists(videoId: string): Promise<boolean> {
   try {
     await s3Client.send(
       new HeadObjectCommand({
-        Bucket: S3_BUCKET_NAME,
+        Bucket: S3_THUMBNAIL_BUCKET_NAME,
         Key: `video-thumb-${videoId}`,
       })
     );
@@ -129,14 +132,14 @@ async function uploadThumbnail(
 
   await s3Client.send(
     new PutObjectCommand({
-      Bucket: S3_BUCKET_NAME,
+      Bucket: S3_THUMBNAIL_BUCKET_NAME,
       Key: key,
       Body: thumbnailBuffer,
       ContentType: "image/jpeg",
     })
   );
 
-  console.log(`  Uploaded thumbnail: ${key}`);
+  console.log(`  Uploaded thumbnail to ${S3_THUMBNAIL_BUCKET_NAME}: ${key}`);
 }
 
 /**
@@ -188,11 +191,13 @@ async function main() {
   }
 
   // Validate environment
-  if (!S3_BUCKET_NAME || !S3_BUCKET_URL) {
+  if (!S3_BUCKET_NAME || !S3_BUCKET_URL || !S3_THUMBNAIL_BUCKET_NAME) {
     console.error("Error: S3 environment variables not configured");
     console.log("Required: S3_BUCKET_NAME_AWS, S3_BUCKET_URL_AWS, ACCESS_KEY_ID_AWS, SECRET_ACCESS_KEY_AWS, REGION_AWS");
     process.exit(1);
   }
+
+  console.log(`Thumbnail bucket: ${S3_THUMBNAIL_BUCKET_NAME}`);
 
   // Fetch all completed videos
   console.log("Fetching videos from database...");
