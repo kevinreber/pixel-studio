@@ -104,7 +104,7 @@ function Document({
   env?: Record<string, string | undefined>;
 }) {
   return (
-    <html lang="en" className="dark h-full overflow-x-hidden">
+    <html lang="en" className="dark h-full overflow-x-hidden" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -133,7 +133,7 @@ function Document({
           }}
         />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         {children}
         {env && (
           <script
