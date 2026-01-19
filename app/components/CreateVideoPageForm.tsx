@@ -644,7 +644,7 @@ const CreateVideoPageForm = () => {
                     name="duration"
                     value={selectedDuration}
                   />
-                  <div className="flex gap-2 mt-1">
+                  <div className="grid grid-cols-2 gap-2 mt-1">
                     {DURATION_OPTIONS.filter(
                       (d) => d.value <= selectedModel.maxDuration
                     ).map((duration) => (
@@ -658,7 +658,7 @@ const CreateVideoPageForm = () => {
                         }
                         onClick={() => setSelectedDuration(duration.value)}
                         disabled={isSubmitting}
-                        className={`flex-1 ${
+                        className={`${
                           selectedDuration === duration.value
                             ? "bg-zinc-700 hover:bg-zinc-600"
                             : "bg-zinc-800/50 hover:bg-zinc-700/50"
