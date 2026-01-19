@@ -3,11 +3,13 @@
  *
  * GET /api/achievements - Get user's achievements and progress
  * POST /api/achievements - Check and unlock achievements
- * POST /api/achievements/seed - Seed achievement definitions (admin)
+ * POST /api/achievements/seed - Seed achievement definitions (admin only)
  */
 
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
+import { z } from "zod";
 import { requireUserLogin } from "~/services";
+import { prisma } from "~/services/prisma.server";
 import {
   getUserAchievements,
   getAchievementStats,
@@ -17,6 +19,37 @@ import {
   markAchievementsNotified,
 } from "~/services/achievements.server";
 import { Logger } from "~/utils/logger.server";
+
+// Zod schema for action body validation
+const AchievementActionSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("check"),
+    category: z.string().optional(),
+  }),
+  z.object({
+    action: z.literal("notify"),
+    achievementIds: z.array(z.string()).min(1, "achievementIds array required"),
+  }),
+  z.object({
+    action: z.literal("seed"),
+  }),
+]);
+
+/**
+ * Check if user has admin role
+ */
+async function isUserAdmin(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      roles: {
+        select: { name: true },
+      },
+    },
+  });
+
+  return user?.roles.some((role) => role.name === "admin") ?? false;
+}
 
 /**
  * GET /api/achievements - Get user's achievements with progress
@@ -102,12 +135,25 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   try {
     const body = await request.json();
-    const actionType = body.action || "check";
 
-    switch (actionType) {
+    // Validate request body with Zod
+    const parseResult = AchievementActionSchema.safeParse(body);
+    if (!parseResult.success) {
+      return json(
+        {
+          success: false,
+          error: "Invalid request body",
+          details: parseResult.error.flatten().fieldErrors,
+        },
+        { status: 400 }
+      );
+    }
+
+    const validatedBody = parseResult.data;
+
+    switch (validatedBody.action) {
       case "check": {
-        const category = body.category as string | undefined;
-        const results = await checkAndUnlockAchievements(user.id, category);
+        const results = await checkAndUnlockAchievements(user.id, validatedBody.category);
         const unlocked = results.filter((r) => r.success);
 
         return json({
@@ -121,22 +167,23 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
 
       case "notify": {
-        const achievementIds = body.achievementIds as string[];
-        if (!achievementIds || !Array.isArray(achievementIds)) {
-          return json(
-            { success: false, error: "achievementIds array required" },
-            { status: 400 }
-          );
-        }
-        await markAchievementsNotified(achievementIds);
+        await markAchievementsNotified(validatedBody.achievementIds);
         return json({
           success: true,
-          data: { notified: achievementIds.length },
+          data: { notified: validatedBody.achievementIds.length },
         });
       }
 
       case "seed": {
-        // Seed achievements (could be admin-only in production)
+        // Admin-only: Seed achievement definitions
+        const isAdmin = await isUserAdmin(user.id);
+        if (!isAdmin) {
+          return json(
+            { success: false, error: "Unauthorized: Admin role required" },
+            { status: 403 }
+          );
+        }
+
         await seedAchievements();
         return json({
           success: true,
@@ -145,8 +192,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
 
       default:
+        // TypeScript exhaustiveness check - this should never happen with Zod
         return json(
-          { success: false, error: `Unknown action: ${actionType}` },
+          { success: false, error: "Unknown action" },
           { status: 400 }
         );
     }

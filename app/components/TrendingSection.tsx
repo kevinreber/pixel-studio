@@ -93,11 +93,27 @@ export const TrendingSection = ({
 
   const data = initialData || fetcher.data?.data;
   const isLoading = fetcher.state === "loading";
+  const hasError = fetcher.data && !fetcher.data.success;
 
   if (isLoading && !data) {
     return (
       <div className={cn("flex items-center justify-center py-8", className)}>
         <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />
+      </div>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <div className={cn("flex flex-col items-center justify-center py-8 text-center", className)}>
+        <TrendingUp className="h-8 w-8 text-zinc-600 mb-2" />
+        <p className="text-zinc-400 text-sm">Unable to load trending content</p>
+        <button
+          onClick={() => fetcher.load(`/api/trending?period=${period}`)}
+          className="mt-2 text-xs text-zinc-500 hover:text-white underline"
+        >
+          Try again
+        </button>
       </div>
     );
   }

@@ -146,69 +146,72 @@ export async function canClaimDailyBonus(userId: string): Promise<boolean> {
 /**
  * Process a daily login and award bonus credits
  * This should be called when a user logs in or visits the app
+ *
+ * Uses a serializable transaction to prevent race conditions where
+ * two simultaneous requests could both claim the daily bonus.
  */
 export async function claimDailyBonus(userId: string): Promise<DailyBonusResult> {
   const today = getStartOfToday();
 
-  // Get or create streak record
-  let streak = await prisma.loginStreak.findUnique({
-    where: { userId },
-  });
-
-  if (!streak) {
-    streak = await prisma.loginStreak.create({
-      data: { userId },
+  // Use serializable isolation level to prevent race conditions
+  const result = await prisma.$transaction(async (tx) => {
+    // Get or create streak record inside transaction
+    let streak = await tx.loginStreak.findUnique({
+      where: { userId },
     });
-  }
 
-  // Check if already claimed today
-  if (streak.lastBonusClaimed && isSameDay(streak.lastBonusClaimed, today)) {
-    return {
-      success: false,
-      creditsAwarded: 0,
-      streakBonus: 0,
-      newStreak: streak.currentStreak,
-      isNewDay: false,
-      streakMilestone: null,
-      message: "Daily bonus already claimed today",
-    };
-  }
-
-  // Calculate new streak
-  let newStreak = 1;
-
-  if (streak.lastLoginDate) {
-    if (isConsecutiveDay(streak.lastLoginDate, today)) {
-      // Consecutive day - increment streak
-      newStreak = streak.currentStreak + 1;
-    } else if (isSameDay(streak.lastLoginDate, today)) {
-      // Same day - keep current streak
-      newStreak = streak.currentStreak;
+    if (!streak) {
+      streak = await tx.loginStreak.create({
+        data: { userId },
+      });
     }
-    // Otherwise streak resets to 1
-  }
 
-  // Calculate bonuses
-  let totalCredits = DAILY_LOGIN_BONUS;
-  let streakBonus = 0;
-  let streakMilestone: number | null = null;
-
-  // Check for streak milestones
-  for (const [milestone, bonus] of Object.entries(STREAK_BONUSES)) {
-    const milestoneNum = parseInt(milestone);
-    if (newStreak === milestoneNum) {
-      streakBonus = bonus;
-      streakMilestone = milestoneNum;
-      totalCredits += bonus;
-      break;
+    // Check if already claimed today (inside transaction to prevent race condition)
+    if (streak.lastBonusClaimed && isSameDay(streak.lastBonusClaimed, today)) {
+      return {
+        success: false,
+        creditsAwarded: 0,
+        streakBonus: 0,
+        newStreak: streak.currentStreak,
+        isNewDay: false,
+        streakMilestone: null,
+        message: "Daily bonus already claimed today",
+      };
     }
-  }
 
-  // Update longest streak if needed
-  const newLongestStreak = Math.max(streak.longestStreak, newStreak);
+    // Calculate new streak
+    let newStreak = 1;
 
-  // Update streak record and user credits in a transaction
-  await prisma.$transaction(async (tx) => {
+    if (streak.lastLoginDate) {
+      if (isConsecutiveDay(streak.lastLoginDate, today)) {
+        // Consecutive day - increment streak
+        newStreak = streak.currentStreak + 1;
+      } else if (isSameDay(streak.lastLoginDate, today)) {
+        // Same day - keep current streak
+        newStreak = streak.currentStreak;
+      }
+      // Otherwise streak resets to 1
+    }
+
+    // Calculate bonuses
+    let totalCredits = DAILY_LOGIN_BONUS;
+    let streakBonus = 0;
+    let streakMilestone: number | null = null;
+
+    // Check for streak milestones
+    for (const [milestone, bonus] of Object.entries(STREAK_BONUSES)) {
+      const milestoneNum = parseInt(milestone);
+      if (newStreak === milestoneNum) {
+        streakBonus = bonus;
+        streakMilestone = milestoneNum;
+        totalCredits += bonus;
+        break;
+      }
+    }
+
+    // Update longest streak if needed
+    const newLongestStreak = Math.max(streak.longestStreak, newStreak);
+
     // Update streak record
     await tx.loginStreak.update({
       where: { userId },
@@ -217,7 +220,7 @@ export async function claimDailyBonus(userId: string): Promise<DailyBonusResult>
         longestStreak: newLongestStreak,
         lastLoginDate: today,
         lastBonusClaimed: today,
-        totalDaysLoggedIn: streak!.totalDaysLoggedIn + 1,
+        totalDaysLoggedIn: streak.totalDaysLoggedIn + 1,
       },
     });
 
@@ -228,36 +231,43 @@ export async function claimDailyBonus(userId: string): Promise<DailyBonusResult>
         credits: { increment: totalCredits },
       },
     });
-  });
 
-  // Log the bonus credit transaction
-  const description = streakMilestone
-    ? `Daily login bonus (${newStreak}-day streak milestone!)`
-    : `Daily login bonus (${newStreak}-day streak)`;
-
-  await logBonusCredits({
-    userId,
-    amount: totalCredits,
-    description,
-    metadata: {
-      type: "daily_login",
-      streak: newStreak,
-      streakMilestone,
+    return {
+      success: true,
+      creditsAwarded: totalCredits,
       streakBonus,
-    },
+      newStreak,
+      isNewDay: true,
+      streakMilestone,
+      message: streakMilestone
+        ? `Congratulations! ${newStreak}-day streak! You earned ${totalCredits} credits!`
+        : `Daily bonus claimed! ${newStreak}-day streak. You earned ${totalCredits} credit${totalCredits > 1 ? "s" : ""}!`,
+    };
+  }, {
+    isolationLevel: "Serializable", // Prevent race conditions
   });
 
-  return {
-    success: true,
-    creditsAwarded: totalCredits,
-    streakBonus,
-    newStreak,
-    isNewDay: true,
-    streakMilestone,
-    message: streakMilestone
-      ? `Congratulations! ${newStreak}-day streak! You earned ${totalCredits} credits!`
-      : `Daily bonus claimed! ${newStreak}-day streak. You earned ${totalCredits} credit${totalCredits > 1 ? "s" : ""}!`,
-  };
+  // Log the bonus credit transaction outside the main transaction
+  // to avoid extending the serializable transaction duration
+  if (result.success) {
+    const description = result.streakMilestone
+      ? `Daily login bonus (${result.newStreak}-day streak milestone!)`
+      : `Daily login bonus (${result.newStreak}-day streak)`;
+
+    await logBonusCredits({
+      userId,
+      amount: result.creditsAwarded,
+      description,
+      metadata: {
+        type: "daily_login",
+        streak: result.newStreak,
+        streakMilestone: result.streakMilestone,
+        streakBonus: result.streakBonus,
+      },
+    });
+  }
+
+  return result;
 }
 
 /**

@@ -232,6 +232,9 @@ export async function getTrendingVideos(
 
 /**
  * Get trending creators based on recent follower growth and engagement
+ *
+ * Optimized to use aggregated queries instead of N+1 pattern.
+ * Uses raw SQL for efficient like counting across all users.
  */
 export async function getTrendingCreators(
   period: TrendingPeriod = "7d",
@@ -240,7 +243,7 @@ export async function getTrendingCreators(
   const hours = TRENDING_PERIODS[period];
   const cutoffDate = new Date(Date.now() - hours * 60 * 60 * 1000);
 
-  // Get users with their stats
+  // Get users with their basic stats in a single query
   const users = await prisma.user.findMany({
     select: {
       id: true,
@@ -263,44 +266,78 @@ export async function getTrendingCreators(
     take: 100,
   });
 
-  // Get engagement stats for each user
-  const usersWithStats = await Promise.all(
-    users.map(async (user) => {
-      // Get total likes on user's images
-      const totalLikes = await prisma.imageLike.count({
-        where: {
-          image: { userId: user.id },
-        },
-      });
+  if (users.length === 0) {
+    return [];
+  }
 
-      // Get recent likes (within period)
-      const recentLikes = await prisma.imageLike.count({
-        where: {
-          image: {
-            userId: user.id,
-            createdAt: { gte: cutoffDate },
-          },
-        },
-      });
+  const userIds = users.map((u) => u.id);
 
-      // Calculate score based on followers, recent engagement
-      const score =
-        user._count.followedBy * 2 +
-        recentLikes * 3 +
-        user._count.images * 0.5;
+  // Get total likes per user in a single aggregated query
+  const totalLikesPerUser = await prisma.imageLike.groupBy({
+    by: ["imageId"],
+    where: {
+      image: {
+        userId: { in: userIds },
+      },
+    },
+    _count: true,
+  });
 
-      return {
-        id: user.id,
-        username: user.username,
-        image: user.image,
-        followerCount: user._count.followedBy,
-        imageCount: user._count.images,
-        totalLikes,
-        recentLikes,
-        score,
-      };
-    })
-  );
+  // Get image ownership to map likes back to users
+  const imageOwnership = await prisma.image.findMany({
+    where: {
+      id: { in: totalLikesPerUser.map((l) => l.imageId) },
+    },
+    select: {
+      id: true,
+      userId: true,
+      createdAt: true,
+    },
+  });
+
+  // Build a map of imageId -> userId and imageId -> createdAt
+  const imageToUser = new Map(imageOwnership.map((img) => [img.id, img.userId]));
+  const imageCreatedAt = new Map(imageOwnership.map((img) => [img.id, img.createdAt]));
+
+  // Aggregate likes by user
+  const userLikesMap = new Map<string, { total: number; recent: number }>();
+  for (const likeGroup of totalLikesPerUser) {
+    const userId = imageToUser.get(likeGroup.imageId);
+    if (!userId) continue;
+
+    const current = userLikesMap.get(userId) || { total: 0, recent: 0 };
+    current.total += likeGroup._count;
+
+    // Check if this image's likes count as recent
+    const imgCreatedAt = imageCreatedAt.get(likeGroup.imageId);
+    if (imgCreatedAt && imgCreatedAt >= cutoffDate) {
+      current.recent += likeGroup._count;
+    }
+
+    userLikesMap.set(userId, current);
+  }
+
+  // Calculate scores and build result
+  const usersWithStats: TrendingCreator[] = users.map((user) => {
+    const likes = userLikesMap.get(user.id) || { total: 0, recent: 0 };
+
+    // Calculate score based on followers, recent engagement
+    const score =
+      user._count.followedBy * 2 +
+      likes.recent * 3 +
+      user._count.images * 0.5;
+
+    return {
+      id: user.id,
+      username: user.username,
+      image: user.image,
+      followerCount: user._count.followedBy,
+      imageCount: user._count.images,
+      totalLikes: likes.total,
+      recentLikes: likes.recent,
+      score,
+    };
+  });
 
   return usersWithStats
     .sort((a, b) => b.score - a.score)

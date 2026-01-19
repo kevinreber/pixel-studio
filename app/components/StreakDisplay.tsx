@@ -65,6 +65,7 @@ export const StreakDisplay = ({
   const data = initialData || fetcher.data?.data;
   const isLoading = fetcher.state === "loading";
   const isClaiming = claimFetcher.state === "submitting";
+  const hasError = fetcher.data && !fetcher.data.success;
 
   const handleClaimBonus = () => {
     claimFetcher.submit(
@@ -78,6 +79,21 @@ export const StreakDisplay = ({
       <div className={cn("flex items-center gap-2 text-zinc-400", className)}>
         <Loader2 className="h-4 w-4 animate-spin" />
         <span>Loading streak...</span>
+      </div>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <div className={cn("flex flex-col items-center gap-2 text-zinc-400 py-4", className)}>
+        <Flame className="h-6 w-6 text-zinc-600" />
+        <p className="text-sm">Unable to load streak data</p>
+        <button
+          onClick={() => fetcher.load("/api/streaks")}
+          className="text-xs text-zinc-500 hover:text-white underline"
+        >
+          Try again
+        </button>
       </div>
     );
   }
