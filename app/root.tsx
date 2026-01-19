@@ -98,10 +98,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 function Document({
   children,
-}: // env,
-{
+  env,
+}: {
   children: React.ReactNode;
-  // env?: Record<string, string>;
+  env?: Record<string, string | undefined>;
 }) {
   return (
     <html lang="en" className="dark h-full overflow-x-hidden">
@@ -135,12 +135,13 @@ function Document({
       </head>
       <body>
         {children}
-        {/* <script
-          dangerouslySetInnerHTML={{
-            __html: `window.ENV = ${JSON.stringify(env)}`,
-          }}
-        /> */}
-        {/* <Toaster closeButton position="top-center" /> */}
+        {env && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `window.ENV = ${JSON.stringify(env)}`,
+            }}
+          />
+        )}
         <ScrollRestoration />
         <Scripts />
         <Analytics />
@@ -157,12 +158,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {/* <Document env={loaderData.ENV}> */}
-      <Document>
+      <Document env={loaderData?.ENV}>
         {!isHome && <NavigationSidebar />} {children}
-        {/* {loaderData && loaderData.toast ? (
-          <ShowToast toast={loaderData.toast} />
-        ) : null} */}
       </Document>
     </>
   );

@@ -22,6 +22,12 @@ import { PageContainer, GeneralErrorBoundary } from "~/components";
 import { cacheDelete } from "~/utils/cache.server";
 import { getModelCreditCost } from "~/config/pricing";
 import { MODEL_OPTIONS, STYLE_OPTIONS } from "~/config/models";
+import {
+  trackImageGenerationStarted,
+  trackImageGenerationCompleted,
+  trackImageGenerationFailed,
+  trackCreditsSpent,
+} from "~/services/analytics.server";
 
 // Re-export for backwards compatibility
 export { MODEL_OPTIONS, STYLE_OPTIONS } from "~/config/models";
@@ -239,6 +245,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         `Successfully queued image generation request: ${response.requestId} via ${queueHealth.backend}`
       );
 
+      // Track image generation started
+      trackImageGenerationStarted(user.id, {
+        prompt: validateFormData.data.prompt,
+        model: validateFormData.data.model,
+        numberOfImages: validateFormData.data.numberOfImages,
+        width: validateFormData.data.width,
+        height: validateFormData.data.height,
+        stylePreset: validateFormData.data.stylePreset,
+        creditCost: totalCreditCost,
+        isAsync: true,
+        setId: response.requestId,
+      });
+
       // Return JSON with requestId so client can track progress via toast
       return json({
         success: true,
@@ -294,10 +313,35 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
     }
 
+    // Track successful synchronous generation
+    trackImageGenerationCompleted(user.id, {
+      prompt: validateFormData.data.prompt,
+      model: validateFormData.data.model,
+      numberOfImages: validateFormData.data.numberOfImages,
+      width: validateFormData.data.width,
+      height: validateFormData.data.height,
+      stylePreset: validateFormData.data.stylePreset,
+      creditCost: totalCreditCost,
+      isAsync: false,
+      setId: result.setId,
+    });
+
+    trackCreditsSpent(user.id, totalCreditCost, "image_generation");
+
     // Redirect to the set page
     return redirect(`/sets/${result.setId}`);
   } catch (error) {
     console.error(`Error creating new images: ${error}`);
+
+    // Track failed generation
+    trackImageGenerationFailed(user.id, {
+      prompt: validateFormData.data.prompt,
+      model: validateFormData.data.model,
+      numberOfImages: validateFormData.data.numberOfImages,
+      creditCost: totalCreditCost,
+      isAsync: false,
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
+    });
 
     return json(
       {

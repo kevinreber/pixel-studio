@@ -4,6 +4,7 @@ import { getImages, type MediaTypeFilter } from "server/getImages";
 import { PageContainer, GeneralErrorBoundary } from "~/components";
 import { requireUserLogin } from "~/services";
 import { getCachedDataWithRevalidate } from "~/utils/cache.server";
+import { trackSearch } from "~/services/analytics.server";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Explore AI Generated Images & Videos" }];
@@ -29,13 +30,24 @@ export const MODEL_FILTER_OPTIONS = [
 ] as const;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await requireUserLogin(request);
+  const user = await requireUserLogin(request);
   const searchParams = new URL(request.url).searchParams;
   const searchTerm = searchParams.get("q") || "";
   const currentPage = Math.max(Number(searchParams.get("page") || 1), 1);
   const pageSize = Math.max(Number(searchParams.get("pageSize") || 50), 10);
   const mediaType = (searchParams.get("type") || "all") as MediaTypeFilter;
   const model = searchParams.get("model") || "";
+
+  // Track search if user is searching or filtering
+  if (searchTerm || mediaType !== "all" || model) {
+    trackSearch(user.id, {
+      searchTerm: searchTerm || undefined,
+      mediaType,
+      model: model || undefined,
+      page: currentPage,
+      pageSize,
+    });
+  }
 
   const cacheKey = `explore-images?q=${searchTerm}&page=${currentPage}&pageSize=${pageSize}&type=${mediaType}&model=${model}`;
   const imagesData = getCachedDataWithRevalidate(

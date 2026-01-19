@@ -4,6 +4,10 @@ import { createComment } from "~/server/createComment";
 import { CommentSchema, CommentResponseSchema } from "~/schemas/comment";
 import { z } from "zod";
 import { invalidateCache } from "~/utils/cache.server";
+import {
+  trackComment,
+  AnalyticsEvents,
+} from "~/services/analytics.server";
 
 export const action = async ({
   request,
@@ -27,6 +31,14 @@ export const action = async ({
         message: validatedData.comment,
         imageId: validatedData.imageId,
         userId: user.id,
+      });
+
+      // Track comment creation
+      trackComment(user.id, AnalyticsEvents.IMAGE_COMMENT_CREATED, {
+        targetId: validatedData.imageId,
+        targetType: "image",
+        commentId: comment.id,
+        messageLength: validatedData.comment.length,
       });
 
       // Validate the response

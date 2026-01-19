@@ -22,6 +22,12 @@ import {
   ASPECT_RATIO_OPTIONS,
   DURATION_OPTIONS,
 } from "~/config/videoModels";
+import {
+  trackVideoGenerationStarted,
+  trackVideoGenerationCompleted,
+  trackVideoGenerationFailed,
+  trackCreditsSpent,
+} from "~/services/analytics.server";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Create AI Generated Videos" }];
@@ -193,6 +199,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         `Successfully queued video generation request: ${response.requestId} via ${queueHealth.backend}`
       );
 
+      // Track video generation started
+      trackVideoGenerationStarted(user.id, {
+        prompt: validateFormData.data.prompt,
+        model: validateFormData.data.model,
+        duration: validateFormData.data.duration,
+        aspectRatio: validateFormData.data.aspectRatio,
+        creditCost: totalCreditCost,
+        sourceImageId: validateFormData.data.sourceImageId,
+        setId: response.requestId,
+      });
+
       // Return JSON with requestId so client can track progress via toast
       return json({
         success: true,
@@ -245,10 +262,32 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
     }
 
+    // Track successful synchronous generation
+    trackVideoGenerationCompleted(user.id, {
+      prompt: validateFormData.data.prompt,
+      model: validateFormData.data.model,
+      duration: validateFormData.data.duration,
+      aspectRatio: validateFormData.data.aspectRatio,
+      creditCost: totalCreditCost,
+      setId: result.setId,
+    });
+
+    trackCreditsSpent(user.id, totalCreditCost, "video_generation");
+
     // Redirect to the set page
     return redirect(`/sets/${result.setId}`);
   } catch (error) {
     console.error(`Error creating video: ${error}`);
+
+    // Track failed generation
+    trackVideoGenerationFailed(user.id, {
+      prompt: validateFormData.data.prompt,
+      model: validateFormData.data.model,
+      duration: validateFormData.data.duration,
+      aspectRatio: validateFormData.data.aspectRatio,
+      creditCost: totalCreditCost,
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
+    });
 
     return json(
       {
