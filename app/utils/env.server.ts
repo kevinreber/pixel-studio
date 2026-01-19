@@ -41,6 +41,8 @@ export function init() {
 export function getEnv() {
   return {
     MODE: process.env.NODE_ENV,
+    POSTHOG_API_KEY: process.env.POSTHOG_API_KEY,
+    POSTHOG_HOST: process.env.POSTHOG_HOST || "https://us.i.posthog.com",
   };
 }
 

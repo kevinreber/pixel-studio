@@ -7,6 +7,10 @@ import { requireUserLogin } from "~/services/auth.server";
 import { stripeCheckout } from "~/services/stripe.server";
 import { loader as UserLoaderData } from "../root";
 import { Logger } from "~/utils/logger.server";
+import {
+  trackPayment,
+  AnalyticsEvents,
+} from "~/services/analytics.server";
 
 export const meta: MetaFunction<
   typeof loader,
@@ -31,6 +35,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const url = await stripeCheckout({
     userId: user.id,
+  });
+
+  // Track checkout started
+  trackPayment(user.id, AnalyticsEvents.CHECKOUT_STARTED, {
+    credits: 100, // Default credit package
   });
 
   Logger.info({

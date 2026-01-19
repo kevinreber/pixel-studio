@@ -3,6 +3,10 @@ import { createImageLike, deleteImageLike } from "~/server";
 import { requireUserLogin } from "~/services";
 import { invariantResponse } from "~/utils";
 import { cacheDelete } from "~/utils/cache.server";
+import {
+  trackEngagement,
+  AnalyticsEvents,
+} from "~/services/analytics.server";
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
@@ -16,8 +20,16 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
   if (request.method === "POST") {
     await createImageLike({ imageId, userId: user.id });
+    trackEngagement(user.id, AnalyticsEvents.IMAGE_LIKED, {
+      targetId: imageId,
+      targetType: "image",
+    });
   } else if (request.method === "DELETE") {
     await deleteImageLike({ imageId, userId: user.id });
+    trackEngagement(user.id, AnalyticsEvents.IMAGE_UNLIKED, {
+      targetId: imageId,
+      targetType: "image",
+    });
   }
 
   return json({ success: true });

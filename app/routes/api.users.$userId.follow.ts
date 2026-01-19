@@ -4,6 +4,10 @@ import { requireUserLogin } from "~/services";
 import { invariantResponse } from "~/utils";
 import { cacheDelete, cacheDeletePattern } from "~/utils/cache.server";
 import { Logger } from "~/utils/logger.server";
+import {
+  trackSocial,
+  AnalyticsEvents,
+} from "~/services/analytics.server";
 
 // Prevent automatic revalidation of parent routes after follow/unfollow actions
 // The UI handles optimistic updates, so we don't need to refetch all data
@@ -22,8 +26,14 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   try {
     if (request.method === "POST") {
       await createFollow({ followerId: user.id, followingId: targetUserId });
+      trackSocial(user.id, AnalyticsEvents.USER_FOLLOWED, {
+        targetUserId,
+      });
     } else if (request.method === "DELETE") {
       await deleteFollow({ followerId: user.id, followingId: targetUserId });
+      trackSocial(user.id, AnalyticsEvents.USER_UNFOLLOWED, {
+        targetUserId,
+      });
     }
 
     // Invalidate caches after successful operation
