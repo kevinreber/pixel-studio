@@ -32,6 +32,7 @@ import {
   ASPECT_RATIO_OPTIONS,
   DURATION_OPTIONS,
   type VideoModelOption,
+  calculateVideoCreditCost,
 } from "~/config/videoModels";
 import { toast } from "sonner";
 import type { ActionData, CreateVideoPageLoader } from "~/routes/create-video";
@@ -393,11 +394,16 @@ const CreateVideoPageForm = () => {
 
               {/* Credit Cost Display */}
               <div className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
-                <span className="text-sm font-medium">Cost</span>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Cost</span>
+                  <span className="text-xs text-zinc-400">
+                    {selectedModel.baseCreditCost} base + {selectedModel.perSecondCreditCost}/sec
+                  </span>
+                </div>
                 <div className="flex items-center gap-1.5 text-amber-400">
                   <Coins className="w-4 h-4" />
                   <span className="font-semibold">
-                    {selectedModel.creditCost} credits
+                    {calculateVideoCreditCost(selectedModel, selectedDuration)} credits
                   </span>
                 </div>
               </div>
@@ -704,11 +710,16 @@ const CreateVideoPageForm = () => {
 
               {/* Credit Cost Display */}
               <div className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg border-t border-zinc-700 pt-4">
-                <span className="text-sm font-medium">Total Cost</span>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Total Cost</span>
+                  <span className="text-xs text-zinc-400">
+                    {selectedModel.baseCreditCost} base + {selectedModel.perSecondCreditCost}/sec × {selectedDuration}s
+                  </span>
+                </div>
                 <div className="flex items-center gap-1.5 text-amber-400">
                   <Coins className="w-4 h-4" />
                   <span className="font-semibold">
-                    {selectedModel.creditCost} credits
+                    {calculateVideoCreditCost(selectedModel, selectedDuration)} credits
                   </span>
                 </div>
               </div>

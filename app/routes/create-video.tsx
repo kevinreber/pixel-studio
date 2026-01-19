@@ -134,9 +134,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     );
   }
 
-  // Calculate total credit cost
+  // Calculate total credit cost based on duration
   const modelValue = validateFormData.data.model;
-  const totalCreditCost = getVideoModelCreditCost(modelValue);
+  const videoDuration = validateFormData.data.duration || 5;
+  const totalCreditCost = getVideoModelCreditCost(modelValue, videoDuration);
 
   // Check if user has enough credits
   try {
