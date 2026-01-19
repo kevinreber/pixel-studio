@@ -78,6 +78,31 @@ model User {
   notificationsTriggered Notification[] @relation("NotificationActor")
   generationLogs GenerationLog[]
   creditTransactions CreditTransaction[]
+
+  // Analytics relations
+  userAnalytics     UserAnalytics[]
+  promptAnalytics   PromptAnalytics[]
+  styleFingerprint  StyleFingerprint?
+
+  // Marketplace relations
+  marketplacePrompts MarketplacePrompt[]
+  promptPurchases    PromptPurchase[]   @relation("PromptPurchases")
+  promptReviews      PromptReview[]
+
+  // Tipping relations
+  tipsSent           Tip[]              @relation("TipsSent")
+  tipsReceived       Tip[]              @relation("TipsReceived")
+
+  // Collection purchases
+  collectionPurchases CollectionPurchase[] @relation("CollectionPurchases")
+
+  // Print on demand relations
+  printOrders        PrintOrder[]
+  printRoyalties     PrintOrder[]       @relation("PrintRoyalties")
+
+  // Earnings relations
+  creatorEarnings    CreatorEarnings[]
+  payouts            Payout[]
 }
 
 model Password {
@@ -205,6 +230,14 @@ model Image {
   steps            Int?             // Diffusion steps 10-50 (Stable Diffusion)
   promptUpsampling Boolean?         @default(false) // Prompt enhancement (Flux)
 
+  // Smart tagging
+  tags             ImageTag[]
+  attributes       ImageAttribute[]
+
+  // Monetization
+  tips             Tip[]
+  printOrders      PrintOrder[]
+
   @@index([userId])
   @@index([setId])
 }
@@ -294,7 +327,16 @@ model Collection {
   userId      String
   images      CollectionHasImage[]
 
+  // Premium collection features
+  isPublic    Boolean              @default(true)
+  isPremium   Boolean              @default(false)
+  price       Int?                 // Price in credits (null if free)
+  thumbnail   String?              // Custom thumbnail URL
+  purchaseCount Int                @default(0)
+  purchases   CollectionPurchase[]
+
   @@index([userId])
+  @@index([isPublic, isPremium])
 }
 
 model CollectionHasImage {
@@ -390,6 +432,12 @@ enum NotificationType {
   IMAGE_LIKED
   IMAGE_COMMENT
   IMAGE_COMPLETED
+  // Monetization notifications
+  TIP_RECEIVED
+  PROMPT_PURCHASED
+  COLLECTION_PURCHASED
+  PRINT_ORDER_PLACED
+  PAYOUT_COMPLETED
 }
 
 model Notification {
@@ -416,6 +464,414 @@ model Notification {
 
   @@index([recipientId, read])
   @@index([recipientId, createdAt])
+}
+
+// ============================================
+// SMART TAGGING MODELS
+// ============================================
+
+model ImageTag {
+  id         String   @id @default(cuid())
+  imageId    String
+  image      Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  tag        String   // e.g., "person", "landscape", "abstract", "animal"
+  confidence Float    // 0-1 confidence score from AI
+  source     String   @default("ai_vision") // "ai_vision" or "user" for manual tags
+
+  createdAt  DateTime @default(now())
+
+  @@unique([imageId, tag])
+  @@index([imageId])
+  @@index([tag])
+  @@index([confidence])
+}
+
+model ImageAttribute {
+  id         String   @id @default(cuid())
+  imageId    String
+  image      Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  category   String   // "color", "style", "mood", "subject", "technique"
+  value      String   // "warm", "surreal", "peaceful", "portrait", "digital art"
+  confidence Float    // 0-1 confidence score
+
+  createdAt  DateTime @default(now())
+
+  @@unique([imageId, category, value])
+  @@index([imageId])
+  @@index([category])
+  @@index([value])
+}
+
+// ============================================
+// ANALYTICS & INSIGHTS MODELS
+// ============================================
+
+model UserAnalytics {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  period    String   // "daily", "weekly", "monthly"
+  date      DateTime // Start of the period
+
+  // Generation stats
+  totalGenerations      Int @default(0)
+  successfulGenerations Int @default(0)
+  failedGenerations     Int @default(0)
+  averageGenerationTime Int @default(0) // in seconds
+
+  // Credit stats
+  creditsSpent     Int @default(0)
+  creditsPurchased Int @default(0)
+  creditsEarned    Int @default(0) // from marketplace/tips
+
+  // Model usage breakdown (JSON: { "dall-e": 10, "stable-diffusion": 5 })
+  modelUsage       Json?
+
+  // Style usage breakdown (JSON: { "vivid": 8, "natural": 7 })
+  styleUsage       Json?
+
+  // Engagement received
+  likesReceived    Int @default(0)
+  commentsReceived Int @default(0)
+  followersGained  Int @default(0)
+
+  // Engagement given
+  likesGiven       Int @default(0)
+  commentsGiven    Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, period, date])
+  @@index([userId, date])
+  @@index([period, date])
+}
+
+model PromptAnalytics {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  promptHash String   // SHA-256 hash of the prompt for privacy
+  promptPreview String? // First 50 chars for display (optional)
+
+  // Performance metrics
+  usageCount          Int @default(1)
+  successRate         Float @default(100) // percentage
+  averageGenerationTime Int @default(0)
+
+  // Engagement metrics (for public images using this prompt)
+  totalLikes     Int @default(0)
+  totalComments  Int @default(0)
+  totalViews     Int @default(0)
+
+  // Best performing model/style combo
+  bestModel      String?
+  bestStyle      String?
+
+  firstUsedAt    DateTime @default(now())
+  lastUsedAt     DateTime @default(now())
+
+  @@unique([userId, promptHash])
+  @@index([userId, usageCount])
+  @@index([userId, totalLikes])
+}
+
+model StyleFingerprint {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Dominant characteristics (computed from user's images)
+  dominantColors     Json?  // ["warm", "cool", "vibrant", "muted"]
+  dominantStyles     Json?  // ["surreal", "realistic", "abstract"]
+  dominantSubjects   Json?  // ["portrait", "landscape", "fantasy"]
+  dominantMoods      Json?  // ["peaceful", "dramatic", "mysterious"]
+
+  // AI model preferences
+  preferredModels    Json?  // { "dall-e": 0.6, "stable-diffusion": 0.3 }
+
+  // Common prompt themes (keywords extracted from prompts)
+  commonKeywords     Json?  // ["cinematic", "detailed", "fantasy"]
+
+  // Computed scores
+  diversityScore     Float? // How varied their creations are (0-1)
+  consistencyScore   Float? // How consistent their style is (0-1)
+  experimentalScore  Float? // How often they try new things (0-1)
+
+  computedAt         DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// ============================================
+// MONETIZATION - PROMPT MARKETPLACE
+// ============================================
+
+model MarketplacePrompt {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Prompt content
+  title       String
+  description String?  @db.Text
+  prompt      String   @db.Text
+  negativePrompt String? @db.Text
+
+  // Categorization
+  category    String   // "landscape", "portrait", "abstract", "fantasy", "sci-fi", etc.
+  tags        String[] // Searchable tags
+
+  // Recommended settings
+  recommendedModel  String?
+  recommendedStyle  String?
+  recommendedParams Json?    // { width, height, steps, cfgScale, etc. }
+
+  // Pricing
+  price       Int      // In credits
+
+  // Status
+  isPublished Boolean  @default(false)
+  isFeatured  Boolean  @default(false)
+
+  // Stats
+  purchaseCount  Int   @default(0)
+  viewCount      Int   @default(0)
+  averageRating  Float?
+
+  // Sample images (IDs of images created with this prompt)
+  sampleImageIds String[]
+
+  // Reviews
+  reviews     PromptReview[]
+  purchases   PromptPurchase[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isPublished])
+  @@index([category])
+  @@index([isFeatured])
+  @@index([purchaseCount])
+  @@index([averageRating])
+}
+
+model PromptPurchase {
+  id        String   @id @default(cuid())
+  buyerId   String
+  buyer     User     @relation("PromptPurchases", fields: [buyerId], references: [id], onDelete: Cascade)
+
+  promptId  String
+  prompt    MarketplacePrompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  pricePaid Int      // Capture price at time of purchase
+
+  createdAt DateTime @default(now())
+
+  @@unique([buyerId, promptId]) // Can't buy same prompt twice
+  @@index([promptId])
+  @@index([buyerId])
+}
+
+model PromptReview {
+  id       String   @id @default(cuid())
+  promptId String
+  prompt   MarketplacePrompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  rating   Int      // 1-5 stars
+  comment  String?  @db.Text
+
+  // Was this review helpful?
+  helpfulCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([promptId, userId]) // One review per user per prompt
+  @@index([promptId])
+  @@index([rating])
+}
+
+// ============================================
+// MONETIZATION - TIPPING
+// ============================================
+
+model Tip {
+  id          String   @id @default(cuid())
+  senderId    String
+  sender      User     @relation("TipsSent", fields: [senderId], references: [id], onDelete: Cascade)
+
+  recipientId String
+  recipient   User     @relation("TipsReceived", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  // Optional: Tip for a specific image
+  imageId     String?
+  image       Image?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+
+  amount      Int      // In credits
+  message     String?  // Optional thank-you message
+
+  createdAt   DateTime @default(now())
+
+  @@index([senderId])
+  @@index([recipientId, createdAt])
+  @@index([imageId])
+}
+
+// ============================================
+// MONETIZATION - PREMIUM COLLECTIONS
+// ============================================
+
+model CollectionPurchase {
+  id           String     @id @default(cuid())
+  buyerId      String
+  buyer        User       @relation("CollectionPurchases", fields: [buyerId], references: [id], onDelete: Cascade)
+
+  collectionId String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  pricePaid    Int
+
+  createdAt    DateTime   @default(now())
+
+  @@unique([buyerId, collectionId])
+  @@index([collectionId])
+  @@index([buyerId])
+}
+
+// ============================================
+// MONETIZATION - PRINT ON DEMAND
+// ============================================
+
+model PrintProduct {
+  id          String   @id @default(cuid())
+  name        String   // "Canvas Print", "Poster", "Metal Print", etc.
+  description String?
+
+  // Pricing tiers by size
+  sizes       Json     // [{ name: "Small", dimensions: "8x10", basePrice: 25 }, ...]
+
+  // Provider info
+  provider    String   // "printful", "printify", etc.
+  providerProductId String?
+
+  isActive    Boolean  @default(true)
+
+  orders      PrintOrder[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PrintOrder {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  imageId     String
+  image       Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  productId   String
+  product     PrintProduct @relation(fields: [productId], references: [id])
+
+  // Order details
+  size        String   // Selected size
+  quantity    Int      @default(1)
+  price       Int      // Total price in cents
+
+  // Shipping
+  shippingAddress Json
+  shippingMethod  String?
+  shippingCost    Int?
+
+  // Status
+  status      String   @default("pending") // "pending", "processing", "shipped", "delivered", "cancelled"
+
+  // Provider tracking
+  providerOrderId String?
+  trackingNumber  String?
+  trackingUrl     String?
+
+  // Creator earnings (if not their own image)
+  creatorId       String?
+  creator         User?    @relation("PrintRoyalties", fields: [creatorId], references: [id], onDelete: SetNull)
+  creatorEarnings Int?     // Royalty amount in cents
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  shippedAt   DateTime?
+  deliveredAt DateTime?
+
+  @@index([userId])
+  @@index([imageId])
+  @@index([status])
+  @@index([creatorId])
+}
+
+// ============================================
+// CREATOR EARNINGS & PAYOUTS
+// ============================================
+
+model CreatorEarnings {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Earnings by source
+  source      String   // "marketplace", "tips", "print_royalties"
+
+  // Reference to the transaction
+  referenceId String   // ID of the PromptPurchase, Tip, or PrintOrder
+  referenceType String // "prompt_purchase", "tip", "print_order"
+
+  amount      Int      // Amount earned in credits (or cents for print)
+
+  // Payout status
+  isPaidOut   Boolean  @default(false)
+  payoutId    String?  // Reference to Payout when paid
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId, isPaidOut])
+  @@index([userId, createdAt])
+  @@index([source])
+}
+
+model Payout {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  amount      Int      // Total payout amount
+  currency    String   @default("USD")
+
+  // Payout method
+  method      String   // "stripe", "paypal", "credits"
+
+  // Status
+  status      String   @default("pending") // "pending", "processing", "completed", "failed"
+
+  // External reference
+  stripePayoutId String?
+
+  // For credit conversions
+  creditsConverted Int?
+
+  metadata    Json?
+
+  createdAt   DateTime @default(now())
+  processedAt DateTime?
+  completedAt DateTime?
+
+  @@index([userId, status])
+  @@index([status])
 }
 
 // ! TODO: Add this to the schema
