@@ -7,6 +7,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -62,16 +63,17 @@ export function AdminDeleteImageButton({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Button
-        variant="destructive"
-        size="sm"
-        onClick={() => setOpen(true)}
-        disabled={disabled}
-        className="flex items-center gap-2"
-      >
-        <ShieldAlert className="h-4 w-4" />
-        <span>Admin Delete</span>
-      </Button>
+      <DialogTrigger asChild>
+        <Button
+          variant="destructive"
+          size="sm"
+          disabled={disabled}
+          className="flex items-center gap-2"
+        >
+          <ShieldAlert className="h-4 w-4" />
+          <span>Admin Delete</span>
+        </Button>
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
