@@ -9,7 +9,8 @@
 
 import { createNewVideo, updateVideoStatus } from "./createNewVideo";
 import { createNewSet, deleteSet } from "~/server";
-import { addVideoToS3 } from "./addVideoToS3.server";
+import { addVideoToS3, addVideoThumbnailToS3 } from "./addVideoToS3.server";
+import { extractVideoThumbnailSafe } from "./extractVideoThumbnail.server";
 
 const LUMA_API_URL = process.env.LUMA_API_URL || "https://api.lumalabs.ai/dream-machine/v1";
 const LUMA_API_KEY = process.env.LUMA_API_KEY;
@@ -238,6 +239,19 @@ export const createLumaVideo = async (
       videoBuffer,
       contentType: "video/mp4",
     });
+
+    // Extract and upload thumbnail
+    const thumbnailBuffer = await extractVideoThumbnailSafe(videoBuffer);
+    if (thumbnailBuffer) {
+      await addVideoThumbnailToS3({
+        videoId: video.id,
+        thumbnailBuffer,
+        contentType: "image/jpeg",
+      });
+      console.log(`Thumbnail generated for video ${video.id}`);
+    } else {
+      console.warn(`Failed to generate thumbnail for video ${video.id}`);
+    }
 
     // Update video as complete
     await updateVideoStatus({

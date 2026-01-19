@@ -86,9 +86,12 @@ const SetDetailsAccessor = () => {
   const videoCount = setVideos?.length || 0;
   const creditCostPerImage = model ? getModelCreditCost(model) : 0;
   const imageCost = creditCostPerImage * imageCount;
-  // Videos use video-specific pricing
-  const creditCostPerVideo = setVideos?.[0]?.model ? getVideoModelCreditCost(setVideos[0].model) : 0;
-  const videoCost = creditCostPerVideo * videoCount;
+  // Videos use duration-based pricing
+  const videoCost = setVideos?.reduce((total, video) => {
+    if (!video.model) return total;
+    const videoDuration = video.duration || 5;
+    return total + getVideoModelCreditCost(video.model, videoDuration);
+  }, 0) || 0;
   const totalCost = imageCost + videoCost;
   const [formattedDate, setFormattedDate] = React.useState(
     typeof setCreatedAt === "string"
@@ -168,8 +171,8 @@ const SetDetailsAccessor = () => {
             )}
             {videoCount > 0 && (
               <span className="text-zinc-500">
-                {creditCostPerVideo} per video × {videoCount} video
-                {videoCount !== 1 ? "s" : ""}
+                {videoCost} credits for {videoCount} video
+                {videoCount !== 1 ? "s" : ""} (duration-based)
               </span>
             )}
           </div>

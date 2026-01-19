@@ -32,6 +32,7 @@ import {
   ASPECT_RATIO_OPTIONS,
   DURATION_OPTIONS,
   type VideoModelOption,
+  calculateVideoCreditCost,
 } from "~/config/videoModels";
 import { toast } from "sonner";
 import type { ActionData, CreateVideoPageLoader } from "~/routes/create-video";
@@ -417,11 +418,16 @@ const CreateVideoPageForm = () => {
 
               {/* Credit Cost Display */}
               <div className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
-                <span className="text-sm font-medium">Cost</span>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Cost</span>
+                  <span className="text-xs text-zinc-400">
+                    {selectedModel.baseCreditCost} base + {selectedModel.perSecondCreditCost}/sec
+                  </span>
+                </div>
                 <div className="flex items-center gap-1.5 text-amber-400">
                   <Coins className="w-4 h-4" />
                   <span className="font-semibold">
-                    {selectedModel.creditCost} credits
+                    {calculateVideoCreditCost(selectedModel, selectedDuration)} credits
                   </span>
                 </div>
               </div>
@@ -476,7 +482,7 @@ const CreateVideoPageForm = () => {
                       <ProviderBadge company={model.company} />
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-600/20 text-amber-400 border border-amber-600/30">
                         <Coins className="w-3 h-3" />
-                        {model.creditCost} credits
+                        {model.baseCreditCost}+{model.perSecondCreditCost}/s
                       </span>
                     </div>
                     <p className="mt-2 text-sm text-gray-300">
@@ -674,7 +680,7 @@ const CreateVideoPageForm = () => {
                     name="duration"
                     value={selectedDuration}
                   />
-                  <div className="flex gap-2 mt-1">
+                  <div className="grid grid-cols-2 gap-2 mt-1">
                     {DURATION_OPTIONS.filter(
                       (d) => d.value <= selectedModel.maxDuration
                     ).map((duration) => (
@@ -688,7 +694,7 @@ const CreateVideoPageForm = () => {
                         }
                         onClick={() => setSelectedDuration(duration.value)}
                         disabled={isSubmitting}
-                        className={`flex-1 ${
+                        className={`${
                           selectedDuration === duration.value
                             ? "bg-zinc-700 hover:bg-zinc-600"
                             : "bg-zinc-800/50 hover:bg-zinc-700/50"
@@ -740,11 +746,16 @@ const CreateVideoPageForm = () => {
 
               {/* Credit Cost Display */}
               <div className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg border-t border-zinc-700 pt-4">
-                <span className="text-sm font-medium">Total Cost</span>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Total Cost</span>
+                  <span className="text-xs text-zinc-400">
+                    {selectedModel.baseCreditCost} base + {selectedModel.perSecondCreditCost}/sec × {selectedDuration}s
+                  </span>
+                </div>
                 <div className="flex items-center gap-1.5 text-amber-400">
                   <Coins className="w-4 h-4" />
                   <span className="font-semibold">
-                    {selectedModel.creditCost} credits
+                    {calculateVideoCreditCost(selectedModel, selectedDuration)} credits
                   </span>
                 </div>
               </div>
@@ -804,7 +815,7 @@ const CreateVideoPageForm = () => {
                       <ProviderBadge company={model.company} />
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-600/20 text-amber-400 border border-amber-600/30">
                         <Coins className="w-3 h-3" />
-                        {model.creditCost} credits
+                        {model.baseCreditCost}+{model.perSecondCreditCost}/s
                       </span>
                     </div>
                     <p className="text-sm mt-2 text-gray-300">

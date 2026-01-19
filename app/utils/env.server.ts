@@ -6,10 +6,13 @@ const schema = z.object({
   HONEYPOT_SECRET: z.string(),
 });
 
+// eslint-disable-next-line import/namespace
+type SchemaType = z.infer<typeof schema>;
+
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace NodeJS {
-    interface ProcessEnv extends z.infer<typeof schema> {}
+    interface ProcessEnv extends SchemaType {}
   }
 }
 

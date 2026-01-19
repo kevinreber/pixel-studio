@@ -7,10 +7,22 @@ import { PageContainer } from "~/components";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useLoggedInUser } from "~/hooks";
-import { invalidateCache } from "~/utils/cache.server";
-import { History, Wallet } from "lucide-react";
+import { invalidateCache, cacheDeletePattern } from "~/utils/cache.server";
+import {
+  History,
+  Wallet,
+  User,
+  ChevronRight,
+  Settings as SettingsIcon,
+} from "lucide-react";
 
 const UsernameSchema = z
   .string()
@@ -68,9 +80,11 @@ export async function action({ request }: ActionFunctionArgs) {
       where: { id: user.id },
       data: { username },
     });
-    // Need to invalidate the cache for the user
-    const cacheKey = `user-login:${user.id}`;
-    await invalidateCache(cacheKey);
+    // Invalidate both login and profile caches so new username appears everywhere
+    await Promise.all([
+      invalidateCache(`user-login:${user.id}`),
+      cacheDeletePattern(`user-profile:${user.id}:*`),
+    ]);
 
     return json({ success: true, user: updatedUser });
   } catch (error) {
@@ -97,74 +111,129 @@ export default function Index() {
 
   return (
     <PageContainer>
-      <div className="max-w-2xl mx-auto py-10">
-        {/* Settings Navigation */}
-        <div className="mb-6 flex flex-wrap gap-4">
-          <Link
-            to="/settings/generation-history"
-            className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
-          >
-            <History className="w-4 h-4" />
-            View Generation History
-          </Link>
-          <Link
-            to="/settings/credit-history"
-            className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
-          >
-            <Wallet className="w-4 h-4" />
-            View Credit History
-          </Link>
+      <div className="max-w-3xl mx-auto py-6 md:py-10 space-y-8">
+        {/* Page Header */}
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <SettingsIcon className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+              <p className="text-muted-foreground">
+                Manage your account settings and preferences
+              </p>
+            </div>
+          </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold">
-              Account Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Form method="post" className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  type="text"
-                  id="username"
-                  name="username"
-                  defaultValue={user.username}
-                  minLength={3}
-                  maxLength={30}
-                  pattern="^[a-zA-Z0-9_-]+$"
-                  required
-                  className="max-w-md"
-                />
-                <p className="text-sm text-muted-foreground">
-                  Username can only contain letters, numbers, underscores, and
-                  hyphens.
-                </p>
+        {/* Activity Section */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-muted-foreground">
+            Activity
+          </h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Link to="/settings/generation-history" className="group">
+              <Card className="h-full transition-colors hover:bg-accent/50 hover:border-accent">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="p-2 rounded-lg bg-blue-500/10">
+                      <History className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <CardTitle className="text-base mb-1">
+                    Generation History
+                  </CardTitle>
+                  <CardDescription>
+                    View all your generated images and videos
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link to="/settings/credit-history" className="group">
+              <Card className="h-full transition-colors hover:bg-accent/50 hover:border-accent">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="p-2 rounded-lg bg-green-500/10">
+                      <Wallet className="w-5 h-5 text-green-500" />
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <CardTitle className="text-base mb-1">Credit History</CardTitle>
+                  <CardDescription>
+                    Track your credit usage and purchases
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        </div>
+
+        {/* Account Section */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-muted-foreground">
+            Account
+          </h2>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-500/10">
+                  <User className="w-5 h-5 text-purple-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Profile Information</CardTitle>
+                  <CardDescription>
+                    Update your account details
+                  </CardDescription>
+                </div>
               </div>
-
-              {actionData?.error && (
-                <div className="text-red-500 text-sm font-medium">
-                  {actionData.error}
+            </CardHeader>
+            <CardContent>
+              <Form method="post" className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    type="text"
+                    id="username"
+                    name="username"
+                    defaultValue={user.username}
+                    minLength={3}
+                    maxLength={30}
+                    pattern="^[a-zA-Z0-9_-]+$"
+                    required
+                    className="max-w-md"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Username can only contain letters, numbers, underscores, and
+                    hyphens.
+                  </p>
                 </div>
-              )}
 
-              {actionData?.success && (
-                <div className="text-green-500 text-sm font-medium">
-                  Username updated successfully!
-                </div>
-              )}
+                {actionData?.error && (
+                  <div className="text-red-500 text-sm font-medium bg-red-500/10 px-3 py-2 rounded-md">
+                    {actionData.error}
+                  </div>
+                )}
 
-              <Button
-                type="submit"
-                className="w-full sm:w-auto"
-                variant="outline"
-              >
-                Update Username
-              </Button>
-            </Form>
-          </CardContent>
-        </Card>
+                {actionData?.success && (
+                  <div className="text-green-500 text-sm font-medium bg-green-500/10 px-3 py-2 rounded-md">
+                    Username updated successfully!
+                  </div>
+                )}
+
+                <Button type="submit" className="w-full sm:w-auto">
+                  Save Changes
+                </Button>
+              </Form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </PageContainer>
   );

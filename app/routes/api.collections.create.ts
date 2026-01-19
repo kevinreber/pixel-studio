@@ -2,6 +2,7 @@ import { ActionFunctionArgs, json } from "@remix-run/node";
 import { requireUserLogin } from "~/services";
 import { prisma } from "~/services/prisma.server";
 import { CollectionSchema } from "~/schemas/collection";
+import { cacheDelete } from "~/utils/cache.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
@@ -19,6 +20,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         userId: user.id,
       },
     });
+
+    // Invalidate user collections cache so new collection appears immediately
+    await cacheDelete(`user-collections:${user.id}`);
 
     return json({ collection });
   } catch (error) {
