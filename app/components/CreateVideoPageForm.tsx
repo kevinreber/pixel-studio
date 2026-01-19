@@ -458,7 +458,7 @@ const CreateVideoPageForm = () => {
                       <ProviderBadge company={model.company} />
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-600/20 text-amber-400 border border-amber-600/30">
                         <Coins className="w-3 h-3" />
-                        {model.creditCost} credits
+                        {model.baseCreditCost}+{model.perSecondCreditCost}/s
                       </span>
                     </div>
                     <p className="mt-2 text-sm text-gray-300">
@@ -779,7 +779,7 @@ const CreateVideoPageForm = () => {
                       <ProviderBadge company={model.company} />
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-600/20 text-amber-400 border border-amber-600/30">
                         <Coins className="w-3 h-3" />
-                        {model.creditCost} credits
+                        {model.baseCreditCost}+{model.perSecondCreditCost}/s
                       </span>
                     </div>
                     <p className="text-sm mt-2 text-gray-300">
