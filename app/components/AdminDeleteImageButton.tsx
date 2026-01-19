@@ -74,7 +74,7 @@ export function AdminDeleteImageButton({
           <span>Admin Delete</span>
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="z-[200]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShieldAlert className="h-5 w-5 text-red-500" />
