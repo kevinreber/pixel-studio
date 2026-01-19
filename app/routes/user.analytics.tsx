@@ -256,7 +256,15 @@ function StyleFingerprint({
   );
 }
 
-function TopPrompts({ prompts }: { prompts: UserInsightsDashboard["topPrompts"] }) {
+function TopPrompts({ prompts }: { prompts: Array<{
+  promptPreview: string;
+  usageCount: number;
+  successRate: number;
+  averageLikes: number;
+  bestModel: string | null;
+  bestStyle: string | null;
+  lastUsedAt: Date | string;
+}> }) {
   return (
     <Card>
       <CardHeader>
@@ -297,7 +305,19 @@ function TopPrompts({ prompts }: { prompts: UserInsightsDashboard["topPrompts"] 
   );
 }
 
-function CreditUsage({ creditUsage }: { creditUsage: UserInsightsDashboard["creditUsage"] }) {
+function CreditUsage({ creditUsage }: { creditUsage: {
+  totalSpent: number;
+  totalPurchased: number;
+  totalEarned: number;
+  currentBalance: number;
+  spendingByCategory: Record<string, number>;
+  recentTransactions: Array<{
+    type: string;
+    amount: number;
+    description: string;
+    createdAt: Date | string;
+  }>;
+} }) {
   return (
     <Card>
       <CardHeader>

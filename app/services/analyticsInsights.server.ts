@@ -60,6 +60,7 @@ export interface PromptPerformanceData {
   averageLikes: number;
   averageComments: number;
   bestModel: string | null;
+  bestStyle: string | null;
   lastUsedAt: Date;
 }
 
@@ -320,7 +321,10 @@ export async function getCreditUsageStats(userId: string): Promise<CreditUsageSt
     totalEarned,
     currentBalance: user?.credits ?? 0,
     spendingByCategory,
-    recentTransactions: transactions,
+    recentTransactions: transactions.map((tx) => ({
+      ...tx,
+      description: tx.description ?? "",
+    })),
   };
 }
 
@@ -414,7 +418,7 @@ export async function trackPromptUsage(
   } catch (error) {
     Logger.error({
       message: "[AnalyticsInsights] Error tracking prompt usage",
-      error,
+      error: error instanceof Error ? error : undefined,
       metadata: { userId, promptHash },
     });
   }
@@ -445,6 +449,7 @@ export async function getTopPrompts(
     averageLikes: p.totalLikes / Math.max(p.usageCount, 1),
     averageComments: p.totalComments / Math.max(p.usageCount, 1),
     bestModel: p.bestModel,
+    bestStyle: p.bestStyle,
     lastUsedAt: p.lastUsedAt,
   }));
 }

@@ -263,14 +263,16 @@ export async function purchaseCollection(
   });
 
   // Log credit transaction for buyer (non-blocking)
-  logCreditSpend(buyerId, collection.price, `Purchased collection: ${collection.title}`).catch(
-    (err) => {
-      Logger.error({
-        message: "[PremiumCollections] Failed to log credit spend",
-        error: err,
-      });
-    }
-  );
+  logCreditSpend({
+    userId: buyerId,
+    amount: collection.price,
+    description: `Purchased collection: ${collection.title}`,
+  }).catch((err) => {
+    Logger.error({
+      message: "[PremiumCollections] Failed to log credit spend",
+      error: err instanceof Error ? err : undefined,
+    });
+  });
 
   Logger.info({
     message: "[PremiumCollections] Collection purchased",

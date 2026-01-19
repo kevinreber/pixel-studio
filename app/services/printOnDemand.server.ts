@@ -5,6 +5,7 @@
  * to order physical prints of their generated images
  */
 
+import type { Prisma } from "@prisma/client";
 import { prisma } from "~/services/prisma.server";
 import { Logger } from "~/utils/logger.server";
 
@@ -140,7 +141,7 @@ export async function initializeProducts(): Promise<void> {
       update: {
         name: product.name,
         description: product.description,
-        sizes: product.sizes,
+        sizes: product.sizes as unknown as Prisma.InputJsonValue,
         provider: product.provider,
         isActive: product.isActive,
       },
@@ -148,7 +149,7 @@ export async function initializeProducts(): Promise<void> {
         id: `default-${product.name.toLowerCase().replace(/\s+/g, "-")}`,
         name: product.name,
         description: product.description,
-        sizes: product.sizes,
+        sizes: product.sizes as unknown as Prisma.InputJsonValue,
         provider: product.provider,
         isActive: product.isActive,
       },
@@ -173,7 +174,7 @@ export async function getAvailableProducts(): Promise<PrintProductDetails[]> {
     id: p.id,
     name: p.name,
     description: p.description,
-    sizes: p.sizes as ProductSize[],
+    sizes: p.sizes as unknown as ProductSize[],
     provider: p.provider,
     isActive: p.isActive,
   }));
@@ -193,7 +194,7 @@ export async function getProduct(productId: string): Promise<PrintProductDetails
     id: product.id,
     name: product.name,
     description: product.description,
-    sizes: product.sizes as ProductSize[],
+    sizes: product.sizes as unknown as ProductSize[],
     provider: product.provider,
     isActive: product.isActive,
   };
@@ -298,7 +299,7 @@ export async function createPrintOrder(
       size: params.size,
       quantity: params.quantity,
       price: pricing.total,
-      shippingAddress: params.shippingAddress,
+      shippingAddress: params.shippingAddress as unknown as Prisma.InputJsonValue,
       shippingMethod: params.shippingMethod || "standard",
       shippingCost: pricing.estimatedShipping,
       status: "pending",

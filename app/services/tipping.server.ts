@@ -145,10 +145,14 @@ export async function sendTip(senderId: string, params: TipParams): Promise<{ ti
   });
 
   // Log credit transaction for sender (non-blocking)
-  logCreditSpend(senderId, amount, `Tip to @${recipient.username}`).catch((err) => {
+  logCreditSpend({
+    userId: senderId,
+    amount,
+    description: `Tip to @${recipient.username}`,
+  }).catch((err) => {
     Logger.error({
       message: "[Tipping] Failed to log credit spend",
-      error: err,
+      error: err instanceof Error ? err : undefined,
     });
   });
 

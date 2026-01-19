@@ -8,6 +8,7 @@
  * - Marketplace discovery
  */
 
+import type { Prisma } from "@prisma/client";
 import { prisma } from "~/services/prisma.server";
 import { Logger } from "~/utils/logger.server";
 import { logCreditSpend } from "./creditTransaction.server";
@@ -113,7 +114,7 @@ export async function publishPrompt(
       price: params.price,
       recommendedModel: params.recommendedModel,
       recommendedStyle: params.recommendedStyle,
-      recommendedParams: params.recommendedParams,
+      recommendedParams: params.recommendedParams as Prisma.InputJsonValue | undefined,
       sampleImageIds: params.sampleImageIds || [],
       isPublished: true,
     },
@@ -154,7 +155,7 @@ export async function updatePrompt(
       ...(updates.price && { price: updates.price }),
       ...(updates.recommendedModel && { recommendedModel: updates.recommendedModel }),
       ...(updates.recommendedStyle && { recommendedStyle: updates.recommendedStyle }),
-      ...(updates.recommendedParams && { recommendedParams: updates.recommendedParams }),
+      ...(updates.recommendedParams && { recommendedParams: updates.recommendedParams as Prisma.InputJsonValue }),
       ...(updates.sampleImageIds && { sampleImageIds: updates.sampleImageIds }),
     },
   });
@@ -313,10 +314,14 @@ export async function purchasePrompt(
   });
 
   // Log credit transaction for buyer (non-blocking)
-  logCreditSpend(buyerId, prompt.price, `Purchased prompt: ${prompt.title}`).catch((err) => {
+  logCreditSpend({
+    userId: buyerId,
+    amount: prompt.price,
+    description: `Purchased prompt: ${prompt.title}`,
+  }).catch((err) => {
     Logger.error({
       message: "[Marketplace] Failed to log credit spend",
-      error: err,
+      error: err instanceof Error ? err : undefined,
     });
   });
 

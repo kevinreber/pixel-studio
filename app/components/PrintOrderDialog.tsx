@@ -45,14 +45,38 @@ interface PrintOrderDialogProps {
   className?: string;
 }
 
+interface ProductsResponse {
+  success?: boolean;
+  products?: PrintProduct[];
+  error?: string;
+}
+
+interface PricingResponse {
+  success?: boolean;
+  pricing?: {
+    basePrice: number;
+    subtotal: number;
+    estimatedShipping: number;
+    creatorRoyalty: number;
+    total: number;
+  };
+  error?: string;
+}
+
+interface OrderResponse {
+  success?: boolean;
+  orderId?: string;
+  error?: string;
+}
+
 export function PrintOrderDialog({
   imageId,
   imageTitle,
   className,
 }: PrintOrderDialogProps) {
-  const productsFetcher = useFetcher();
-  const priceFetcher = useFetcher();
-  const orderFetcher = useFetcher();
+  const productsFetcher = useFetcher<ProductsResponse>();
+  const priceFetcher = useFetcher<PricingResponse>();
+  const orderFetcher = useFetcher<OrderResponse>();
 
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"select" | "shipping" | "confirm" | "success">("select");
@@ -101,7 +125,7 @@ export function PrintOrderDialog({
     submitPrice();
   }, [submitPrice]);
 
-  const products = productsFetcher.data?.products as PrintProduct[] | undefined;
+  const products = productsFetcher.data?.products;
   const pricing = priceFetcher.data?.pricing;
   const isSubmitting = orderFetcher.state === "submitting";
 

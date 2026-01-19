@@ -48,7 +48,7 @@ export function ImageTags({
   const [showAddTag, setShowAddTag] = useState(false);
 
   const isAnalyzing = tagFetcher.state === "submitting" && tagFetcher.formData?.get("_action") === "analyze";
-  const isAddingTag = tagFetcher.state === "submitting" && tagFetcher.formData?.get("tag");
+  const isAddingTag = tagFetcher.state === "submitting" && !!tagFetcher.formData?.get("tag");
 
   const handleAnalyze = () => {
     tagFetcher.submit(

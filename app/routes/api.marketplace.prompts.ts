@@ -6,7 +6,7 @@
  */
 
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { requireUserLogin, getUserFromRequest } from "~/services/auth.server";
+import { requireUserLogin, getUserFromAuth } from "~/services/auth.server";
 import { searchMarketplace, publishPrompt } from "~/services/marketplace.server";
 import { z } from "zod";
 
@@ -45,7 +45,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   // Get current user if logged in
-  const user = await getUserFromRequest(request);
+  const user = await getUserFromAuth(request);
 
   try {
     const { prompts, total } = await searchMarketplace(

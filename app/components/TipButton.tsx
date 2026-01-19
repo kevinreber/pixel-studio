@@ -33,6 +33,11 @@ interface TipButtonProps {
 
 const QUICK_AMOUNTS = [5, 10, 25, 50];
 
+interface TipResponse {
+  success?: boolean;
+  error?: string;
+}
+
 export function TipButton({
   recipientId,
   recipientUsername,
@@ -41,7 +46,7 @@ export function TipButton({
   variant = "outline",
   size = "default",
 }: TipButtonProps) {
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<TipResponse>();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState<number>(10);
   const [message, setMessage] = useState("");

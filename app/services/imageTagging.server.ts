@@ -181,7 +181,7 @@ Respond ONLY with valid JSON in this exact format:
   } catch (error) {
     Logger.error({
       message: "[ImageTagging] Error analyzing image with vision API",
-      error,
+      error: error instanceof Error ? error : undefined,
       metadata: { imageUrl },
     });
     throw error;
@@ -273,7 +273,7 @@ export async function tagImage(imageId: string): Promise<{
   } catch (error) {
     Logger.error({
       message: "[ImageTagging] Error tagging image",
-      error,
+      error: error instanceof Error ? error : undefined,
       metadata: { imageId },
     });
     throw error;

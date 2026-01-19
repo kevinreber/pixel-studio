@@ -6,7 +6,7 @@
 
 import { json, type LoaderFunctionArgs, type MetaFunction } from "@remix-run/node";
 import { useLoaderData, useSearchParams, Link } from "@remix-run/react";
-import { getUserFromRequest } from "~/services/auth.server";
+import { getUserFromAuth } from "~/services/auth.server";
 import {
   searchMarketplace,
   getMarketplaceCategories,
@@ -48,7 +48,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const category = url.searchParams.get("category") || undefined;
   const sortBy = (url.searchParams.get("sortBy") as "newest" | "popular" | "topRated") || "popular";
 
-  const user = await getUserFromRequest(request);
+  const user = await getUserFromAuth(request);
 
   const [{ prompts, total }, categories, featured] = await Promise.all([
     searchMarketplace({ query, category, sortBy, limit: 20 }, user?.id),
