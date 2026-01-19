@@ -142,10 +142,12 @@ async function uploadThumbnail(
   console.log(`  Uploaded thumbnail to ${S3_THUMBNAIL_BUCKET_NAME}: ${key}`);
 }
 
+type ProcessResult = "processed" | "skipped" | "failed";
+
 /**
  * Process a single video
  */
-async function processVideo(video: { id: string; prompt: string }): Promise<boolean> {
+async function processVideo(video: { id: string; prompt: string }): Promise<ProcessResult> {
   console.log(`\nProcessing video: ${video.id}`);
   console.log(`  Prompt: ${video.prompt.substring(0, 50)}...`);
 
@@ -154,12 +156,12 @@ async function processVideo(video: { id: string; prompt: string }): Promise<bool
     const exists = await thumbnailExists(video.id);
     if (exists) {
       console.log(`  Thumbnail already exists, skipping`);
-      return false;
+      return "skipped";
     }
 
     if (isDryRun) {
       console.log(`  [DRY RUN] Would generate thumbnail`);
-      return true;
+      return "processed";
     }
 
     // Download video
@@ -173,10 +175,10 @@ async function processVideo(video: { id: string; prompt: string }): Promise<bool
     // Upload thumbnail
     await uploadThumbnail(video.id, thumbnailBuffer);
 
-    return true;
+    return "processed";
   } catch (error) {
     console.error(`  Error: ${error instanceof Error ? error.message : error}`);
-    return false;
+    return "failed";
   }
 }
 
@@ -225,10 +227,12 @@ async function main() {
 
   for (const video of videos) {
     const result = await processVideo(video);
-    if (result) {
+    if (result === "processed") {
       processed++;
-    } else {
+    } else if (result === "skipped") {
       skipped++;
+    } else {
+      failed++;
     }
   }
 
