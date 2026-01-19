@@ -92,26 +92,60 @@ export interface GetImagesResponse {
 
 export type GETImagesAPIResponse = ReturnType<typeof getImages>;
 
+export type MediaTypeFilter = "all" | "images" | "videos";
+
+export interface GetImagesOptions {
+  searchTerm?: string;
+  page?: number;
+  pageSize?: number;
+  mediaType?: MediaTypeFilter;
+  model?: string;
+}
+
 export const getImages = async (
-  searchTerm = "",
+  searchTermOrOptions: string | GetImagesOptions = "",
   page = DEFAULT_CURRENT_PAGE,
   pageSize = DEFAULT_PAGE_SIZE
 ): Promise<GetImagesResponse> => {
-  const like = `%${searchTerm ?? ""}%`;
+  // Support both old signature and new options object
+  const options: GetImagesOptions =
+    typeof searchTermOrOptions === "string"
+      ? { searchTerm: searchTermOrOptions, page, pageSize }
+      : searchTermOrOptions;
+
+  const searchTerm = options.searchTerm ?? "";
+  const currentPage = options.page ?? DEFAULT_CURRENT_PAGE;
+  const currentPageSize = options.pageSize ?? DEFAULT_PAGE_SIZE;
+  const mediaType = options.mediaType ?? "all";
+  const modelFilter = options.model ?? "";
+
+  const like = `%${searchTerm}%`;
+  const modelLike = modelFilter ? `%${modelFilter}%` : "%";
 
   try {
+    const shouldFetchImages = mediaType === "all" || mediaType === "images";
+    const shouldFetchVideos = mediaType === "all" || mediaType === "videos";
+
     // Get total counts for images and videos
     const [imageCountResult, videoCountResult] = await Promise.all([
-      prisma.$queryRaw`
-        SELECT COUNT(*)::int as count
-        FROM "Image" i
-        WHERE i.private = false AND (i.title LIKE ${like} OR i.prompt LIKE ${like} OR i."stylePreset" LIKE ${like})
-      `,
-      prisma.$queryRaw`
-        SELECT COUNT(*)::int as count
-        FROM "Video" v
-        WHERE v.private = false AND v.status = 'complete' AND (v.title LIKE ${like} OR v.prompt LIKE ${like})
-      `,
+      shouldFetchImages
+        ? prisma.$queryRaw`
+            SELECT COUNT(*)::int as count
+            FROM "Image" i
+            WHERE i.private = false
+              AND (i.title LIKE ${like} OR i.prompt LIKE ${like} OR i."stylePreset" LIKE ${like})
+              AND i.model LIKE ${modelLike}
+          `
+        : Promise.resolve([{ count: 0 }]),
+      shouldFetchVideos
+        ? prisma.$queryRaw`
+            SELECT COUNT(*)::int as count
+            FROM "Video" v
+            WHERE v.private = false AND v.status = 'complete'
+              AND (v.title LIKE ${like} OR v.prompt LIKE ${like})
+              AND (v.model LIKE ${modelLike} OR v.model IS NULL)
+          `
+        : Promise.resolve([{ count: 0 }]),
     ]);
 
     const imageCount =
@@ -119,24 +153,32 @@ export const getImages = async (
     const videoCount =
       (videoCountResult as { count: number }[])[0]?.count || 0;
     const totalCount = imageCount + videoCount;
-    const totalPages = Math.ceil(totalCount / pageSize);
-    const hasNextPage = page < totalPages;
-    const hasPrevPage = page > 1;
+    const totalPages = Math.ceil(totalCount / currentPageSize);
+    const hasNextPage = currentPage < totalPages;
+    const hasPrevPage = currentPage > 1;
 
     // Get images and videos
     const [rawImages, rawVideos] = await Promise.all([
-      prisma.$queryRaw`
-        SELECT i.id, i.title, i.prompt, i.model, i."stylePreset", i."userId", i."createdAt"
-        FROM "Image" i
-        WHERE i.private = false AND (i.title LIKE ${like} OR i.prompt LIKE ${like} OR i."stylePreset" LIKE ${like})
-        ORDER BY i."createdAt" DESC
-      `,
-      prisma.$queryRaw`
-        SELECT v.id, v.title, v.prompt, v.model, v."userId", v.duration, v."aspectRatio", v.status, v."createdAt"
-        FROM "Video" v
-        WHERE v.private = false AND v.status = 'complete' AND (v.title LIKE ${like} OR v.prompt LIKE ${like})
-        ORDER BY v."createdAt" DESC
-      `,
+      shouldFetchImages
+        ? prisma.$queryRaw`
+            SELECT i.id, i.title, i.prompt, i.model, i."stylePreset", i."userId", i."createdAt"
+            FROM "Image" i
+            WHERE i.private = false
+              AND (i.title LIKE ${like} OR i.prompt LIKE ${like} OR i."stylePreset" LIKE ${like})
+              AND i.model LIKE ${modelLike}
+            ORDER BY i."createdAt" DESC
+          `
+        : Promise.resolve([]),
+      shouldFetchVideos
+        ? prisma.$queryRaw`
+            SELECT v.id, v.title, v.prompt, v.model, v."userId", v.duration, v."aspectRatio", v.status, v."createdAt"
+            FROM "Video" v
+            WHERE v.private = false AND v.status = 'complete'
+              AND (v.title LIKE ${like} OR v.prompt LIKE ${like})
+              AND (v.model LIKE ${modelLike} OR v.model IS NULL)
+            ORDER BY v."createdAt" DESC
+          `
+        : Promise.resolve([]),
     ]);
 
     const imagesResult = ImagesSearchResultsSchema.safeParse(rawImages);
@@ -151,11 +193,11 @@ export const getImages = async (
         items: [],
         pagination: {
           totalCount: 0,
-          currentPage: page,
+          currentPage,
           totalPages: 0,
           hasNextPage: false,
           hasPrevPage: false,
-          pageSize,
+          pageSize: currentPageSize,
         },
       } as const;
     }
@@ -186,8 +228,8 @@ export const getImages = async (
     );
 
     // Apply pagination to combined results
-    const skip = (page - 1) * pageSize;
-    const paginatedItems = allItems.slice(skip, skip + pageSize);
+    const skip = (currentPage - 1) * currentPageSize;
+    const paginatedItems = allItems.slice(skip, skip + currentPageSize);
 
     // Separate paginated items back into images and videos for backwards compatibility
     const paginatedImages = paginatedItems.filter(
@@ -204,11 +246,11 @@ export const getImages = async (
       items: paginatedItems,
       pagination: {
         totalCount,
-        currentPage: page,
+        currentPage,
         totalPages,
         hasNextPage,
         hasPrevPage,
-        pageSize,
+        pageSize: currentPageSize,
       },
     } as const;
   } catch (error) {
@@ -220,11 +262,11 @@ export const getImages = async (
       items: [],
       pagination: {
         totalCount: 0,
-        currentPage: page,
+        currentPage,
         totalPages: 0,
         hasNextPage: false,
         hasPrevPage: false,
-        pageSize,
+        pageSize: currentPageSize,
       },
     } as const;
   }
