@@ -93,7 +93,7 @@ export function ImagePicker({
     if (open) {
       fetchImages();
     }
-  }, [open, page, debouncedSearch]);
+  }, [open, page, debouncedSearch, fetchImages]);
 
   const handleSelect = (image: UserImage) => {
     onSelect({ id: image.id, url: image.url });
@@ -108,11 +108,6 @@ export function ImagePicker({
   const data = fetcher.data;
   const images = data?.images || [];
   const pagination = data?.pagination;
-
-  // Check if current selected URL matches an image
-  const selectedImage = selectedImageUrl
-    ? images.find((img) => img.url === selectedImageUrl)
-    : null;
 
   return (
     <div className="space-y-2">
