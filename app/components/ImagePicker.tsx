@@ -26,7 +26,7 @@ import {
   ChevronRight,
   X,
 } from "lucide-react";
-import { cn } from "~/utils/cn";
+import { cn } from "@/lib/utils";
 
 interface UserImage {
   id: string;
