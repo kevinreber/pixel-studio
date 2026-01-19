@@ -1,6 +1,10 @@
 import { json, LoaderFunctionArgs } from "@remix-run/node";
 import { requireUserLogin } from "~/services";
 import { prisma } from "~/services/prisma.server";
+import {
+  trackCollection,
+  AnalyticsEvents,
+} from "~/services/analytics.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const user = await requireUserLogin(request);
@@ -49,6 +53,12 @@ export const action = async ({ request }: LoaderFunctionArgs) => {
       title,
       userId: user.id,
     },
+  });
+
+  // Track collection creation
+  trackCollection(user.id, AnalyticsEvents.COLLECTION_CREATED, {
+    collectionId: collection.id,
+    title: collection.title,
   });
 
   return json({ success: true, collection });

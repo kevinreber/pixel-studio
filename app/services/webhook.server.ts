@@ -3,6 +3,10 @@ import { prisma } from "./prisma.server";
 import { Logger } from "~/utils/logger.server";
 import { invalidateCache } from "~/utils/cache.server";
 import { logCreditPurchase } from "./creditTransaction.server";
+import {
+  trackPayment,
+  AnalyticsEvents,
+} from "~/services/analytics.server";
 
 const CHECKOUT_SESSION_COMPLETED = "checkout.session.completed";
 
@@ -92,6 +96,17 @@ const updateUserCredits = async (userId: string, stripeSessionId?: string) => {
       previousBalance: userData.credits - creditsToAdd,
       newBalance: userData.credits,
     },
+  });
+
+  // Track payment completed and credits purchased
+  trackPayment(userId, AnalyticsEvents.PAYMENT_COMPLETED, {
+    credits: creditsToAdd,
+    stripeSessionId: stripeSessionId || "unknown",
+  });
+
+  trackPayment(userId, AnalyticsEvents.CREDITS_PURCHASED, {
+    credits: creditsToAdd,
+    stripeSessionId: stripeSessionId || "unknown",
   });
 
   Logger.info({

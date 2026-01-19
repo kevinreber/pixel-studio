@@ -98,13 +98,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 function Document({
   children,
-}: // env,
-{
+  env,
+}: {
   children: React.ReactNode;
-  // env?: Record<string, string>;
+  env?: Record<string, string | undefined>;
 }) {
   return (
-    <html lang="en" className="dark h-full overflow-x-hidden">
+    <html lang="en" className="dark h-full overflow-x-hidden" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -133,14 +133,15 @@ function Document({
           }}
         />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         {children}
-        {/* <script
-          dangerouslySetInnerHTML={{
-            __html: `window.ENV = ${JSON.stringify(env)}`,
-          }}
-        /> */}
-        {/* <Toaster closeButton position="top-center" /> */}
+        {env && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `window.ENV = ${JSON.stringify(env)}`,
+            }}
+          />
+        )}
         <ScrollRestoration />
         <Scripts />
         <Analytics />
@@ -151,18 +152,13 @@ function Document({
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const loaderData = useLoaderData<typeof loader>();
-  console.log("loaderData in Layout:", loaderData);
   const location = useLocation();
   const isHome = location.pathname === "/";
 
   return (
     <>
-      {/* <Document env={loaderData.ENV}> */}
-      <Document>
+      <Document env={loaderData?.ENV}>
         {!isHome && <NavigationSidebar />} {children}
-        {/* {loaderData && loaderData.toast ? (
-          <ShowToast toast={loaderData.toast} />
-        ) : null} */}
       </Document>
     </>
   );
