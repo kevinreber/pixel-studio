@@ -216,6 +216,8 @@ model ImageLike {
   imageId String
 
   @@id([userId, imageId])
+  @@index([userId])
+  @@index([imageId])
 }
 
 model VideoLike {
@@ -241,6 +243,10 @@ model Comment {
   parentId  String?
   likes     CommentLike[]
   notifications Notification[]
+
+  @@index([userId])
+  @@index([imageId])
+  @@index([parentId])
 }
 
 model VideoComment {
@@ -274,6 +280,8 @@ model CommentLike {
   commentId String
 
   @@id([userId, commentId])
+  @@index([userId])
+  @@index([commentId])
 }
 
 model Collection {

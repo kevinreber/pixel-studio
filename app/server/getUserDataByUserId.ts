@@ -70,23 +70,8 @@ export const getUserDataByUserId = async (
   page = DEFAULT_CURRENT_PAGE,
   pageSize = DEFAULT_PAGE_SIZE
 ) => {
-  // Get counts for images and videos
-  const [imageCount, videoCount] = await Promise.all([
-    prisma.image.count({
-      where: {
-        userId,
-        private: false,
-      },
-    }),
-    prisma.video.count({
-      where: {
-        userId,
-        private: false,
-        status: "complete",
-      },
-    }),
-  ]);
-
+  // If UserA is visiting UserB's profile, we do not want to show UserB's Private images to UserA
+  // Use _count to get total counts in a single query instead of separate count queries
   const userData = await prisma.user.findUnique({
     where: {
       id: userId,
@@ -97,7 +82,12 @@ export const getUserDataByUserId = async (
       username: true,
       image: true,
       createdAt: true,
-
+      _count: {
+        select: {
+          images: { where: { private: false } },
+          videos: { where: { private: false, status: "complete" } },
+        },
+      },
       images: {
         orderBy: {
           createdAt: "desc",
@@ -175,6 +165,9 @@ export const getUserDataByUserId = async (
       },
     },
   });
+
+  const imageCount = userData?._count.images ?? 0;
+  const videoCount = userData?._count.videos ?? 0;
 
   // Format images with URLs and type
   const formattedImages: ProfileImage[] =

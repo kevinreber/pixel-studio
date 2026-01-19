@@ -4,12 +4,6 @@ import { getUserDataByUserId } from "./getUserDataByUserId";
 // Mock Prisma
 vi.mock("~/services/prisma.server", () => ({
   prisma: {
-    image: {
-      count: vi.fn(),
-    },
-    video: {
-      count: vi.fn(),
-    },
     user: {
       findUnique: vi.fn(),
     },
@@ -21,6 +15,9 @@ vi.mock("utils/s3Utils", () => ({
   getS3BucketURL: vi.fn((id: string) => `https://s3.example.com/images/${id}`),
   getS3BucketThumbnailURL: vi.fn(
     (id: string) => `https://s3.example.com/thumbnails/${id}`
+  ),
+  getS3BucketBlurURL: vi.fn(
+    (id: string) => `https://s3.example.com/blur/${id}`
   ),
   getS3VideoURL: vi.fn((id: string) => `https://s3.example.com/videos/${id}`),
   getS3VideoThumbnailURL: vi.fn(
@@ -42,6 +39,7 @@ describe("getUserDataByUserId", () => {
       username: "testuser",
       image: "https://example.com/avatar.jpg",
       createdAt: new Date(),
+      _count: { images: 1, videos: 1 },
       images: [
         {
           id: "img-1",
@@ -80,8 +78,6 @@ describe("getUserDataByUserId", () => {
       ],
     };
 
-    vi.mocked(prisma.image.count).mockResolvedValue(1);
-    vi.mocked(prisma.video.count).mockResolvedValue(1);
     vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never);
 
     const result = await getUserDataByUserId("user-1");
@@ -101,6 +97,7 @@ describe("getUserDataByUserId", () => {
       username: "testuser",
       image: null,
       createdAt: new Date(),
+      _count: { images: 1, videos: 1 },
       images: [
         {
           id: "img-1",
@@ -131,8 +128,6 @@ describe("getUserDataByUserId", () => {
       ],
     };
 
-    vi.mocked(prisma.image.count).mockResolvedValue(1);
-    vi.mocked(prisma.video.count).mockResolvedValue(1);
     vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never);
 
     const result = await getUserDataByUserId("user-1");
@@ -148,6 +143,7 @@ describe("getUserDataByUserId", () => {
       username: "testuser",
       image: null,
       createdAt: new Date(),
+      _count: { images: 1, videos: 1 },
       images: [
         {
           id: "img-old",
@@ -178,8 +174,6 @@ describe("getUserDataByUserId", () => {
       ],
     };
 
-    vi.mocked(prisma.image.count).mockResolvedValue(1);
-    vi.mocked(prisma.video.count).mockResolvedValue(1);
     vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never);
 
     const result = await getUserDataByUserId("user-1");
@@ -199,6 +193,7 @@ describe("getUserDataByUserId", () => {
       username: "testuser",
       image: null,
       createdAt: new Date(),
+      _count: { images: 1, videos: 1 },
       images: [
         {
           id: "img-1",
@@ -229,8 +224,6 @@ describe("getUserDataByUserId", () => {
       ],
     };
 
-    vi.mocked(prisma.image.count).mockResolvedValue(1);
-    vi.mocked(prisma.video.count).mockResolvedValue(1);
     vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never);
 
     const result = await getUserDataByUserId("user-1");
@@ -246,8 +239,6 @@ describe("getUserDataByUserId", () => {
   });
 
   it("should return null user when user not found", async () => {
-    vi.mocked(prisma.image.count).mockResolvedValue(0);
-    vi.mocked(prisma.video.count).mockResolvedValue(0);
     vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
 
     const result = await getUserDataByUserId("non-existent-user");
@@ -265,6 +256,7 @@ describe("getUserDataByUserId", () => {
       username: "testuser",
       image: null,
       createdAt: new Date(),
+      _count: { images: 1, videos: 0 },
       images: [
         {
           id: "img-1",
@@ -282,8 +274,6 @@ describe("getUserDataByUserId", () => {
       videos: [],
     };
 
-    vi.mocked(prisma.image.count).mockResolvedValue(1);
-    vi.mocked(prisma.video.count).mockResolvedValue(0);
     vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never);
 
     const result = await getUserDataByUserId("user-1");
@@ -301,6 +291,7 @@ describe("getUserDataByUserId", () => {
       username: "testuser",
       image: null,
       createdAt: new Date(),
+      _count: { images: 0, videos: 1 },
       images: [],
       videos: [
         {
@@ -318,8 +309,6 @@ describe("getUserDataByUserId", () => {
       ],
     };
 
-    vi.mocked(prisma.image.count).mockResolvedValue(0);
-    vi.mocked(prisma.video.count).mockResolvedValue(1);
     vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never);
 
     const result = await getUserDataByUserId("user-1");
@@ -337,6 +326,7 @@ describe("getUserDataByUserId", () => {
       username: "testuser",
       image: null,
       createdAt: new Date(),
+      _count: { images: 30, videos: 0 },
       images: Array.from({ length: 30 }, (_, i) => ({
         id: `img-${i}`,
         title: `Image ${i}`,
@@ -352,8 +342,6 @@ describe("getUserDataByUserId", () => {
       videos: [],
     };
 
-    vi.mocked(prisma.image.count).mockResolvedValue(30);
-    vi.mocked(prisma.video.count).mockResolvedValue(0);
     vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never);
 
     const result = await getUserDataByUserId("user-1", 1, 10);
@@ -369,6 +357,7 @@ describe("getUserDataByUserId", () => {
       username: "testuser",
       image: null,
       createdAt: new Date(),
+      _count: { images: 0, videos: 1 },
       images: [],
       videos: [
         {
@@ -386,8 +375,6 @@ describe("getUserDataByUserId", () => {
       ],
     };
 
-    vi.mocked(prisma.image.count).mockResolvedValue(0);
-    vi.mocked(prisma.video.count).mockResolvedValue(1);
     vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never);
 
     const result = await getUserDataByUserId("user-1");

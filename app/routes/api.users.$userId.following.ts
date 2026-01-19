@@ -1,5 +1,5 @@
 import { LoaderFunctionArgs } from "@remix-run/node";
-import { getFollowing, isFollowing } from "~/server";
+import { getFollowing, getFollowingSet } from "~/server";
 import { getGoogleSessionAuth } from "~/services";
 import { Logger } from "~/utils/logger.server";
 
@@ -21,15 +21,17 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     const session = await getGoogleSessionAuth(request);
     const currentUserId = session?.id;
 
+    // Batch query to check follow status for all users at once (avoids N+1 queries)
+    const userIds = result.following.map((u) => u.id);
+    const followingSet = currentUserId
+      ? await getFollowingSet(currentUserId, userIds)
+      : new Set<string>();
+
     // Add isFollowedByCurrentUser to each user
-    const followingWithStatus = await Promise.all(
-      result.following.map(async (user) => {
-        const isFollowedByCurrentUser = currentUserId
-          ? await isFollowing({ followerId: currentUserId, followingId: user.id })
-          : false;
-        return { ...user, isFollowedByCurrentUser };
-      })
-    );
+    const followingWithStatus = result.following.map((user) => ({
+      ...user,
+      isFollowedByCurrentUser: followingSet.has(user.id),
+    }));
 
     return Response.json({
       following: followingWithStatus,
