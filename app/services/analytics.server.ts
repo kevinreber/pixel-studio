@@ -9,10 +9,13 @@ function getPostHogClient(): PostHog | null {
   }
 
   if (!posthogClient) {
+    // Use batching in production for better performance
+    const isDevelopment = process.env.NODE_ENV === "development";
     posthogClient = new PostHog(process.env.POSTHOG_API_KEY, {
       host: process.env.POSTHOG_HOST || "https://us.i.posthog.com",
-      flushAt: 1, // Send events immediately in development
-      flushInterval: 0,
+      // In dev: send immediately for debugging. In prod: batch for performance
+      flushAt: isDevelopment ? 1 : 20,
+      flushInterval: isDevelopment ? 0 : 10000, // 10 seconds in production
     });
   }
 
@@ -108,7 +111,8 @@ export interface AuthEventProperties extends BaseEventProperties {
 }
 
 export interface ImageGenerationEventProperties extends BaseEventProperties {
-  prompt?: string;
+  // Note: We intentionally do NOT track the full prompt for privacy reasons
+  // Only track the length to understand usage patterns without storing user content
   promptLength?: number;
   model: string;
   numberOfImages: number;
@@ -121,8 +125,31 @@ export interface ImageGenerationEventProperties extends BaseEventProperties {
 }
 
 export interface VideoGenerationEventProperties extends BaseEventProperties {
-  prompt?: string;
+  // Note: We intentionally do NOT track the full prompt for privacy reasons
   promptLength?: number;
+  model: string;
+  duration?: number;
+  aspectRatio?: string;
+  creditCost: number;
+  sourceImageId?: string;
+  setId?: string;
+}
+
+// Input types that accept prompt (will be converted to promptLength)
+export interface ImageGenerationInput {
+  prompt?: string;
+  model: string;
+  numberOfImages: number;
+  width?: number;
+  height?: number;
+  stylePreset?: string;
+  creditCost: number;
+  isAsync?: boolean;
+  setId?: string;
+}
+
+export interface VideoGenerationInput {
+  prompt?: string;
   model: string;
   duration?: number;
   aspectRatio?: string;
@@ -311,16 +338,40 @@ export function trackUserLogout(userId: string): void {
 }
 
 /**
+ * Strip prompt from properties and convert to promptLength for privacy
+ */
+function sanitizeImageGenerationProps(
+  input: ImageGenerationInput
+): ImageGenerationEventProperties {
+  const { prompt, ...rest } = input;
+  return {
+    ...rest,
+    promptLength: prompt?.length,
+  };
+}
+
+function sanitizeVideoGenerationProps(
+  input: VideoGenerationInput
+): VideoGenerationEventProperties {
+  const { prompt, ...rest } = input;
+  return {
+    ...rest,
+    promptLength: prompt?.length,
+  };
+}
+
+/**
  * Track image generation started
  */
 export function trackImageGenerationStarted(
   userId: string,
-  properties: ImageGenerationEventProperties
+  properties: ImageGenerationInput
 ): void {
-  trackEvent(userId, AnalyticsEvents.IMAGE_GENERATION_STARTED, {
-    ...properties,
-    promptLength: properties.prompt?.length,
-  });
+  trackEvent(
+    userId,
+    AnalyticsEvents.IMAGE_GENERATION_STARTED,
+    sanitizeImageGenerationProps(properties)
+  );
 }
 
 /**
@@ -328,9 +379,13 @@ export function trackImageGenerationStarted(
  */
 export function trackImageGenerationCompleted(
   userId: string,
-  properties: ImageGenerationEventProperties & { generationTimeMs?: number }
+  properties: ImageGenerationInput & { generationTimeMs?: number }
 ): void {
-  trackEvent(userId, AnalyticsEvents.IMAGE_GENERATION_COMPLETED, properties);
+  const { generationTimeMs, ...rest } = properties;
+  trackEvent(userId, AnalyticsEvents.IMAGE_GENERATION_COMPLETED, {
+    ...sanitizeImageGenerationProps(rest),
+    generationTimeMs,
+  } as ImageGenerationEventProperties & { generationTimeMs?: number });
 }
 
 /**
@@ -338,12 +393,20 @@ export function trackImageGenerationCompleted(
  */
 export function trackImageGenerationFailed(
   userId: string,
-  properties: ImageGenerationEventProperties & {
+  properties: ImageGenerationInput & {
     errorMessage?: string;
     errorCode?: string;
   }
 ): void {
-  trackEvent(userId, AnalyticsEvents.IMAGE_GENERATION_FAILED, properties);
+  const { errorMessage, errorCode, ...rest } = properties;
+  trackEvent(userId, AnalyticsEvents.IMAGE_GENERATION_FAILED, {
+    ...sanitizeImageGenerationProps(rest),
+    errorMessage,
+    errorCode,
+  } as ImageGenerationEventProperties & {
+    errorMessage?: string;
+    errorCode?: string;
+  });
 }
 
 /**
@@ -351,12 +414,13 @@ export function trackImageGenerationFailed(
  */
 export function trackVideoGenerationStarted(
   userId: string,
-  properties: VideoGenerationEventProperties
+  properties: VideoGenerationInput
 ): void {
-  trackEvent(userId, AnalyticsEvents.VIDEO_GENERATION_STARTED, {
-    ...properties,
-    promptLength: properties.prompt?.length,
-  });
+  trackEvent(
+    userId,
+    AnalyticsEvents.VIDEO_GENERATION_STARTED,
+    sanitizeVideoGenerationProps(properties)
+  );
 }
 
 /**
@@ -364,9 +428,13 @@ export function trackVideoGenerationStarted(
  */
 export function trackVideoGenerationCompleted(
   userId: string,
-  properties: VideoGenerationEventProperties & { generationTimeMs?: number }
+  properties: VideoGenerationInput & { generationTimeMs?: number }
 ): void {
-  trackEvent(userId, AnalyticsEvents.VIDEO_GENERATION_COMPLETED, properties);
+  const { generationTimeMs, ...rest } = properties;
+  trackEvent(userId, AnalyticsEvents.VIDEO_GENERATION_COMPLETED, {
+    ...sanitizeVideoGenerationProps(rest),
+    generationTimeMs,
+  } as VideoGenerationEventProperties & { generationTimeMs?: number });
 }
 
 /**
@@ -374,12 +442,20 @@ export function trackVideoGenerationCompleted(
  */
 export function trackVideoGenerationFailed(
   userId: string,
-  properties: VideoGenerationEventProperties & {
+  properties: VideoGenerationInput & {
     errorMessage?: string;
     errorCode?: string;
   }
 ): void {
-  trackEvent(userId, AnalyticsEvents.VIDEO_GENERATION_FAILED, properties);
+  const { errorMessage, errorCode, ...rest } = properties;
+  trackEvent(userId, AnalyticsEvents.VIDEO_GENERATION_FAILED, {
+    ...sanitizeVideoGenerationProps(rest),
+    errorMessage,
+    errorCode,
+  } as VideoGenerationEventProperties & {
+    errorMessage?: string;
+    errorCode?: string;
+  });
 }
 
 /**

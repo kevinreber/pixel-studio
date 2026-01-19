@@ -86,59 +86,22 @@ interface UseAnalyticsOptions {
 }
 
 /**
- * Hook for client-side analytics tracking with PostHog
+ * Hook for client-side analytics tracking with PostHog.
+ * Note: PostHog is initialized in entry.client.tsx - this hook uses the existing instance.
  */
 export function useAnalytics(options: UseAnalyticsOptions = {}) {
   const { userId, userProperties } = options;
   const location = useLocation();
-  const isInitialized = useRef(false);
   const previousPath = useRef<string | null>(null);
+  const previousUserId = useRef<string | undefined>(undefined);
 
-  // Initialize PostHog on mount (client-side only)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (isInitialized.current) return;
-
-    const apiKey = (window as unknown as { ENV?: { POSTHOG_API_KEY?: string } })
-      ?.ENV?.POSTHOG_API_KEY;
-    const host =
-      (window as unknown as { ENV?: { POSTHOG_HOST?: string } })?.ENV
-        ?.POSTHOG_HOST || "https://us.i.posthog.com";
-
-    if (!apiKey) {
-      if (process.env.NODE_ENV === "development") {
-        console.log("[Analytics] PostHog not initialized - no API key");
-      }
-      return;
-    }
-
-    try {
-      posthog.init(apiKey, {
-        api_host: host,
-        autocapture: true,
-        capture_pageview: false, // We handle this manually for more control
-        capture_pageleave: true,
-        persistence: "localStorage+cookie",
-        loaded: (posthog) => {
-          if (process.env.NODE_ENV === "development") {
-            console.log("[Analytics] PostHog initialized");
-          }
-          // Identify user if available
-          if (userId) {
-            posthog.identify(userId, userProperties);
-          }
-        },
-      });
-      isInitialized.current = true;
-    } catch (error) {
-      console.error("[Analytics] Failed to initialize PostHog:", error);
-    }
-  }, [userId, userProperties]);
-
-  // Identify user when userId changes
+  // Identify user when userId changes (avoid re-identifying on every render)
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!userId) return;
+    if (previousUserId.current === userId) return;
+
+    previousUserId.current = userId;
 
     try {
       posthog.identify(userId, userProperties);

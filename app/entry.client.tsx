@@ -35,8 +35,8 @@ function initPostHog() {
   if (apiKey) {
     posthog.init(apiKey, {
       api_host: host,
-      autocapture: true,
-      capture_pageview: true,
+      autocapture: false, // Disable to avoid capturing sensitive form data
+      capture_pageview: false, // Manual tracking for more control
       capture_pageleave: true,
       persistence: "localStorage+cookie",
       loaded: () => {
