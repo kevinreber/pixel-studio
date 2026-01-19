@@ -67,6 +67,9 @@ model User {
   comments     Comment[]
   imageLikes   ImageLike[]
   commentLikes CommentLike[]
+  videoLikes   VideoLike[]
+  videoComments VideoComment[]
+  videoCommentLikes VideoCommentLike[]
   collections  Collection[]
   roles        Role[]
   followedBy   Follow[]      @relation("FollowedBy")
@@ -163,6 +166,10 @@ model Video {
   // External provider data
   externalId    String?   // ID from video generation API
 
+  // Social features
+  comments      VideoComment[]
+  likes         VideoLike[]
+
   @@index([userId])
   @@index([setId])
 }
@@ -211,6 +218,15 @@ model ImageLike {
   @@id([userId, imageId])
 }
 
+model VideoLike {
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId  String
+  videoId String
+
+  @@id([userId, videoId])
+}
+
 model Comment {
   id        String        @id @default(cuid())
   message   String
@@ -225,6 +241,30 @@ model Comment {
   parentId  String?
   likes     CommentLike[]
   notifications Notification[]
+}
+
+model VideoComment {
+  id        String             @id @default(cuid())
+  message   String
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  video     Video              @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  videoId   String
+  parent    VideoComment?      @relation("VideoParentChild", fields: [parentId], references: [id], onDelete: Cascade)
+  children  VideoComment[]     @relation("VideoParentChild")
+  parentId  String?
+  likes     VideoCommentLike[]
+}
+
+model VideoCommentLike {
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   VideoComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  commentId String
+
+  @@id([userId, commentId])
 }
 
 model CommentLike {

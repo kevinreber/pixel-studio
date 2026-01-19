@@ -17,10 +17,8 @@ import {
   ImageGridSkeleton,
   PaginationControls,
 } from "~/components";
-import { type GetImagesResponse, type MediaItem } from "~/server/getImages";
+import { type GetImagesResponse } from "~/server/getImages";
 import type { ImageDetail } from "~/server/getImage";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 const LoadingSkeleton = () => {
   return (
@@ -43,10 +41,8 @@ const LoadingSkeleton = () => {
 
 const MediaGrid = ({
   imagesData,
-  onVideoClick,
 }: {
   imagesData: GetImagesResponse | undefined;
-  onVideoClick: (video: MediaItem) => void;
 }) => {
   if (!imagesData) {
     return <ImageGridSkeleton />;
@@ -93,13 +89,7 @@ const MediaGrid = ({
           </li>
         ) : (
           <li key={item.id} className="hover:!opacity-60">
-            <button
-              type="button"
-              className="w-full text-left"
-              onClick={() => onVideoClick(item)}
-            >
-              <VideoCard videoData={item} onClickRedirectTo="#" />
-            </button>
+            <VideoCard videoData={item} />
           </li>
         )
       )}
@@ -113,18 +103,7 @@ const ExplorePageAccessor = () => {
   const [searchParams] = useSearchParams();
   const initialSearchTerm = searchParams.get("q") || "";
   const [searchTerm, setSearchTerm] = React.useState(initialSearchTerm);
-  const [selectedVideo, setSelectedVideo] = React.useState<MediaItem | null>(null);
   const isLoading = navigation.state !== "idle";
-
-  const handleVideoClick = (video: MediaItem) => {
-    if (video.type === "video") {
-      setSelectedVideo(video);
-    }
-  };
-
-  const handleCloseVideo = () => {
-    setSelectedVideo(null);
-  };
 
   return (
     <div className="flex flex-col h-[calc(100vh-6rem)]">
@@ -199,47 +178,10 @@ const ExplorePageAccessor = () => {
           {isLoading ? (
             <ImageGridSkeleton />
           ) : (
-            <MediaGrid imagesData={imagesData} onVideoClick={handleVideoClick} />
+            <MediaGrid imagesData={imagesData} />
           )}
         </div>
       </div>
-
-      {/* Video Modal */}
-      {selectedVideo !== null && selectedVideo.type === "video" && (
-        <Dialog open={true} onOpenChange={handleCloseVideo}>
-          <DialogContent
-            className="w-full md:max-w-[90%] md:h-[90vh] h-[100vh] p-0 gap-0 dark:bg-zinc-900 overflow-hidden z-[100] [&>button]:absolute [&>button]:right-4 [&>button]:top-4 [&>button]:z-10 [&>button_span]:hidden"
-            onInteractOutside={(e) => e.preventDefault()}
-            aria-describedby={undefined}
-          >
-            <VisuallyHidden>
-              <DialogTitle>Video Details</DialogTitle>
-            </VisuallyHidden>
-            <div className="flex flex-col h-full">
-              <div className="flex-1 flex items-center justify-center bg-black">
-{/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                <video
-                  src={selectedVideo.url}
-                  controls
-                  autoPlay
-                  className="max-w-full max-h-full"
-                  poster={selectedVideo.thumbnailURL}
-                >
-                  Your browser does not support the video tag.
-                </video>
-              </div>
-              <div className="p-4 bg-zinc-900">
-                <p className="text-sm text-zinc-300">{selectedVideo.prompt}</p>
-                {selectedVideo.duration && (
-                  <p className="text-xs text-zinc-500 mt-2">
-                    Duration: {Math.floor(selectedVideo.duration / 60)}:{(selectedVideo.duration % 60).toString().padStart(2, "0")}
-                  </p>
-                )}
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
 
       {/* Fixed Pagination at Bottom */}
       {!isLoading && imagesData?.pagination && (
