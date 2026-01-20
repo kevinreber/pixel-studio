@@ -17,7 +17,7 @@ import {
   FollowListModal,
 } from "~/components";
 import type { UserProfilePageLoader } from "~/routes/profile.$userId";
-import { Grid, User, Loader2 } from "lucide-react";
+import { Grid, User, Loader2, Image, Film } from "lucide-react";
 import React from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -62,16 +62,24 @@ const UserDoesNotExist = () => {
             </div>
           </div>
 
-          <Tabs defaultValue="posts" className="mt-4">
+          <Tabs defaultValue="all" className="mt-4">
             <TabsList className="w-full justify-center">
-              <TabsTrigger value="posts" className="flex items-center gap-2">
+              <TabsTrigger value="all" className="flex items-center gap-2">
                 <Grid className="h-4 w-4" />
-                POSTS
+                ALL
+              </TabsTrigger>
+              <TabsTrigger value="images" className="flex items-center gap-2">
+                <Image className="h-4 w-4" />
+                IMAGES
+              </TabsTrigger>
+              <TabsTrigger value="videos" className="flex items-center gap-2">
+                <Film className="h-4 w-4" />
+                VIDEOS
               </TabsTrigger>
             </TabsList>
 
             <div className="mt-4">
-              <TabsContent value="posts">
+              <TabsContent value="all">
                 <div className="text-center py-12">
                   <h2 className="text-lg mb-2">User Does Not Exist</h2>
                 </div>
@@ -91,6 +99,8 @@ interface UserProfileAccessorProps {
   profileUserId: string;
 }
 
+type ContentFilter = "all" | "images" | "videos";
+
 const UserProfileAccessor = ({
   userData: resolvedData,
   followStats,
@@ -107,6 +117,19 @@ const UserProfileAccessor = ({
   const [followListModalOpen, setFollowListModalOpen] = React.useState(false);
   const [followListTab, setFollowListTab] = React.useState<"followers" | "following">("followers");
   const [selectedVideo, setSelectedVideo] = React.useState<ProfileVideo | null>(null);
+  const [contentFilter, setContentFilter] = React.useState<ContentFilter>("all");
+
+  // Filter items based on selected content filter
+  const filteredItems = React.useMemo(() => {
+    if (contentFilter === "all") return userItems;
+    if (contentFilter === "images") return userItems.filter((item) => item.type === "image");
+    if (contentFilter === "videos") return userItems.filter((item) => item.type === "video");
+    return userItems;
+  }, [userItems, contentFilter]);
+
+  // Get counts for each content type
+  const imageCount = userItems.filter((item) => item.type === "image").length;
+  const videoCount = userItems.filter((item) => item.type === "video").length;
 
   if (!userData) return <UserDoesNotExist />;
 
@@ -240,21 +263,39 @@ const UserProfileAccessor = ({
           </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="posts" className="mt-4">
+        {/* Content Filter Tabs */}
+        <Tabs
+          value={contentFilter}
+          onValueChange={(value) => setContentFilter(value as ContentFilter)}
+          className="mt-4"
+        >
           <TabsList className="w-full justify-center">
-            <TabsTrigger value="posts" className="flex items-center gap-2">
+            <TabsTrigger value="all" className="flex items-center gap-2">
               <Grid className="h-4 w-4" />
-              POSTS
+              ALL
+            </TabsTrigger>
+            <TabsTrigger value="images" className="flex items-center gap-2">
+              <Image className="h-4 w-4" />
+              IMAGES
+              {imageCount > 0 && (
+                <span className="text-xs text-zinc-500">({imageCount})</span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="videos" className="flex items-center gap-2">
+              <Film className="h-4 w-4" />
+              VIDEOS
+              {videoCount > 0 && (
+                <span className="text-xs text-zinc-500">({videoCount})</span>
+              )}
             </TabsTrigger>
           </TabsList>
 
-          {/* Scrollable Content */}
+          {/* Content Grid */}
           <div className="mt-4">
-            <TabsContent value="posts">
-              {userItems.length > 0 ? (
+            <TabsContent value={contentFilter} forceMount>
+              {filteredItems.length > 0 ? (
                 <ul className="grid grid-cols-2 md:grid-cols-3 gap-1 md:gap-4 lg:gap-6">
-                  {userItems.map((item) =>
+                  {filteredItems.map((item) =>
                     item.type === "image" ? (
                       <li key={item.id} className="hover:!opacity-60">
                         <ImageCard imageData={item} />
@@ -274,18 +315,54 @@ const UserProfileAccessor = ({
                 </ul>
               ) : (
                 <div className="text-center py-12">
-                  <h2 className="font-semibold text-lg mb-2">No Posts Yet</h2>
-                  <p className="text-zinc-500">
-                    When you create images or videos, they will appear here.
-                  </p>
-                  <Button
-                    className="mt-4 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                    asChild
-                  >
-                    <Link to="/create" prefetch="intent">
-                      Create Your First Image
-                    </Link>
-                  </Button>
+                  {contentFilter === "all" && (
+                    <>
+                      <h2 className="font-semibold text-lg mb-2">No Posts Yet</h2>
+                      <p className="text-zinc-500">
+                        When you create images or videos, they will appear here.
+                      </p>
+                      <Button
+                        className="mt-4 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                        asChild
+                      >
+                        <Link to="/create" prefetch="intent">
+                          Create Your First Image
+                        </Link>
+                      </Button>
+                    </>
+                  )}
+                  {contentFilter === "images" && (
+                    <>
+                      <h2 className="font-semibold text-lg mb-2">No Images Yet</h2>
+                      <p className="text-zinc-500">
+                        When you create images, they will appear here.
+                      </p>
+                      <Button
+                        className="mt-4 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                        asChild
+                      >
+                        <Link to="/create" prefetch="intent">
+                          Create Your First Image
+                        </Link>
+                      </Button>
+                    </>
+                  )}
+                  {contentFilter === "videos" && (
+                    <>
+                      <h2 className="font-semibold text-lg mb-2">No Videos Yet</h2>
+                      <p className="text-zinc-500">
+                        When you create videos, they will appear here.
+                      </p>
+                      <Button
+                        className="mt-4 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                        asChild
+                      >
+                        <Link to="/create-video" prefetch="intent">
+                          Create Your First Video
+                        </Link>
+                      </Button>
+                    </>
+                  )}
                 </div>
               )}
             </TabsContent>
