@@ -116,6 +116,15 @@ export const AchievementBadge = ({
   const isLocked = !achievement.isUnlocked;
   const isSecret = achievement.isSecret && isLocked;
 
+  // Generate accessible label for screen readers
+  const ariaLabel = isSecret
+    ? "Secret achievement - complete to reveal"
+    : `${achievement.name} - ${achievement.tier} tier - ${
+        isLocked
+          ? `locked, ${achievement.progress} of ${achievement.requirement} progress`
+          : "unlocked"
+      }`;
+
   return (
     <div
       className={cn(
@@ -127,6 +136,7 @@ export const AchievementBadge = ({
       onKeyDown={onClick ? (e) => e.key === "Enter" && onClick() : undefined}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
+      aria-label={ariaLabel}
     >
       {/* Badge icon */}
       <div
@@ -151,7 +161,10 @@ export const AchievementBadge = ({
 
         {/* Unlocked checkmark */}
         {achievement.isUnlocked && (
-          <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5">
+          <div
+            className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5"
+            aria-hidden="true"
+          >
             <svg
               className="h-3 w-3 text-white"
               fill="none"

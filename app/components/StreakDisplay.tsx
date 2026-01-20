@@ -39,6 +39,8 @@ export const StreakDisplay = ({
 
   const [showCelebration, setShowCelebration] = React.useState(false);
   const [lastClaimResult, setLastClaimResult] = React.useState<ClaimResult | null>(null);
+  const [claimError, setClaimError] = React.useState<string | null>(null);
+  const [processedClaimId, setProcessedClaimId] = React.useState<number>(0);
 
   // Load initial data on mount
   React.useEffect(() => {
@@ -48,16 +50,26 @@ export const StreakDisplay = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData]);
 
-  // Handle claim result
+  // Handle claim result - track processed state to prevent refetch loops
   React.useEffect(() => {
+    // Generate a unique ID for this claim result to track if we've processed it
+    const claimId = claimFetcher.data ? Date.now() : 0;
+    if (claimId === 0 || claimId === processedClaimId) return;
+
+    setProcessedClaimId(claimId);
+    setClaimError(null);
+
     if (claimFetcher.data?.success && claimFetcher.data.data?.isNewDay) {
       setLastClaimResult(claimFetcher.data.data);
       setShowCelebration(true);
-      // Refresh streak data
+      // Refresh streak data only once on successful claim
       fetcher.load("/api/streaks");
       // Hide celebration after 3 seconds
       const timer = setTimeout(() => setShowCelebration(false), 3000);
       return () => clearTimeout(timer);
+    } else if (claimFetcher.data && !claimFetcher.data.success) {
+      // Handle claim failure
+      setClaimError(claimFetcher.data.data?.message || "Failed to claim bonus");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [claimFetcher.data]);
@@ -68,6 +80,7 @@ export const StreakDisplay = ({
   const hasError = fetcher.data && !fetcher.data.success;
 
   const handleClaimBonus = () => {
+    setClaimError(null);
     claimFetcher.submit(
       {},
       { method: "POST", action: "/api/streaks" }
@@ -197,18 +210,23 @@ export const StreakDisplay = ({
 
       {/* Claim button */}
       {data.canClaimDailyBonus ? (
-        <Button
-          onClick={handleClaimBonus}
-          disabled={isClaiming}
-          className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold"
-        >
-          {isClaiming ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <Gift className="h-4 w-4 mr-2" />
+        <div className="space-y-2">
+          <Button
+            onClick={handleClaimBonus}
+            disabled={isClaiming}
+            className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold"
+          >
+            {isClaiming ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Gift className="h-4 w-4 mr-2" />
+            )}
+            Claim Daily Bonus
+          </Button>
+          {claimError && (
+            <p className="text-xs text-red-400 text-center">{claimError}</p>
           )}
-          Claim Daily Bonus
-        </Button>
+        </div>
       ) : (
         <div className="text-center text-sm text-zinc-500 py-2">
           Come back tomorrow for your next bonus!

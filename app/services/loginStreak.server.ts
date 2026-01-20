@@ -19,6 +19,16 @@
  * - 14-day streak: +3 bonus credits
  * - 30-day streak: +5 bonus credits
  *
+ * TIMEZONE BEHAVIOR:
+ * All date calculations use UTC to ensure consistent behavior across all users
+ * regardless of their local timezone. This means:
+ * - A "day" resets at midnight UTC (00:00 UTC)
+ * - Users in different timezones will see the same reset time (midnight UTC)
+ * - Example: A user in PST (UTC-8) can claim their daily bonus after 4:00 PM PST
+ *
+ * This approach ensures fairness and prevents timezone manipulation, though
+ * users may experience the "new day" at different local times.
+ *
  * =============================================================================
  */
 

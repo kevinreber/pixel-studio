@@ -23,6 +23,7 @@
 
 import { prisma } from "~/services/prisma.server";
 import { logBonusCredits } from "~/services/creditTransaction.server";
+import { Logger } from "~/utils/logger.server";
 
 // Achievement definitions - these will be seeded to the database
 export const ACHIEVEMENT_DEFINITIONS = [
@@ -464,14 +465,23 @@ export async function checkAndUnlockAchievements(
   });
 
   for (const achievement of unlockedAchievements) {
-    const currentProgress = getProgressForAchievement(achievement, progress);
+    try {
+      const currentProgress = getProgressForAchievement(achievement, progress);
 
-    if (currentProgress >= achievement.requirement) {
-      // Unlock the achievement
-      const result = await unlockAchievement(userId, achievement.code);
-      if (result.success) {
-        results.push(result);
+      if (currentProgress >= achievement.requirement) {
+        // Unlock the achievement
+        const result = await unlockAchievement(userId, achievement.code);
+        if (result.success) {
+          results.push(result);
+        }
       }
+    } catch (error) {
+      // Log the error but continue processing other achievements
+      Logger.error("Failed to process achievement unlock", {
+        userId,
+        achievementCode: achievement.code,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
