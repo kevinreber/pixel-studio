@@ -63,16 +63,25 @@ const UserDoesNotExist = () => {
           </div>
 
           <Tabs defaultValue="all" className="mt-4">
-            <TabsList className="w-full justify-center">
-              <TabsTrigger value="all" className="flex items-center gap-2">
+            <TabsList className="w-full justify-center bg-transparent border-b border-zinc-200 dark:border-zinc-800 rounded-none p-0">
+              <TabsTrigger
+                value="all"
+                className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
+              >
                 <Grid className="h-4 w-4" />
                 ALL
               </TabsTrigger>
-              <TabsTrigger value="images" className="flex items-center gap-2">
+              <TabsTrigger
+                value="images"
+                className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
+              >
                 <Image className="h-4 w-4" />
                 IMAGES
               </TabsTrigger>
-              <TabsTrigger value="videos" className="flex items-center gap-2">
+              <TabsTrigger
+                value="videos"
+                className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
+              >
                 <Film className="h-4 w-4" />
                 VIDEOS
               </TabsTrigger>
@@ -267,19 +276,28 @@ const UserProfileAccessor = ({
           onValueChange={(value) => setContentFilter(value as ContentFilter)}
           className="mt-4"
         >
-          <TabsList className="w-full justify-center">
-            <TabsTrigger value="all" className="flex items-center gap-2">
+          <TabsList className="w-full justify-center bg-transparent border-b border-zinc-200 dark:border-zinc-800 rounded-none p-0">
+            <TabsTrigger
+              value="all"
+              className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
+            >
               <Grid className="h-4 w-4" />
               ALL
             </TabsTrigger>
-            <TabsTrigger value="images" className="flex items-center gap-2">
+            <TabsTrigger
+              value="images"
+              className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
+            >
               <Image className="h-4 w-4" />
               IMAGES
               {imageCount > 0 && (
                 <span className="text-xs text-zinc-500">({imageCount})</span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="videos" className="flex items-center gap-2">
+            <TabsTrigger
+              value="videos"
+              className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
+            >
               <Film className="h-4 w-4" />
               VIDEOS
               {videoCount > 0 && (
