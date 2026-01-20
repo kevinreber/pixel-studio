@@ -1,13 +1,15 @@
-import { test, expect } from "@playwright/test";
+import { describe, test, expect } from "vitest";
 
 /**
- * E2E tests for Duration-Based Video Pricing feature.
+ * Unit tests for Duration-Based Video Pricing feature.
  *
  * These tests verify that:
  * 1. Video credit costs are calculated based on duration
- * 2. UI displays dynamic pricing formula (base + per-second)
- * 3. Total cost updates when duration is changed
- * 4. Model cards show pricing in correct format
+ * 2. Pricing format strings are correctly structured
+ * 3. Duration options are filtered by model constraints
+ * 4. Edge cases are handled gracefully
+ *
+ * Moved from Playwright E2E tests to Vitest for faster execution.
  */
 
 // Video model pricing configuration (mirrors app/config/pricing.ts)
@@ -53,7 +55,7 @@ function calculateExpectedCost(modelValue: string, duration: number): number {
   return pricing.baseCost + clampedDuration * pricing.perSecondCost;
 }
 
-test.describe("Video Pricing - Credit Calculation Logic", () => {
+describe("Video Pricing - Credit Calculation Logic", () => {
   test("calculates correct cost for runway-gen4-turbo at various durations", () => {
     const model = "runway-gen4-turbo";
 
@@ -107,7 +109,7 @@ test.describe("Video Pricing - Credit Calculation Logic", () => {
   });
 });
 
-test.describe("Video Pricing - Margin Analysis", () => {
+describe("Video Pricing - Margin Analysis", () => {
   // Runway charges 5 API credits/second at $0.01/credit = $0.05/second
   const RUNWAY_API_COST_PER_SECOND = 0.05;
   // Blended average revenue per Pixel Studio credit
@@ -149,17 +151,7 @@ test.describe("Video Pricing - Margin Analysis", () => {
   });
 });
 
-test.describe("Video Pricing - Page Access", () => {
-  test.skip("create-video page redirects to login when unauthenticated", async ({
-    page,
-  }) => {
-    // Skip: Requires browser - run manually with `npx playwright install`
-    await page.goto("/create-video");
-    await expect(page).toHaveURL(/login/);
-  });
-});
-
-test.describe("Video Pricing - Pricing Format Display", () => {
+describe("Video Pricing - Pricing Format Display", () => {
   test("pricing format string is correctly structured", () => {
     // Test the format: "{base}+{perSecond}/s"
     const model = VIDEO_MODEL_PRICING["runway-gen4-turbo"];
@@ -176,7 +168,7 @@ test.describe("Video Pricing - Pricing Format Display", () => {
   });
 });
 
-test.describe("Video Pricing - Duration Options", () => {
+describe("Video Pricing - Duration Options", () => {
   const DURATION_OPTIONS = [
     { value: 4, label: "4 seconds" },
     { value: 6, label: "6 seconds" },
@@ -214,7 +206,7 @@ test.describe("Video Pricing - Duration Options", () => {
   });
 });
 
-test.describe("Video Pricing - Model Cards Display", () => {
+describe("Video Pricing - Model Cards Display", () => {
   test("each model has correct pricing properties", () => {
     // Verify all models have required pricing fields
     Object.values(VIDEO_MODEL_PRICING).forEach((pricing) => {
@@ -232,7 +224,7 @@ test.describe("Video Pricing - Model Cards Display", () => {
   });
 });
 
-test.describe("Video Pricing - Edge Cases", () => {
+describe("Video Pricing - Edge Cases", () => {
   test("handles unknown model gracefully", () => {
     // Unknown model should return 0 (our helper function behavior)
     const cost = calculateExpectedCost("unknown-model", 5);
@@ -252,7 +244,7 @@ test.describe("Video Pricing - Edge Cases", () => {
   });
 });
 
-test.describe("Video Pricing - Backwards Compatibility", () => {
+describe("Video Pricing - Backwards Compatibility", () => {
   test("legacy creditCost field is still present", () => {
     // Models should have a legacy creditCost for backwards compatibility
     // This is calculated as baseCost + (defaultDuration × perSecondCost)
@@ -262,7 +254,7 @@ test.describe("Video Pricing - Backwards Compatibility", () => {
   });
 });
 
-test.describe("Video Pricing - API Integration", () => {
+describe("Video Pricing - API Integration", () => {
   test("form data includes duration parameter", () => {
     // Verify form data structure includes duration
     const expectedFields = ["prompt", "model", "duration", "aspectRatio"];
@@ -276,7 +268,7 @@ test.describe("Video Pricing - API Integration", () => {
   });
 });
 
-test.describe("Video Pricing - Comparison with Old Pricing", () => {
+describe("Video Pricing - Comparison with Old Pricing", () => {
   // Old flat pricing (before this feature)
   const OLD_PRICING = {
     "runway-gen4-turbo": 10,
