@@ -10,21 +10,29 @@ import { RemixBrowser, useLocation, useMatches } from "@remix-run/react";
 import { startTransition, StrictMode, useEffect } from "react";
 import { hydrateRoot } from "react-dom/client";
 
-// Initialize Sentry
-Sentry.init({
-  dsn: "https://cd7847ec1fa0966145399ddcd6a5a6f4@o4506551058759680.ingest.us.sentry.io/4507813698666496",
-  tracesSampleRate: 1,
-  replaysSessionSampleRate: 0.1,
-  replaysOnErrorSampleRate: 1,
+// Only initialize Sentry in production to avoid sending local dev errors
+const isProduction = process.env.NODE_ENV === "production";
 
-  integrations: [
-    Sentry.browserTracingIntegration({
-      useEffect,
-      useLocation,
-      useMatches,
-    }),
-  ],
-});
+if (isProduction) {
+  const sentryDsn =
+    (window as unknown as { ENV?: Record<string, string> }).ENV?.SENTRY_DSN ||
+    "https://cd7847ec1fa0966145399ddcd6a5a6f4@o4506551058759680.ingest.us.sentry.io/4507813698666496";
+
+  Sentry.init({
+    dsn: sentryDsn,
+    tracesSampleRate: 1,
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1,
+
+    integrations: [
+      Sentry.browserTracingIntegration({
+        useEffect,
+        useLocation,
+        useMatches,
+      }),
+    ],
+  });
+}
 
 // Initialize PostHog after DOM is ready
 function initPostHog() {
