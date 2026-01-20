@@ -25,7 +25,7 @@
  */
 
 import { prisma } from "~/services/prisma.server";
-import { deleteImageFromDB, deleteImageFromS3Bucket } from "~/server/deleteImage";
+import { deleteImageFromS3Bucket } from "~/server/deleteImage";
 
 export interface DeleteImageWithAuditParams {
   imageId: string;
@@ -42,7 +42,11 @@ export interface DeleteImageResult {
 
 /**
  * Delete an image with full audit trail
- * Creates an audit log entry before deletion, preserving all image metadata
+ * Creates an audit log entry and deletes the image in a single transaction
+ * to prevent orphaned audit logs if deletion fails.
+ *
+ * Note: S3 deletion is handled separately - if it fails, the DB deletion
+ * is still committed but the error is logged for manual cleanup.
  */
 export async function deleteImageWithAudit(
   params: DeleteImageWithAuditParams
@@ -71,49 +75,65 @@ export async function deleteImageWithAudit(
       };
     }
 
-    // Create the audit log entry with all original image data
-    const deletionLog = await prisma.imageDeletionLog.create({
-      data: {
-        imageId: image.id,
-        imageTitle: image.title,
-        imagePrompt: image.prompt,
-        imageModel: image.model,
-        imageUserId: image.userId,
-        imageCreatedAt: image.createdAt,
-        deletedBy,
-        reason,
-        metadata: {
-          // Preserve all generation parameters
-          width: image.width,
-          height: image.height,
-          quality: image.quality,
-          generationStyle: image.generationStyle,
-          negativePrompt: image.negativePrompt,
-          seed: image.seed,
-          cfgScale: image.cfgScale,
-          steps: image.steps,
-          promptUpsampling: image.promptUpsampling,
-          stylePreset: image.stylePreset,
-          private: image.private,
-          setId: image.setId,
-          // Owner info for reference
-          ownerUsername: image.user.username,
-          ownerEmail: image.user.email,
+    // Use a transaction to ensure audit log and deletion happen atomically
+    // If either fails, both are rolled back
+    const deletionLog = await prisma.$transaction(async (tx) => {
+      // Create the audit log entry with all original image data
+      const log = await tx.imageDeletionLog.create({
+        data: {
+          imageId: image.id,
+          imageTitle: image.title,
+          imagePrompt: image.prompt,
+          imageModel: image.model,
+          imageUserId: image.userId,
+          imageCreatedAt: image.createdAt,
+          deletedBy,
+          reason,
+          metadata: {
+            // Preserve all generation parameters
+            width: image.width,
+            height: image.height,
+            quality: image.quality,
+            generationStyle: image.generationStyle,
+            negativePrompt: image.negativePrompt,
+            seed: image.seed,
+            cfgScale: image.cfgScale,
+            steps: image.steps,
+            promptUpsampling: image.promptUpsampling,
+            stylePreset: image.stylePreset,
+            private: image.private,
+            setId: image.setId,
+            // Owner info for reference
+            ownerUsername: image.user.username,
+            ownerEmail: image.user.email,
+          },
         },
-      },
+      });
+
+      // Delete the image from DB within the same transaction
+      await tx.image.delete({
+        where: { id: imageId },
+      });
+
+      return log;
     });
 
     console.log(
-      `[ImageDeletionLog] Created audit log ${deletionLog.id} for image ${imageId}`
+      `[ImageDeletionLog] Created audit log ${deletionLog.id} and deleted image ${imageId} from database`
     );
 
-    // Now delete the image from DB
-    await deleteImageFromDB(imageId);
-    console.log(`[ImageDeletionLog] Deleted image ${imageId} from database`);
-
-    // Delete from S3
-    await deleteImageFromS3Bucket(imageId);
-    console.log(`[ImageDeletionLog] Deleted image ${imageId} from S3`);
+    // Delete from S3 (outside transaction - S3 failures shouldn't roll back DB)
+    try {
+      await deleteImageFromS3Bucket(imageId);
+      console.log(`[ImageDeletionLog] Deleted image ${imageId} from S3`);
+    } catch (s3Error) {
+      // Log S3 error but don't fail the operation - DB deletion succeeded
+      // This allows for manual S3 cleanup if needed
+      console.error(
+        `[ImageDeletionLog] Warning: Failed to delete image ${imageId} from S3:`,
+        s3Error
+      );
+    }
 
     return {
       success: true,

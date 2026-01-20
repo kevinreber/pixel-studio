@@ -1,8 +1,12 @@
 import { ActionFunctionArgs, json } from "@remix-run/node";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { requireUserLogin } from "~/services";
 import { canDeleteAnyImage, getUserWithRoles } from "~/server/isAdmin.server";
 import { deleteImageWithAudit } from "~/services/imageDeletionLog.server";
+
+// CUID format validation regex
+const CUID_REGEX = /^c[^\s-]{24,}$/;
 
 const DeleteImageSchema = z.object({
   reason: z.string().optional(),
@@ -19,8 +23,12 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
   const imageId = params.imageId;
 
-  if (!imageId) {
-    return json({ error: "Image ID is required" }, { status: 400 });
+  // Validate imageId exists and is valid CUID format
+  if (!imageId || !CUID_REGEX.test(imageId)) {
+    return json(
+      { error: "Invalid image ID format" },
+      { status: 400 }
+    );
   }
 
   // Fetch user with roles to check permissions
@@ -77,6 +85,16 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
         if (error instanceof z.ZodError) {
           return json({ error: "Invalid request data" }, { status: 400 });
+        }
+
+        // Handle Prisma-specific errors
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === "P2025") {
+            return json({ error: "Image not found" }, { status: 404 });
+          }
+          if (error.code === "P2003") {
+            return json({ error: "Cannot delete: image has dependencies" }, { status: 409 });
+          }
         }
 
         return json(

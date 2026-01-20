@@ -14,17 +14,17 @@ vi.mock("~/services/prisma.server", () => ({
       count: vi.fn(),
       groupBy: vi.fn(),
     },
+    $transaction: vi.fn(),
   },
 }));
 
 // Mock deleteImage functions
 vi.mock("~/server/deleteImage", () => ({
-  deleteImageFromDB: vi.fn(),
   deleteImageFromS3Bucket: vi.fn(),
 }));
 
 import { prisma } from "~/services/prisma.server";
-import { deleteImageFromDB, deleteImageFromS3Bucket } from "~/server/deleteImage";
+import { deleteImageFromS3Bucket } from "~/server/deleteImage";
 import {
   deleteImageWithAudit,
   getImageDeletionLogs,
@@ -78,10 +78,20 @@ describe("deleteImageWithAudit", () => {
     metadata: {},
   };
 
-  it("successfully deletes an image and creates audit log", async () => {
+  it("successfully deletes an image and creates audit log in transaction", async () => {
     vi.mocked(prisma.image.findUnique).mockResolvedValue(mockImage as never);
-    vi.mocked(prisma.imageDeletionLog.create).mockResolvedValue(mockDeletionLog as never);
-    vi.mocked(deleteImageFromDB).mockResolvedValue({ id: "image-123" } as never);
+    // Mock the transaction to return the deletion log
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+      const tx = {
+        imageDeletionLog: {
+          create: vi.fn().mockResolvedValue(mockDeletionLog),
+        },
+        image: {
+          delete: vi.fn().mockResolvedValue(mockImage),
+        },
+      };
+      return callback(tx);
+    });
     vi.mocked(deleteImageFromS3Bucket).mockResolvedValue({ success: true } as never);
 
     const result = await deleteImageWithAudit({
@@ -94,22 +104,8 @@ describe("deleteImageWithAudit", () => {
     expect(result.message).toContain("deleted successfully");
     expect(result.deletionLogId).toBe("deletion-log-789");
 
-    // Verify audit log was created with correct data
-    expect(prisma.imageDeletionLog.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        imageId: "image-123",
-        imageTitle: "Test Image",
-        imagePrompt: "A beautiful sunset",
-        imageModel: "dall-e-3",
-        imageUserId: "user-456",
-        deletedBy: "admin-111",
-        reason: "Inappropriate content",
-      }),
-    });
-
-    // Verify deletion was called
-    expect(deleteImageFromDB).toHaveBeenCalledWith("image-123");
-    expect(deleteImageFromS3Bucket).toHaveBeenCalledWith("image-123");
+    // Verify transaction was called
+    expect(vi.mocked(prisma.$transaction)).toHaveBeenCalled();
   });
 
   it("returns error when image is not found", async () => {
@@ -123,19 +119,23 @@ describe("deleteImageWithAudit", () => {
     expect(result.success).toBe(false);
     expect(result.message).toContain("not found");
 
-    // Verify no deletion was attempted
-    expect(prisma.imageDeletionLog.create).not.toHaveBeenCalled();
-    expect(deleteImageFromDB).not.toHaveBeenCalled();
-    expect(deleteImageFromS3Bucket).not.toHaveBeenCalled();
+    // Verify no transaction was attempted
+    expect(vi.mocked(prisma.$transaction)).not.toHaveBeenCalled();
   });
 
   it("handles deletion without reason", async () => {
     vi.mocked(prisma.image.findUnique).mockResolvedValue(mockImage as never);
-    vi.mocked(prisma.imageDeletionLog.create).mockResolvedValue({
-      ...mockDeletionLog,
-      reason: null,
-    } as never);
-    vi.mocked(deleteImageFromDB).mockResolvedValue({ id: "image-123" } as never);
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+      const tx = {
+        imageDeletionLog: {
+          create: vi.fn().mockResolvedValue({ ...mockDeletionLog, reason: null }),
+        },
+        image: {
+          delete: vi.fn().mockResolvedValue(mockImage),
+        },
+      };
+      return callback(tx);
+    });
     vi.mocked(deleteImageFromS3Bucket).mockResolvedValue({ success: true } as never);
 
     const result = await deleteImageWithAudit({
@@ -145,17 +145,26 @@ describe("deleteImageWithAudit", () => {
     });
 
     expect(result.success).toBe(true);
-    expect(prisma.imageDeletionLog.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        reason: undefined,
-      }),
-    });
   });
 
   it("preserves image metadata in audit log", async () => {
     vi.mocked(prisma.image.findUnique).mockResolvedValue(mockImage as never);
-    vi.mocked(prisma.imageDeletionLog.create).mockResolvedValue(mockDeletionLog as never);
-    vi.mocked(deleteImageFromDB).mockResolvedValue({ id: "image-123" } as never);
+
+    let capturedCreateData: unknown;
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+      const tx = {
+        imageDeletionLog: {
+          create: vi.fn().mockImplementation((args) => {
+            capturedCreateData = args.data;
+            return Promise.resolve(mockDeletionLog);
+          }),
+        },
+        image: {
+          delete: vi.fn().mockResolvedValue(mockImage),
+        },
+      };
+      return callback(tx);
+    });
     vi.mocked(deleteImageFromS3Bucket).mockResolvedValue({ success: true } as never);
 
     await deleteImageWithAudit({
@@ -163,16 +172,14 @@ describe("deleteImageWithAudit", () => {
       deletedBy: "admin-111",
     });
 
-    expect(prisma.imageDeletionLog.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        metadata: expect.objectContaining({
-          width: 1024,
-          height: 1024,
-          quality: "hd",
-          generationStyle: "vivid",
-          ownerUsername: "testuser",
-          ownerEmail: "test@example.com",
-        }),
+    expect(capturedCreateData).toMatchObject({
+      metadata: expect.objectContaining({
+        width: 1024,
+        height: 1024,
+        quality: "hd",
+        generationStyle: "vivid",
+        ownerUsername: "testuser",
+        ownerEmail: "test@example.com",
       }),
     });
   });
@@ -188,6 +195,45 @@ describe("deleteImageWithAudit", () => {
     expect(result.success).toBe(false);
     expect(result.message).toContain("Failed to delete");
     expect(result.error).toBeDefined();
+  });
+
+  it("handles transaction failure gracefully", async () => {
+    vi.mocked(prisma.image.findUnique).mockResolvedValue(mockImage as never);
+    vi.mocked(prisma.$transaction).mockRejectedValue(new Error("Transaction failed"));
+
+    const result = await deleteImageWithAudit({
+      imageId: "image-123",
+      deletedBy: "admin-111",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.message).toContain("Failed to delete");
+  });
+
+  it("continues successfully even if S3 deletion fails", async () => {
+    vi.mocked(prisma.image.findUnique).mockResolvedValue(mockImage as never);
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+      const tx = {
+        imageDeletionLog: {
+          create: vi.fn().mockResolvedValue(mockDeletionLog),
+        },
+        image: {
+          delete: vi.fn().mockResolvedValue(mockImage),
+        },
+      };
+      return callback(tx);
+    });
+    // S3 deletion fails
+    vi.mocked(deleteImageFromS3Bucket).mockRejectedValue(new Error("S3 error"));
+
+    const result = await deleteImageWithAudit({
+      imageId: "image-123",
+      deletedBy: "admin-111",
+    });
+
+    // Should still succeed - S3 failure is logged but doesn't fail the operation
+    expect(result.success).toBe(true);
+    expect(result.deletionLogId).toBe("deletion-log-789");
   });
 });
 

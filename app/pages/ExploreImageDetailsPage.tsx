@@ -38,6 +38,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { isUserAdmin, type UserWithRoles } from "~/utils/isAdmin";
 
 interface ExploreImageDetailsPageProps {
   onClose: () => void;
@@ -105,16 +106,6 @@ export type AsyncImageData = Awaited<
   Awaited<ReturnType<ExplorePageImageLoader>>["data"]
 >;
 export type ImageUserData = NonNullable<AsyncImageData["user"]>;
-
-// Helper to check if user has admin role
-interface UserWithRoles {
-  roles?: Array<{ name: string }>;
-}
-
-function isUserAdmin(user: UserWithRoles | null | undefined): boolean {
-  if (!user?.roles) return false;
-  return user.roles.some((role) => role.name.toLowerCase() === "admin");
-}
 
 const ExploreImageDetailsPageAccessor = ({
   onClose,

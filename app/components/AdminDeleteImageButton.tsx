@@ -22,11 +22,11 @@ interface AdminDeleteImageButtonProps {
   onDeleted?: () => void;
 }
 
-interface DeleteResponse {
-  success?: boolean;
-  error?: string;
-  message?: string;
-}
+// Discriminated union for type-safe response handling
+type DeleteResponse =
+  | { success: true; message: string; deletionLogId: string }
+  | { success: false; error: string }
+  | { error: string }; // For non-success responses without success field
 
 export function AdminDeleteImageButton({
   imageId,
@@ -40,12 +40,14 @@ export function AdminDeleteImageButton({
   const isDeleting = fetcher.state !== "idle";
 
   React.useEffect(() => {
-    if (fetcher.data?.success) {
+    if (!fetcher.data) return;
+
+    if ("success" in fetcher.data && fetcher.data.success === true) {
       toast.success("Image deleted successfully");
       setOpen(false);
       setReason("");
       onDeleted?.();
-    } else if (fetcher.data?.error) {
+    } else if ("error" in fetcher.data) {
       toast.error(fetcher.data.error);
     }
   }, [fetcher.data, onDeleted]);
