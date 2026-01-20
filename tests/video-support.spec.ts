@@ -4,11 +4,14 @@ import type { Page } from "@playwright/test";
 /**
  * E2E tests for the Video Support feature on Feed, Explore, and Profile pages.
  *
- * These tests verify that:
- * 1. Video content is displayed alongside images
- * 2. Video cards show play button overlay and duration
- * 3. Video modal opens and plays video when clicked
- * 4. Pages handle mixed content (images + videos) correctly
+ * These tests verify browser-specific behavior:
+ * 1. Page routing and authentication redirects
+ * 2. API endpoint responses
+ * 3. App loading without console errors
+ * 4. Mock data integration
+ *
+ * Pure unit tests (duration formatting, type discrimination, sorting)
+ * have been moved to app/utils/video-support.test.ts for faster execution.
  */
 
 // Mock data for videos
@@ -172,16 +175,6 @@ test.describe("Video Support - Page Routes", () => {
   });
 });
 
-test.describe("Video Support - Explore Page Meta", () => {
-  test("Explore page has updated title mentioning videos", async ({ page }) => {
-    // Navigate to explore (will redirect to login)
-    await page.goto("/explore");
-
-    // After redirect, check we're on login page
-    await expect(page).toHaveURL(/login/);
-  });
-});
-
 test.describe("Video Support - API Responses", () => {
   test("Feed API endpoint exists and responds", async ({ request }) => {
     const response = await request.get("/feed");
@@ -199,22 +192,9 @@ test.describe("Video Support - API Responses", () => {
   });
 });
 
-test.describe("Video Support - Component Structure", () => {
-  test("VideoCard component is exported from components", async ({ page }) => {
-    await page.goto("/");
-
-    // Verify the app loads correctly (VideoCard is part of the bundle)
-    const appLoaded = await page.evaluate(() => {
-      return document.body !== null;
-    });
-
-    expect(appLoaded).toBeTruthy();
-  });
-
-  test("App loads with video support infrastructure", async ({ page }) => {
-    await page.goto("/");
-
-    // Check that the app loads without errors
+test.describe("Video Support - App Loading", () => {
+  test("App loads without critical errors", async ({ page }) => {
+    // Set up console error listener before navigation
     const consoleErrors: string[] = [];
     page.on("console", (msg) => {
       if (msg.type() === "error") {
@@ -222,12 +202,17 @@ test.describe("Video Support - Component Structure", () => {
       }
     });
 
-    // Wait a bit for any errors to appear
-    await page.waitForTimeout(1000);
+    await page.goto("/");
+
+    // Wait for page to be fully loaded
+    await page.waitForLoadState("networkidle");
 
     // Filter out expected errors (like network requests to protected routes)
     const unexpectedErrors = consoleErrors.filter(
-      (err) => !err.includes("401") && !err.includes("403") && !err.includes("Failed to fetch")
+      (err) =>
+        !err.includes("401") &&
+        !err.includes("403") &&
+        !err.includes("Failed to fetch")
     );
 
     // There should be no unexpected errors
@@ -235,162 +220,23 @@ test.describe("Video Support - Component Structure", () => {
   });
 });
 
-test.describe("Video Support - Mock Data Tests", () => {
-  test("mock feed response contains both images and videos", async ({ page }) => {
+test.describe("Video Support - Mock Data Integration", () => {
+  test("mock feed response can be set up correctly", async ({ page }) => {
     await mockFeedWithVideos(page);
-
-    // Navigate and verify mock was set up
     await page.goto("/");
-
-    const mockSetupSuccess = true;
-    expect(mockSetupSuccess).toBeTruthy();
+    // If we get here without error, mock was set up correctly
+    expect(true).toBeTruthy();
   });
 
-  test("mock explore response contains both images and videos", async ({ page }) => {
+  test("mock explore response can be set up correctly", async ({ page }) => {
     await mockExploreWithVideos(page);
-
     await page.goto("/");
-
-    const mockSetupSuccess = true;
-    expect(mockSetupSuccess).toBeTruthy();
+    expect(true).toBeTruthy();
   });
 
-  test("mock profile response contains both images and videos", async ({ page }) => {
+  test("mock profile response can be set up correctly", async ({ page }) => {
     await mockProfileWithVideos(page);
-
     await page.goto("/");
-
-    const mockSetupSuccess = true;
-    expect(mockSetupSuccess).toBeTruthy();
-  });
-});
-
-test.describe("Video Support - Video Modal Structure", () => {
-  test("video modal uses Dialog component", async ({ page }) => {
-    await page.goto("/");
-
-    // Verify Radix Dialog components are available in the bundle
-    const appLoaded = await page.evaluate(() => {
-      return typeof window !== "undefined";
-    });
-
-    expect(appLoaded).toBeTruthy();
-  });
-
-  test("video element attributes are correct for playback", async ({ page }) => {
-    await page.goto("/");
-
-    // This verifies our video modal implementation has correct attributes
-    // The video element should have: controls, autoPlay, poster
-    const videoAttributesCorrect = true; // Verified in component code
-    expect(videoAttributesCorrect).toBeTruthy();
-  });
-});
-
-test.describe("Video Support - Duration Formatting", () => {
-  test("duration badge shows correctly formatted time", async ({ page }) => {
-    await page.goto("/");
-
-    // Test the duration formatting logic
-    const formatDuration = (seconds: number) => {
-      const mins = Math.floor(seconds / 60);
-      const secs = seconds % 60;
-      return `${mins}:${secs.toString().padStart(2, "0")}`;
-    };
-
-    // Test cases
-    expect(formatDuration(10)).toBe("0:10");
-    expect(formatDuration(65)).toBe("1:05");
-    expect(formatDuration(125)).toBe("2:05");
-    expect(formatDuration(0)).toBe("0:00");
-  });
-});
-
-test.describe("Video Support - Type Discrimination", () => {
-  test("items are correctly typed as image or video", async ({ page }) => {
-    await page.goto("/");
-
-    // Test the type discrimination logic
-    type MediaItem = { type: "image" | "video"; id: string };
-
-    const items: MediaItem[] = [
-      { type: "image", id: "1" },
-      { type: "video", id: "2" },
-    ];
-
-    const images = items.filter((item) => item.type === "image");
-    const videos = items.filter((item) => item.type === "video");
-
-    expect(images.length).toBe(1);
-    expect(videos.length).toBe(1);
-    expect(images[0].id).toBe("1");
-    expect(videos[0].id).toBe("2");
-  });
-});
-
-test.describe("Video Support - Sorting", () => {
-  test("items are sorted by createdAt descending", async ({ page }) => {
-    await page.goto("/");
-
-    // Test the sorting logic
-    const items = [
-      { createdAt: new Date("2024-01-01"), id: "old" },
-      { createdAt: new Date("2024-01-03"), id: "new" },
-      { createdAt: new Date("2024-01-02"), id: "mid" },
-    ];
-
-    const sorted = [...items].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-
-    expect(sorted[0].id).toBe("new");
-    expect(sorted[1].id).toBe("mid");
-    expect(sorted[2].id).toBe("old");
-  });
-});
-
-test.describe("Video Support - Accessibility", () => {
-  test("video cards have correct ARIA attributes", async ({ page }) => {
-    await page.goto("/");
-
-    // VideoCard should have role="button" and tabIndex={0} for keyboard accessibility
-    const ariaAttributesCorrect = true; // Verified in component code
-    expect(ariaAttributesCorrect).toBeTruthy();
-  });
-
-  test("video modal has correct ARIA labels", async ({ page }) => {
-    await page.goto("/");
-
-    // Modal uses DialogTitle with VisuallyHidden for screen readers
-    const modalAccessible = true; // Verified in component code
-    expect(modalAccessible).toBeTruthy();
-  });
-});
-
-test.describe("Video Support - Play Button Overlay", () => {
-  test("play button icon is rendered on video cards", async ({ page }) => {
-    await page.goto("/");
-
-    // VideoCard renders Play icon from lucide-react
-    const playButtonExists = true; // Verified in component code
-    expect(playButtonExists).toBeTruthy();
-  });
-});
-
-test.describe("Video Support - Backwards Compatibility", () => {
-  test("images array is still returned for backwards compatibility", async ({ page }) => {
-    await page.goto("/");
-
-    // Server functions still return 'images' array alongside 'items'
-    const backwardsCompatible = true; // Verified in server code
-    expect(backwardsCompatible).toBeTruthy();
-  });
-
-  test("feed still works without videos", async ({ page }) => {
-    await page.goto("/");
-
-    // Feed gracefully handles case where there are no videos
-    const handlesNoVideos = true; // Verified in component code
-    expect(handlesNoVideos).toBeTruthy();
+    expect(true).toBeTruthy();
   });
 });
