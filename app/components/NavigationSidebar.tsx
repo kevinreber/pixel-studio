@@ -1,10 +1,11 @@
 import React from "react";
 import PixelStudioIcon from "components/PixelStudioIcon";
 import { Link } from "@remix-run/react";
-import { Search, PenTool, User, Images, Heart, Video, Rss } from "lucide-react";
+import { Search, PenTool, User, Images, Heart, Video, Rss, Shield } from "lucide-react";
 import { UserAvatarButton } from "./UserAvatarButton";
 import { useLoggedInUser } from "~/hooks";
 import { NotificationDropdown } from "./NotificationDropdown";
+import { isUserAdmin, type UserWithRoles } from "~/utils/isAdmin";
 
 const NavButton = ({
   title,
@@ -32,6 +33,7 @@ const NavigationSidebar = () => {
   // const userData = React.useContext(UserContext);
   const userData = useLoggedInUser();
   const isLoggedIn = Boolean(userData?.id);
+  const isAdmin = isUserAdmin(userData as UserWithRoles);
 
   const NAV_LINKS = [
     {
@@ -82,7 +84,18 @@ const NavigationSidebar = () => {
     // },
   ];
 
-  const navLinksToRender = isLoggedIn ? NAV_LINKS : [];
+  // Add admin link for admin users
+  const adminLink = {
+    title: "Admin",
+    icon: <Shield className="md:h-4 md:w-4" />,
+    href: "/admin",
+  };
+
+  const navLinksToRender = isLoggedIn
+    ? isAdmin
+      ? [...NAV_LINKS, adminLink]
+      : NAV_LINKS
+    : [];
 
   return (
     <>
