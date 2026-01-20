@@ -11,7 +11,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Trash2, Users, Image, ChevronRight } from "lucide-react";
+import { Trash2, Users, Image, ChevronRight, Shield } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
@@ -21,22 +23,50 @@ export async function loader({ request }: LoaderFunctionArgs) {
     throw new Response("Forbidden", { status: 403 });
   }
 
-  // Get various stats
-  const [deletionStats, totalUsers, totalImages] = await Promise.all([
+  // Get various stats and admin users
+  const [deletionStats, totalUsers, totalImages, adminUsers] = await Promise.all([
     getImageDeletionStats(),
     prisma.user.count(),
     prisma.image.count(),
+    prisma.user.findMany({
+      where: {
+        roles: {
+          some: {
+            name: {
+              equals: "admin",
+              mode: "insensitive",
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        image: true,
+        createdAt: true,
+        roles: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    }),
   ]);
 
   return json({
     deletionStats,
     totalUsers,
     totalImages,
+    adminUsers,
   });
 }
 
 export default function AdminDashboard() {
-  const { deletionStats, totalUsers, totalImages } = useLoaderData<typeof loader>();
+  const { deletionStats, totalUsers, totalImages, adminUsers } = useLoaderData<typeof loader>();
 
   return (
     <div className="space-y-8">
@@ -159,6 +189,57 @@ export default function AdminDashboard() {
           </Card>
         </div>
       )}
+
+      {/* Admin Users */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Shield className="w-5 h-5 text-red-500" />
+          <h2 className="text-lg font-semibold">Admin Users</h2>
+          <Badge variant="secondary" className="ml-2">
+            {adminUsers.length}
+          </Badge>
+        </div>
+        <Card>
+          <CardContent className="p-0">
+            <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              {adminUsers.map((admin) => (
+                <div
+                  key={admin.id}
+                  className="flex items-center gap-4 p-4 hover:bg-accent/30 transition-colors"
+                >
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={admin.image ?? undefined} alt={admin.username} />
+                    <AvatarFallback>
+                      {admin.username?.charAt(0).toUpperCase() || "A"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium truncate">{admin.username}</span>
+                      <Badge variant="destructive" className="text-xs">
+                        Admin
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {admin.email}
+                    </p>
+                  </div>
+                  <div className="text-sm text-muted-foreground hidden sm:block">
+                    <span className="text-xs uppercase tracking-wide block mb-0.5">
+                      Member since
+                    </span>
+                    {new Date(admin.createdAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
