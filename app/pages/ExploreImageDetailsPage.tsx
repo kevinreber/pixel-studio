@@ -117,11 +117,11 @@ const ExploreImageDetailsPageAccessor = ({
   const isUserLoggedIn = Boolean(userData);
   const isAdmin = isUserAdmin(userData as UserWithRoles);
 
-  const handleImageDeleted = () => {
+  const handleImageDeleted = React.useCallback(() => {
     // Navigate away from the deleted image
     onClose();
     navigate("/explore");
-  };
+  }, [onClose, navigate]);
 
   if (!imageData) return null;
 

@@ -38,11 +38,19 @@ export function AdminDeleteImageButton({
   const [reason, setReason] = React.useState("");
   const fetcher = useFetcher<DeleteResponse>();
   const isDeleting = fetcher.state !== "idle";
+  // Track if we've already processed this deletion to prevent re-render loops
+  const processedDeletionRef = React.useRef<string | null>(null);
 
   React.useEffect(() => {
     if (!fetcher.data) return;
 
     if ("success" in fetcher.data && fetcher.data.success === true) {
+      // Only process if we haven't already handled this deletion
+      if (processedDeletionRef.current === fetcher.data.deletionLogId) {
+        return;
+      }
+      processedDeletionRef.current = fetcher.data.deletionLogId;
+
       toast.success("Image deleted successfully");
       setOpen(false);
       setReason("");
