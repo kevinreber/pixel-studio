@@ -79,6 +79,9 @@ model User {
   generationLogs GenerationLog[]
   creditTransactions CreditTransaction[]
   imageDeletions ImageDeletionLog[]  // Images deleted by this admin
+  // User retention features
+  loginStreak     LoginStreak?
+  achievements    UserAchievement[]
 }
 
 model Password {
@@ -414,11 +417,72 @@ model Follow {
   @@index([followingId])
 }
 
+// =============================================================================
+// USER RETENTION FEATURES
+// =============================================================================
+
+// Daily Login Streak Tracking
+model LoginStreak {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentStreak   Int       @default(0)
+  longestStreak   Int       @default(0)
+  lastLoginDate   DateTime?              // Date of last login (date only, no time)
+  lastBonusClaimed DateTime?             // Last time daily bonus was claimed
+  totalDaysLoggedIn Int     @default(0)  // Lifetime login days
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([lastLoginDate])
+}
+
+// Achievement Definitions
+model Achievement {
+  id          String   @id @default(cuid())
+  code        String   @unique           // Unique identifier: "first_generation", "streak_7", etc.
+  name        String                     // Display name
+  description String                     // Achievement description
+  category    String                     // "generation", "social", "streak", "engagement"
+  icon        String?                    // Icon identifier or URL
+  tier        String   @default("bronze") // "bronze", "silver", "gold", "platinum"
+  requirement Int      @default(1)       // Threshold to unlock (e.g., 10 for "10 images generated")
+  xpReward    Int      @default(10)      // XP awarded when unlocked
+  creditReward Int     @default(0)       // Bonus credits when unlocked
+  isSecret    Boolean  @default(false)   // Hidden until unlocked
+  createdAt   DateTime @default(now())
+
+  // Users who have unlocked this achievement
+  userAchievements UserAchievement[]
+
+  @@index([category])
+  @@index([tier])
+}
+
+// User's Earned Achievements
+model UserAchievement {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  unlockedAt    DateTime    @default(now())
+  progress      Int         @default(0)   // Current progress toward achievement
+  notified      Boolean     @default(false) // Whether user was notified
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@index([achievementId])
+}
+
 enum NotificationType {
   NEW_FOLLOWER
   IMAGE_LIKED
   IMAGE_COMMENT
   IMAGE_COMPLETED
+  ACHIEVEMENT_UNLOCKED
+  STREAK_MILESTONE
 }
 
 model Notification {

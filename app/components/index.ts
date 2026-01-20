@@ -17,3 +17,7 @@ export * from "./FollowListModal";
 export { GenerationQueue } from "./GenerationQueue";
 export * from "./OptimizedImage";
 export * from "./ProgressiveImage";
+// User retention features
+export * from "./StreakDisplay";
+export * from "./AchievementBadge";
+export * from "./TrendingSection";
