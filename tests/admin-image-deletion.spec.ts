@@ -196,16 +196,20 @@ test.describe("Admin Image Deletion - Authorization", () => {
       }
     });
 
-    // Make a direct API call
-    const response = await page.request.delete(
-      "/api/admin/images/test-image-123"
-    );
+    // Navigate to a page first so we have a page context for route interception
+    await page.goto("/");
+
+    // Make API call through page context so route interception works
+    const response = await page.evaluate(async () => {
+      const res = await fetch("/api/admin/images/test-image-123", {
+        method: "DELETE",
+      });
+      return { status: res.status, data: await res.json() };
+    });
 
     // Should be forbidden for non-admin users
-    expect(response.status()).toBe(403);
-
-    const data = await response.json();
-    expect(data.error).toContain("permission");
+    expect(response.status).toBe(403);
+    expect(response.data.error).toContain("permission");
   });
 
   test("Admin user can access delete endpoint", async ({ page }) => {
@@ -229,18 +233,22 @@ test.describe("Admin Image Deletion - Authorization", () => {
       }
     });
 
-    const response = await page.request.delete(
-      "/api/admin/images/test-image-123",
-      {
-        data: { reason: "Test deletion" },
-      }
-    );
+    // Navigate to a page first so we have a page context for route interception
+    await page.goto("/");
 
-    expect(response.status()).toBe(200);
+    // Make API call through page context so route interception works
+    const response = await page.evaluate(async () => {
+      const res = await fetch("/api/admin/images/test-image-123", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "Test deletion" }),
+      });
+      return { status: res.status, data: await res.json() };
+    });
 
-    const data = await response.json();
-    expect(data.success).toBe(true);
-    expect(data.deletionLogId).toBeDefined();
+    expect(response.status).toBe(200);
+    expect(response.data.success).toBe(true);
+    expect(response.data.deletionLogId).toBeDefined();
   });
 });
 
@@ -410,13 +418,18 @@ test.describe("Admin Delete - Error Handling", () => {
       }
     });
 
-    const response = await page.request.delete(
-      "/api/admin/images/nonexistent-id"
-    );
+    // Navigate to a page first so we have a page context for route interception
+    await page.goto("/");
 
-    expect(response.status()).toBe(404);
-    const data = await response.json();
-    expect(data.error).toContain("not found");
+    const response = await page.evaluate(async () => {
+      const res = await fetch("/api/admin/images/nonexistent-id", {
+        method: "DELETE",
+      });
+      return { status: res.status, data: await res.json() };
+    });
+
+    expect(response.status).toBe(404);
+    expect(response.data.error).toContain("not found");
   });
 
   test("Handles server error gracefully", async ({ page }) => {
@@ -434,13 +447,18 @@ test.describe("Admin Delete - Error Handling", () => {
       }
     });
 
-    const response = await page.request.delete(
-      "/api/admin/images/error-image"
-    );
+    // Navigate to a page first so we have a page context for route interception
+    await page.goto("/");
 
-    expect(response.status()).toBe(500);
-    const data = await response.json();
-    expect(data.error).toBeDefined();
+    const response = await page.evaluate(async () => {
+      const res = await fetch("/api/admin/images/error-image", {
+        method: "DELETE",
+      });
+      return { status: res.status, data: await res.json() };
+    });
+
+    expect(response.status).toBe(500);
+    expect(response.data.error).toBeDefined();
   });
 
   test("Handles missing image ID", async ({ request }) => {
@@ -474,11 +492,18 @@ test.describe("Admin Delete - Audit Log", () => {
       }
     });
 
-    const response = await page.request.delete("/api/admin/images/test-image");
+    // Navigate to a page first so we have a page context for route interception
+    await page.goto("/");
 
-    expect(response.status()).toBe(200);
-    const data = await response.json();
-    expect(data.deletionLogId).toBe(mockDeletionLogId);
+    const response = await page.evaluate(async () => {
+      const res = await fetch("/api/admin/images/test-image", {
+        method: "DELETE",
+      });
+      return { status: res.status, data: await res.json() };
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.data.deletionLogId).toBe(mockDeletionLogId);
   });
 
   test("Deletion includes reason when provided", async ({ page }) => {
@@ -512,8 +537,15 @@ test.describe("Admin Delete - Audit Log", () => {
       }
     });
 
-    await page.request.delete("/api/admin/images/test-image", {
-      data: { reason: "Inappropriate content" },
+    // Navigate to a page first so we have a page context for route interception
+    await page.goto("/");
+
+    await page.evaluate(async () => {
+      await fetch("/api/admin/images/test-image", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "Inappropriate content" }),
+      });
     });
 
     expect(capturedReason).toBe("Inappropriate content");
@@ -539,8 +571,17 @@ test.describe("Admin Delete - Permission Checks", () => {
       }
     });
 
-    const response = await page.request.delete("/api/admin/images/test-image");
-    expect(response.status()).toBe(200);
+    // Navigate to a page first so we have a page context for route interception
+    await page.goto("/");
+
+    const response = await page.evaluate(async () => {
+      const res = await fetch("/api/admin/images/test-image", {
+        method: "DELETE",
+      });
+      return { status: res.status };
+    });
+
+    expect(response.status).toBe(200);
   });
 
   test("User without permissions is rejected", async ({ page }) => {
@@ -558,11 +599,18 @@ test.describe("Admin Delete - Permission Checks", () => {
       }
     });
 
-    const response = await page.request.delete("/api/admin/images/test-image");
-    expect(response.status()).toBe(403);
+    // Navigate to a page first so we have a page context for route interception
+    await page.goto("/");
 
-    const data = await response.json();
-    expect(data.error).toContain("permission");
+    const response = await page.evaluate(async () => {
+      const res = await fetch("/api/admin/images/test-image", {
+        method: "DELETE",
+      });
+      return { status: res.status, data: await res.json() };
+    });
+
+    expect(response.status).toBe(403);
+    expect(response.data.error).toContain("permission");
   });
 });
 
@@ -592,8 +640,15 @@ test.describe("Admin Delete - UI Integration", () => {
       }
     });
 
-    // Simulate the delete call with a specific image ID
-    await page.request.delete("/api/admin/images/specific-image-id-123");
+    // Navigate to a page first so we have a page context
+    await page.goto("/");
+
+    // Use page.evaluate to make fetch request through page context (where route interception works)
+    await page.evaluate(async () => {
+      await fetch("/api/admin/images/specific-image-id-123", {
+        method: "DELETE",
+      });
+    });
 
     expect(capturedImageId).toBe("specific-image-id-123");
   });
@@ -624,10 +679,15 @@ test.describe("Admin Delete - UI Integration", () => {
       }
     });
 
-    // Delete multiple images
-    await page.request.delete("/api/admin/images/image-1");
-    await page.request.delete("/api/admin/images/image-2");
-    await page.request.delete("/api/admin/images/image-3");
+    // Navigate to a page first so we have a page context
+    await page.goto("/");
+
+    // Delete multiple images using page.evaluate so route interception works
+    await page.evaluate(async () => {
+      await fetch("/api/admin/images/image-1", { method: "DELETE" });
+      await fetch("/api/admin/images/image-2", { method: "DELETE" });
+      await fetch("/api/admin/images/image-3", { method: "DELETE" });
+    });
 
     expect(deletedImages).toEqual(["image-1", "image-2", "image-3"]);
   });
