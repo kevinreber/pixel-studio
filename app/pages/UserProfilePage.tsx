@@ -6,7 +6,7 @@ import {
 } from "@remix-run/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   PageContainer,
   ImageCard,
@@ -77,15 +77,13 @@ const UserDoesNotExist = () => {
                 VIDEOS
               </TabsTrigger>
             </TabsList>
-
-            <div className="mt-4">
-              <TabsContent value="all">
-                <div className="text-center py-12">
-                  <h2 className="text-lg mb-2">User Does Not Exist</h2>
-                </div>
-              </TabsContent>
-            </div>
           </Tabs>
+
+          <div className="mt-4">
+            <div className="text-center py-12">
+              <h2 className="text-lg mb-2">User Does Not Exist</h2>
+            </div>
+          </div>
         </div>
       </div>
     </PageContainer>
@@ -289,85 +287,83 @@ const UserProfileAccessor = ({
               )}
             </TabsTrigger>
           </TabsList>
-
-          {/* Content Grid */}
-          <div className="mt-4">
-            <TabsContent value={contentFilter} forceMount>
-              {filteredItems.length > 0 ? (
-                <ul className="grid grid-cols-2 md:grid-cols-3 gap-1 md:gap-4 lg:gap-6">
-                  {filteredItems.map((item) =>
-                    item.type === "image" ? (
-                      <li key={item.id} className="hover:!opacity-60">
-                        <ImageCard imageData={item} />
-                      </li>
-                    ) : (
-                      <li key={item.id} className="hover:!opacity-60">
-                        <button
-                          type="button"
-                          className="w-full text-left"
-                          onClick={() => handleVideoClick(item)}
-                        >
-                          <VideoCard videoData={item} onClickRedirectTo="#" />
-                        </button>
-                      </li>
-                    )
-                  )}
-                </ul>
-              ) : (
-                <div className="text-center py-12">
-                  {contentFilter === "all" && (
-                    <>
-                      <h2 className="font-semibold text-lg mb-2">No Posts Yet</h2>
-                      <p className="text-zinc-500">
-                        When you create images or videos, they will appear here.
-                      </p>
-                      <Button
-                        className="mt-4 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                        asChild
-                      >
-                        <Link to="/create" prefetch="intent">
-                          Create Your First Image
-                        </Link>
-                      </Button>
-                    </>
-                  )}
-                  {contentFilter === "images" && (
-                    <>
-                      <h2 className="font-semibold text-lg mb-2">No Images Yet</h2>
-                      <p className="text-zinc-500">
-                        When you create images, they will appear here.
-                      </p>
-                      <Button
-                        className="mt-4 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                        asChild
-                      >
-                        <Link to="/create" prefetch="intent">
-                          Create Your First Image
-                        </Link>
-                      </Button>
-                    </>
-                  )}
-                  {contentFilter === "videos" && (
-                    <>
-                      <h2 className="font-semibold text-lg mb-2">No Videos Yet</h2>
-                      <p className="text-zinc-500">
-                        When you create videos, they will appear here.
-                      </p>
-                      <Button
-                        className="mt-4 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                        asChild
-                      >
-                        <Link to="/create-video" prefetch="intent">
-                          Create Your First Video
-                        </Link>
-                      </Button>
-                    </>
-                  )}
-                </div>
-              )}
-            </TabsContent>
-          </div>
         </Tabs>
+
+        {/* Content Grid */}
+        <div className="mt-4">
+          {filteredItems.length > 0 ? (
+            <ul className="grid grid-cols-2 md:grid-cols-3 gap-1 md:gap-4 lg:gap-6">
+              {filteredItems.map((item) =>
+                item.type === "image" ? (
+                  <li key={item.id} className="hover:!opacity-60">
+                    <ImageCard imageData={item} />
+                  </li>
+                ) : (
+                  <li key={item.id} className="hover:!opacity-60">
+                    <button
+                      type="button"
+                      className="w-full text-left"
+                      onClick={() => handleVideoClick(item)}
+                    >
+                      <VideoCard videoData={item} onClickRedirectTo="#" />
+                    </button>
+                  </li>
+                )
+              )}
+            </ul>
+          ) : (
+            <div className="text-center py-12">
+              {contentFilter === "all" && (
+                <>
+                  <h2 className="font-semibold text-lg mb-2">No Posts Yet</h2>
+                  <p className="text-zinc-500">
+                    When you create images or videos, they will appear here.
+                  </p>
+                  <Button
+                    className="mt-4 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                    asChild
+                  >
+                    <Link to="/create" prefetch="intent">
+                      Create Your First Image
+                    </Link>
+                  </Button>
+                </>
+              )}
+              {contentFilter === "images" && (
+                <>
+                  <h2 className="font-semibold text-lg mb-2">No Images Yet</h2>
+                  <p className="text-zinc-500">
+                    When you create images, they will appear here.
+                  </p>
+                  <Button
+                    className="mt-4 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                    asChild
+                  >
+                    <Link to="/create" prefetch="intent">
+                      Create Your First Image
+                    </Link>
+                  </Button>
+                </>
+              )}
+              {contentFilter === "videos" && (
+                <>
+                  <h2 className="font-semibold text-lg mb-2">No Videos Yet</h2>
+                  <p className="text-zinc-500">
+                    When you create videos, they will appear here.
+                  </p>
+                  <Button
+                    className="mt-4 rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                    asChild
+                  >
+                    <Link to="/create-video" prefetch="intent">
+                      Create Your First Video
+                    </Link>
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
