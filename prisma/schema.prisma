@@ -78,6 +78,7 @@ model User {
   notificationsTriggered Notification[] @relation("NotificationActor")
   generationLogs GenerationLog[]
   creditTransactions CreditTransaction[]
+  imageDeletions ImageDeletionLog[]  // Images deleted by this admin
   // User retention features
   loginStreak     LoginStreak?
   achievements    UserAchievement[]
@@ -375,6 +376,34 @@ model CreditTransaction {
   @@index([type])
   @@index([stripeSessionId])
   @@index([generationLogId])
+}
+
+// Audit log for deleted images
+// Preserves record of deleted images for accountability and history
+model ImageDeletionLog {
+  id          String   @id @default(cuid())
+
+  // Original image data (preserved for audit trail)
+  imageId     String   // Original image ID (not FK since image is deleted)
+  imageTitle  String?
+  imagePrompt String
+  imageModel  String?
+  imageUserId String   // Original owner's user ID
+  imageCreatedAt DateTime // When the image was originally created
+
+  // Deletion metadata
+  deletedBy   String   // Admin user ID who deleted the image
+  deletedByUser User   @relation(fields: [deletedBy], references: [id], onDelete: SetNull)
+  reason      String?  // Optional reason for deletion
+  deletedAt   DateTime @default(now())
+
+  // Additional context (stored as JSON for flexibility)
+  metadata    Json?    // Original image metadata (dimensions, generation params, etc.)
+
+  @@index([imageId])
+  @@index([imageUserId])
+  @@index([deletedBy])
+  @@index([deletedAt])
 }
 
 model Follow {

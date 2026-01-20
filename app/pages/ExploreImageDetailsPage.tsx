@@ -1,6 +1,6 @@
 import React from "react";
 import { useLoggedInUser } from "~/hooks";
-import { Await, Link, useAsyncValue, useLoaderData } from "@remix-run/react";
+import { Await, Link, useAsyncValue, useLoaderData, useNavigate } from "@remix-run/react";
 import { ExplorePageImageLoader } from "~/routes/explore.$imageId";
 import { convertUtcDateToLocalDateString } from "~/client";
 import {
@@ -27,6 +27,7 @@ import {
   ArrowUpCircle,
 } from "lucide-react";
 import { LikeImageButton } from "~/components/LikeImageButton";
+import { AdminDeleteImageButton } from "~/components/AdminDeleteImageButton";
 import { CommentForm } from "~/components/CommentForm";
 import { ImageComment } from "~/components/ImageComment";
 import { ProgressiveImage } from "~/components/ProgressiveImage";
@@ -37,6 +38,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { isUserAdmin, type UserWithRoles } from "~/utils/isAdmin";
 
 interface ExploreImageDetailsPageProps {
   onClose: () => void;
@@ -111,7 +113,15 @@ const ExploreImageDetailsPageAccessor = ({
   const imageData = useAsyncValue() as AsyncImageData;
   const imageUserData = imageData.user as ImageUserData;
   const userData = useLoggedInUser();
+  const navigate = useNavigate();
   const isUserLoggedIn = Boolean(userData);
+  const isAdmin = isUserAdmin(userData as UserWithRoles);
+
+  const handleImageDeleted = React.useCallback(() => {
+    // Navigate away from the deleted image
+    onClose();
+    navigate("/explore");
+  }, [onClose, navigate]);
 
   if (!imageData) return null;
 
@@ -193,6 +203,13 @@ const ExploreImageDetailsPageAccessor = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <LikeImageButton imageData={imageData} />
+                {isAdmin && (
+                  <AdminDeleteImageButton
+                    imageId={imageData.id as string}
+                    imageTitle={imageData.title}
+                    onDeleted={handleImageDeleted}
+                  />
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <p className="text-xs text-zinc-500">
@@ -577,7 +594,16 @@ const ExploreImageDetailsPageAccessor = ({
           {/* Action buttons - Desktop only */}
           <div className="shrink-0 p-4 border-b border-zinc-200 dark:border-zinc-800 hidden md:block">
             <div className="flex items-center justify-between">
-              <LikeImageButton imageData={imageData} />
+              <div className="flex items-center gap-2">
+                <LikeImageButton imageData={imageData} />
+                {isAdmin && (
+                  <AdminDeleteImageButton
+                    imageId={imageData.id as string}
+                    imageTitle={imageData.title}
+                    onDeleted={handleImageDeleted}
+                  />
+                )}
+              </div>
               <p className="text-xs text-zinc-500">
                 {convertUtcDateToLocalDateString(imageData.createdAt!)}
               </p>
