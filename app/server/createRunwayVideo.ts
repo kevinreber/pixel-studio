@@ -10,6 +10,7 @@
 import { createNewVideo, updateVideoStatus } from "./createNewVideo";
 import { createNewSet, deleteSet } from "~/server";
 import { addVideoToS3, addVideoThumbnailToS3 } from "./addVideoToS3.server";
+import { storeSourceImage } from "./storeSourceImage.server";
 import { extractVideoThumbnailSafe } from "./extractVideoThumbnail.server";
 
 const RUNWAY_API_URL = process.env.RUNWAY_API_URL || "https://api.dev.runwayml.com/v1";
@@ -271,6 +272,21 @@ export const createRunwayVideo = async (
   let setId = "";
 
   try {
+    // Store source image if provided (ensures we have a persistent copy)
+    let sourceImageUrl = formData.sourceImageUrl;
+    let sourceImageId = formData.sourceImageId;
+
+    if (sourceImageUrl) {
+      console.log("Storing source image for video generation...");
+      const storedImage = await storeSourceImage(sourceImageUrl);
+      sourceImageUrl = storedImage.url;
+      sourceImageId = storedImage.sourceImageId || sourceImageId;
+
+      if (storedImage.wasExternal) {
+        console.log(`External image stored to S3: ${storedImage.url}`);
+      }
+    }
+
     // Create a set to group the video
     const set = await createNewSet({
       prompt: formData.prompt,
@@ -287,18 +303,18 @@ export const createRunwayVideo = async (
       setId,
       duration: formData.duration,
       aspectRatio: formData.aspectRatio,
-      sourceImageId: formData.sourceImageId,
-      sourceImageUrl: formData.sourceImageUrl,
+      sourceImageId,
+      sourceImageUrl,
       status: "pending",
     });
 
-    // Start Runway generation
+    // Start Runway generation (use our S3 URL for reliability)
     const { id: taskId } = await startRunwayGeneration({
       prompt: formData.prompt,
       model: formData.model,
       duration: formData.duration,
       aspectRatio: formData.aspectRatio,
-      sourceImageUrl: formData.sourceImageUrl,
+      sourceImageUrl,
     });
 
     // Update video with external ID
