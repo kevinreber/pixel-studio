@@ -26,6 +26,7 @@
 
 import { prisma } from "~/services/prisma.server";
 import { deleteImageFromS3Bucket } from "~/server/deleteImage";
+import { cacheDelete, cacheDeletePattern } from "~/utils/cache.server";
 
 export interface DeleteImageWithAuditParams {
   imageId: string;
@@ -132,6 +133,21 @@ export async function deleteImageWithAudit(
       console.error(
         `[ImageDeletionLog] Warning: Failed to delete image ${imageId} from S3:`,
         s3Error
+      );
+    }
+
+    // Invalidate cache entries for the deleted image
+    try {
+      // Delete specific image details cache
+      await cacheDelete(`image-details:${imageId}`);
+      // Delete all explore page caches since the image could appear on any page
+      await cacheDeletePattern("explore-images*");
+      console.log(`[ImageDeletionLog] Invalidated cache for image ${imageId}`);
+    } catch (cacheError) {
+      // Log cache error but don't fail the operation - DB deletion succeeded
+      console.error(
+        `[ImageDeletionLog] Warning: Failed to invalidate cache for image ${imageId}:`,
+        cacheError
       );
     }
 
