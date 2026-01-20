@@ -5,15 +5,32 @@ import { getUserWithRoles, isAdmin } from "~/server/isAdmin.server";
 import { getImageDeletionStats } from "~/services/imageDeletionLog.server";
 import { prisma } from "~/services/prisma.server";
 import {
+  getAdminDashboardStats,
+  getCreditFlowSummary,
+  getGenerationStats,
+} from "~/services/adminAnalytics.server";
+import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Trash2, Users, Image, ChevronRight, Shield } from "lucide-react";
+import {
+  Trash2,
+  Users,
+  Image,
+  ChevronRight,
+  Shield,
+  Coins,
+  Zap,
+  TrendingUp,
+  AlertCircle,
+  Activity,
+} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
@@ -24,10 +41,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   // Get various stats and admin users
-  const [deletionStats, totalUsers, totalImages, adminUsers] = await Promise.all([
+  const [
+    deletionStats,
+    dashboardStats,
+    creditFlowToday,
+    generationStatsToday,
+    adminUsers,
+  ] = await Promise.all([
     getImageDeletionStats(),
-    prisma.user.count(),
-    prisma.image.count(),
+    getAdminDashboardStats(),
+    getCreditFlowSummary("today"),
+    getGenerationStats("today"),
     prisma.user.findMany({
       where: {
         roles: {
@@ -59,63 +83,161 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   return json({
     deletionStats,
-    totalUsers,
-    totalImages,
+    dashboardStats,
+    creditFlowToday,
+    generationStatsToday,
     adminUsers,
   });
 }
 
 export default function AdminDashboard() {
-  const { deletionStats, totalUsers, totalImages, adminUsers } = useLoaderData<typeof loader>();
+  const {
+    deletionStats,
+    dashboardStats,
+    creditFlowToday,
+    generationStatsToday,
+    adminUsers,
+  } = useLoaderData<typeof loader>();
 
   return (
     <div className="space-y-8">
-      {/* Stats Overview */}
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* Platform Stats Overview */}
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {totalUsers.toLocaleString()}
+              {dashboardStats.totalUsers.toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Registered accounts
-            </p>
+            <p className="text-xs text-muted-foreground">Registered accounts</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Today</CardTitle>
+            <Activity className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {dashboardStats.activeUsersToday.toLocaleString()}
+            </div>
+            <p className="text-xs text-muted-foreground">Users generating</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Images</CardTitle>
-            <Image className="h-4 w-4 text-muted-foreground" />
+            <Image className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {totalImages.toLocaleString()}
+              {dashboardStats.totalImages.toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Generated content
-            </p>
+            <p className="text-xs text-muted-foreground">Generated content</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Images Deleted
-            </CardTitle>
-            <Trash2 className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Generations</CardTitle>
+            <Zap className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {deletionStats.totalDeletions.toLocaleString()}
+              {dashboardStats.totalGenerations.toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground">
-              By admin moderation
-            </p>
+            <p className="text-xs text-muted-foreground">All time</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Credits Active</CardTitle>
+            <Coins className="h-4 w-4 text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {dashboardStats.creditsInCirculation.toLocaleString()}
+            </div>
+            <p className="text-xs text-muted-foreground">In circulation</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Zero Credits</CardTitle>
+            <AlertCircle className="h-4 w-4 text-orange-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">
+              {dashboardStats.zeroCreditUsers.toLocaleString()}
+            </div>
+            <p className="text-xs text-muted-foreground">Users at risk</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Today's Activity Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="bg-green-500/5 border-green-500/20">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Credits Purchased Today</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              +{creditFlowToday.totalPurchased.toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-red-500/5 border-red-500/20">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Credits Spent Today</CardTitle>
+            <Coins className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              -{creditFlowToday.totalSpent.toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-blue-500/5 border-blue-500/20">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Generations Today</CardTitle>
+            <Zap className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {generationStatsToday.total.toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-purple-500/5 border-purple-500/20">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Success Rate Today</CardTitle>
+            <Activity className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div
+              className={cn(
+                "text-2xl font-bold",
+                generationStatsToday.successRate >= 90
+                  ? "text-green-600"
+                  : generationStatsToday.successRate >= 70
+                    ? "text-yellow-600"
+                    : "text-red-600"
+              )}
+            >
+              {generationStatsToday.successRate}%
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -123,7 +245,45 @@ export default function AdminDashboard() {
       {/* Quick Links */}
       <div className="space-y-4">
         <h2 className="text-lg font-semibold">Quick Actions</h2>
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Link to="/admin/users" className="group">
+            <Card className="h-full transition-colors hover:bg-accent/50 hover:border-accent">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-lg bg-blue-500/10">
+                    <Users className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <CardTitle className="text-base mb-1">User Analytics</CardTitle>
+                <CardDescription>
+                  View signups, activity, and credit distribution
+                </CardDescription>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link to="/admin/credits" className="group">
+            <Card className="h-full transition-colors hover:bg-accent/50 hover:border-accent">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-lg bg-amber-500/10">
+                    <Coins className="w-5 h-5 text-amber-500" />
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <CardTitle className="text-base mb-1">Credit Economy</CardTitle>
+                <CardDescription>
+                  Monitor credit flow and generation metrics
+                </CardDescription>
+              </CardContent>
+            </Card>
+          </Link>
+
           <Link to="/admin/deletion-logs" className="group">
             <Card className="h-full transition-colors hover:bg-accent/50 hover:border-accent">
               <CardHeader className="pb-3">
@@ -147,8 +307,8 @@ export default function AdminDashboard() {
             <Card className="h-full transition-colors hover:bg-accent/50 hover:border-accent">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-lg bg-blue-500/10">
-                    <Image className="w-5 h-5 text-blue-500" />
+                  <div className="p-2 rounded-lg bg-purple-500/10">
+                    <Image className="w-5 h-5 text-purple-500" />
                   </div>
                   <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
                 </div>
