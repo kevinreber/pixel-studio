@@ -24,7 +24,7 @@
 
 import { Client } from "@upstash/qstash";
 import { createId } from "@paralleldrive/cuid2";
-import type { CreateImagesFormData } from "~/routes/create";
+import type { CreateImagesFormData, ComparisonFormData } from "~/routes/create";
 import type { CreateVideoFormData } from "~/routes/create-video";
 import { publishProcessingUpdate } from "./processingStatus.server";
 import {
@@ -69,6 +69,13 @@ export interface QStashVideoGenerationRequest {
   sourceImageId?: string;
   private?: boolean;
   timestamp: string;
+}
+
+// Extended request for comparison child generations
+export interface QStashComparisonChildRequest extends QStashImageGenerationRequest {
+  parentRequestId: string; // Link to parent comparison request
+  modelIndex: number; // Index of this model in the comparison
+  totalModels: number; // Total number of models in the comparison
 }
 
 export interface QueueResponse {
@@ -176,6 +183,152 @@ export async function queueImageGenerationQStash(
       }`
     );
   }
+}
+
+/**
+ * Queue a comparison generation request (multiple models)
+ * Creates a parent request that spawns child requests for each model
+ *
+ * In local development: Processes jobs immediately for each model
+ * In production: Queues to QStash which calls back for each model
+ */
+export async function queueComparisonGenerationQStash(
+  formData: ComparisonFormData,
+  userId: string,
+  totalCreditCost: number
+): Promise<QueueResponse> {
+  const parentRequestId = createId();
+  const models = formData.models;
+
+  // Build initial model statuses
+  const modelStatuses: Record<
+    string,
+    { status: string; progress: number; setId?: string; error?: string }
+  > = {};
+  for (const model of models) {
+    modelStatuses[model] = { status: "queued", progress: 0 };
+  }
+
+  try {
+    // Set initial parent status with per-model tracking
+    console.log(`[QStash Comparison] Setting initial status for parent request: ${parentRequestId}`);
+    await publishProcessingUpdate(parentRequestId, {
+      userId,
+      status: "queued",
+      progress: 0,
+      message: `Preparing to generate with ${models.length} models...`,
+      timestamp: new Date(),
+      // Extended fields for comparison mode
+      models,
+      modelStatuses,
+      comparisonMode: true,
+      totalModels: models.length,
+      completedModels: 0,
+    } as ComparisonProcessingUpdate);
+
+    console.log(`[QStash Comparison] Initial status set for parent: ${parentRequestId}`);
+
+    // Queue individual generation for each model
+    for (let i = 0; i < models.length; i++) {
+      const model = models[i];
+      const childRequestId = `${parentRequestId}_${model.replace(/[^a-zA-Z0-9]/g, "-")}`;
+
+      const childRequest: QStashComparisonChildRequest = {
+        requestId: childRequestId,
+        userId,
+        prompt: formData.prompt,
+        numberOfImages: formData.numberOfImages,
+        model,
+        stylePreset: formData.stylePreset,
+        private: formData.private || false,
+        timestamp: new Date().toISOString(),
+        parentRequestId,
+        modelIndex: i,
+        totalModels: models.length,
+      };
+
+      if (isLocalDevelopment()) {
+        // LOCAL DEV: Process immediately in background
+        console.log(
+          `[QStash Comparison] Local dev - processing model ${model} for parent ${parentRequestId}`
+        );
+        processComparisonChildLocally(childRequest).catch((err) => {
+          console.error(`[QStash Comparison] Local processing failed for ${childRequestId}:`, err);
+        });
+      } else {
+        // PRODUCTION: Queue to QStash
+        const client = getQStashClient();
+        const baseUrl = process.env.BASE_URL || "http://localhost:5173";
+        const callbackUrl = `${baseUrl}/api/queue/process-image`;
+
+        await client.publishJSON({
+          url: callbackUrl,
+          body: childRequest,
+          retries: 3,
+        });
+
+        console.log(
+          `[QStash Comparison] Queued child request ${childRequestId} for model ${model}`
+        );
+      }
+    }
+
+    // Log generation start (for parent)
+    await logGenerationStart({
+      requestId: parentRequestId,
+      userId,
+      type: "image",
+      prompt: formData.prompt,
+      model: models.join(","), // Comma-separated list of models
+      creditCost: totalCreditCost,
+      metadata: {
+        numberOfImages: formData.numberOfImages,
+        stylePreset: formData.stylePreset,
+        comparisonMode: true,
+        models,
+      },
+    });
+
+    return {
+      requestId: parentRequestId,
+      processingUrl: `/processing/${parentRequestId}?comparison=true`,
+    };
+  } catch (error) {
+    console.error("[QStash Comparison] Failed to queue comparison generation:", error);
+
+    // Update status to failed
+    await publishProcessingUpdate(parentRequestId, {
+      userId,
+      status: "failed",
+      progress: 0,
+      message: "Failed to queue comparison generation request",
+      error: error instanceof Error ? error.message : "Unknown error",
+      timestamp: new Date(),
+    });
+
+    throw new Error(
+      `Failed to queue comparison generation: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
+}
+
+// Extended processing update for comparison mode
+interface ComparisonProcessingUpdate {
+  userId: string;
+  status: "queued" | "processing" | "complete" | "failed" | "partial";
+  progress: number;
+  message: string;
+  timestamp: Date;
+  models?: string[];
+  modelStatuses?: Record<
+    string,
+    { status: string; progress: number; setId?: string; error?: string }
+  >;
+  comparisonMode?: boolean;
+  totalModels?: number;
+  completedModels?: number;
 }
 
 /**
@@ -483,6 +636,154 @@ async function processImageGenerationLocally(
       refundCredits: false, // Credits already deducted in route action
     });
   }
+}
+
+/**
+ * Process a comparison child request locally (for development)
+ * Updates both the child and parent status
+ */
+async function processComparisonChildLocally(
+  request: QStashComparisonChildRequest
+): Promise<void> {
+  const { createNewImages } = await import("~/server/createNewImages");
+
+  const {
+    userId,
+    prompt,
+    numberOfImages,
+    model,
+    stylePreset,
+    parentRequestId,
+    modelIndex,
+    totalModels,
+  } = request;
+
+  console.log(`[Comparison Worker] Processing model ${model} (${modelIndex + 1}/${totalModels}) for parent ${parentRequestId}`);
+
+  try {
+    // Update parent status to show this model is processing
+    await updateParentModelStatus(parentRequestId, userId, model, {
+      status: "processing",
+      progress: 10,
+    });
+
+    // Prepare form data
+    const formData = {
+      prompt,
+      numberOfImages,
+      model,
+      stylePreset,
+      private: request.private || false,
+    };
+
+    // Generate images
+    const result = await createNewImages(formData, userId);
+
+    // Check for errors
+    if ("error" in result) {
+      throw new Error(
+        typeof result.error === "string"
+          ? result.error
+          : "Unknown error from AI provider"
+      );
+    }
+
+    if (!result.setId || !result.images?.length) {
+      throw new Error("Failed to create images - incomplete response");
+    }
+
+    // Update parent status with success for this model
+    await updateParentModelStatus(parentRequestId, userId, model, {
+      status: "complete",
+      progress: 100,
+      setId: result.setId,
+    });
+
+    console.log(
+      `[Comparison Worker] Completed model ${model} for parent ${parentRequestId}, setId: ${result.setId}`
+    );
+  } catch (error) {
+    console.error(`[Comparison Worker] Error processing model ${model}:`, error);
+
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+
+    // Update parent status with failure for this model
+    await updateParentModelStatus(parentRequestId, userId, model, {
+      status: "failed",
+      progress: 0,
+      error: errorMessage,
+    });
+  }
+}
+
+/**
+ * Update a specific model's status within a comparison request
+ */
+async function updateParentModelStatus(
+  parentRequestId: string,
+  userId: string,
+  model: string,
+  modelUpdate: { status: string; progress: number; setId?: string; error?: string }
+): Promise<void> {
+  const { getProcessingStatus } = await import("./processingStatus.server");
+
+  // Get current parent status
+  const parentStatus = await getProcessingStatus(parentRequestId);
+  if (!parentStatus) {
+    console.warn(`[Comparison] Parent status not found for ${parentRequestId}`);
+    return;
+  }
+
+  // Update model status
+  const modelStatuses = (parentStatus as unknown as { modelStatuses?: Record<string, unknown> })
+    .modelStatuses || {};
+  modelStatuses[model] = modelUpdate;
+
+  // Calculate overall progress and status
+  const statuses = Object.values(modelStatuses) as Array<{ status: string; progress: number }>;
+  const completedCount = statuses.filter(
+    (s) => s.status === "complete" || s.status === "failed"
+  ).length;
+  const totalModels = statuses.length;
+  const overallProgress = Math.round(
+    statuses.reduce((sum, s) => sum + s.progress, 0) / totalModels
+  );
+
+  // Determine overall status
+  type StatusType = "queued" | "processing" | "complete" | "failed" | "partial";
+  let overallStatus: StatusType = "processing";
+  if (completedCount === totalModels) {
+    const failedCount = statuses.filter((s) => s.status === "failed").length;
+    if (failedCount === totalModels) {
+      overallStatus = "failed";
+    } else if (failedCount > 0) {
+      overallStatus = "partial"; // Some succeeded, some failed
+    } else {
+      overallStatus = "complete";
+    }
+  }
+
+  // Update parent status
+  await publishProcessingUpdate(parentRequestId, {
+    userId,
+    status: overallStatus,
+    progress: overallProgress,
+    message:
+      overallStatus === "complete"
+        ? `Successfully generated images with ${totalModels} models`
+        : overallStatus === "partial"
+        ? `Completed with ${completedCount - statuses.filter((s) => s.status === "failed").length} of ${totalModels} models`
+        : overallStatus === "failed"
+        ? "All model generations failed"
+        : `Generating... (${completedCount}/${totalModels} models complete)`,
+    timestamp: new Date(),
+    models: Object.keys(modelStatuses),
+    modelStatuses,
+    comparisonMode: true,
+    totalModels,
+    completedModels: completedCount,
+  } as ComparisonProcessingUpdate);
 }
 
 /**

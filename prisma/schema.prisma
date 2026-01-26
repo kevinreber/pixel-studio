@@ -107,6 +107,9 @@ model User {
   imageDeletions ImageDeletionLog[]  // Images deleted by this admin
   loginStreak     LoginStreak?
   achievements    UserAchievement[]
+
+  // Multi-model comparison requests
+  comparisonRequests ComparisonRequest[]
 }
 
 model Password {
@@ -160,6 +163,9 @@ model Set {
   userId      String
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   generationLogs GenerationLog[]
+
+  // Link back to comparison generation if part of a comparison
+  comparisonGenerations ComparisonGeneration[]
 
   @@index([userId])
 }
@@ -965,6 +971,74 @@ model Payout {
   completedAt DateTime?
 
   @@index([userId, status])
+  @@index([status])
+}
+
+// ============================================
+// MULTI-MODEL COMPARISON FEATURE
+// ============================================
+
+// Parent request for multi-model comparison generation
+model ComparisonRequest {
+  id          String   @id @default(cuid())
+  requestId   String   @unique  // Parent request ID for tracking
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Request details
+  prompt          String
+  models          String[] // Array of model IDs to generate with
+  numberOfImages  Int      @default(1) // Per model
+  stylePreset     String?
+  private         Boolean  @default(false)
+
+  // Generation parameters (shared across models where applicable)
+  width           Int?
+  height          Int?
+
+  // Status tracking
+  status      String   @default("queued") // queued, processing, complete, partial, failed
+
+  // Child generations (one per model)
+  generations ComparisonGeneration[]
+
+  // Cost tracking
+  totalCreditCost Int
+
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+
+  @@index([userId])
+  @@index([requestId])
+  @@index([status])
+}
+
+// Individual generation within a comparison request
+model ComparisonGeneration {
+  id                  String   @id @default(cuid())
+  comparisonRequestId String
+  comparisonRequest   ComparisonRequest @relation(fields: [comparisonRequestId], references: [id], onDelete: Cascade)
+
+  // Model being used for this generation
+  model       String
+
+  // Per-model status tracking
+  status      String   @default("queued") // queued, processing, complete, failed
+  progress    Int      @default(0) // 0-100
+
+  // Result linking
+  setId       String?  // Links to Set when complete
+  set         Set?     @relation(fields: [setId], references: [id], onDelete: SetNull)
+
+  // Error tracking
+  error       String?
+
+  // Timing
+  createdAt   DateTime @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  @@index([comparisonRequestId])
   @@index([status])
 }
 

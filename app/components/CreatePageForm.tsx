@@ -19,7 +19,8 @@ import {
   DialogOverlay,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ChevronDown, Check, Loader2, Sparkles, Coins, Settings2, Star } from "lucide-react";
+import { ChevronDown, Check, Loader2, Sparkles, Coins, Settings2, Star, GitCompare } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { CreatePageLoader } from "~/routes/create";
 import { MODEL_OPTIONS, STYLE_OPTIONS } from "~/config/models";
 import { toast } from "sonner";
@@ -234,6 +235,11 @@ const CreatePageForm = () => {
   >("model");
   const [numImages, setNumImages] = React.useState(1);
 
+  // Comparison mode state
+  const [comparisonMode, setComparisonMode] = React.useState(false);
+  const [selectedModels, setSelectedModels] = React.useState<ModelOption[]>([]);
+  const MAX_COMPARISON_MODELS = 4;
+
   // New generation parameter states
   const [selectedSize, setSelectedSize] = React.useState({ width: 1024, height: 1024 });
   const [quality, setQuality] = React.useState<"standard" | "hd">("standard");
@@ -311,6 +317,43 @@ const CreatePageForm = () => {
       });
     }
   }, [actionData, addJob]);
+
+  // Toggle a model in comparison mode
+  const toggleModelSelection = (model: ModelOption) => {
+    if (comparisonMode) {
+      setSelectedModels((prev) => {
+        const isSelected = prev.some((m) => m.value === model.value);
+        if (isSelected) {
+          return prev.filter((m) => m.value !== model.value);
+        }
+        if (prev.length >= MAX_COMPARISON_MODELS) {
+          toast.error("Maximum models reached", {
+            description: `You can compare up to ${MAX_COMPARISON_MODELS} models at once.`,
+          });
+          return prev;
+        }
+        return [...prev, model];
+      });
+    } else {
+      setSelectedModel(model);
+    }
+  };
+
+  // Calculate total credits for comparison mode
+  const getTotalCredits = () => {
+    if (comparisonMode) {
+      return selectedModels.reduce((sum, m) => sum + m.creditCost * numImages, 0);
+    }
+    return selectedModel.creditCost * numImages;
+  };
+
+  // Get credit cost per image (for display purposes)
+  const getCreditCostPerImage = () => {
+    if (comparisonMode) {
+      return selectedModels.reduce((sum, m) => sum + m.creditCost, 0);
+    }
+    return selectedModel.creditCost;
+  };
 
   const handleModelClick = () => {
     if (isMobile) {
@@ -539,13 +582,61 @@ const CreatePageForm = () => {
           <Card className="flex flex-col flex-grow p-4">
             <CardContent className="space-y-4 flex-grow flex flex-col justify-between mb-4">
               <div className="space-y-4">
-                <div>
-                  <Label htmlFor="model">Model</Label>
+                {/* Comparison Mode Toggle */}
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
+                  <div className="flex items-center gap-2">
+                    <GitCompare className="w-4 h-4 text-purple-400" />
+                    <div>
+                      <Label htmlFor="comparisonMode" className="text-sm font-medium cursor-pointer">
+                        Compare Models
+                      </Label>
+                      <p className="text-xs text-gray-400">Generate with multiple models at once</p>
+                    </div>
+                  </div>
+                  <Switch
+                    id="comparisonMode"
+                    checked={comparisonMode}
+                    onCheckedChange={(checked) => {
+                      setComparisonMode(checked);
+                      if (checked) {
+                        // Pre-select current model when enabling comparison
+                        setSelectedModels([selectedModel]);
+                      } else {
+                        // Keep first selected model as the single model
+                        if (selectedModels.length > 0) {
+                          setSelectedModel(selectedModels[0]);
+                        }
+                        setSelectedModels([]);
+                      }
+                    }}
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                {/* Hidden inputs for form submission */}
+                <input type="hidden" name="comparisonMode" value={comparisonMode.toString()} />
+                {comparisonMode ? (
                   <input
                     type="hidden"
-                    name="model"
-                    value={selectedModel.value}
+                    name="models"
+                    value={JSON.stringify(selectedModels.map((m) => m.value))}
                   />
+                ) : (
+                  <input type="hidden" name="model" value={selectedModel.value} />
+                )}
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <Label htmlFor="model">
+                      {comparisonMode ? `Models (${selectedModels.length}/${MAX_COMPARISON_MODELS})` : "Model"}
+                    </Label>
+                    {comparisonMode && selectedModels.length > 0 && (
+                      <div className="flex items-center gap-1.5 text-xs text-purple-400">
+                        <Coins className="w-3 h-3" />
+                        <span>{getTotalCredits()} credits total</span>
+                      </div>
+                    )}
+                  </div>
                   <Button
                     variant="outline"
                     type="button"
@@ -732,8 +823,13 @@ const CreatePageForm = () => {
                   value={numImages}
                   onChange={setNumImages}
                   disabled={isSubmitting}
-                  creditCostPerImage={selectedModel.creditCost}
+                  creditCostPerImage={getCreditCostPerImage()}
                 />
+                {comparisonMode && selectedModels.length > 1 && (
+                  <p className="text-xs text-gray-400 mt-2">
+                    {numImages} image{numImages !== 1 ? "s" : ""} × {selectedModels.length} models = {numImages * selectedModels.length} total images
+                  </p>
+                )}
               </div>
 
               {/* Advanced Options Collapsible Section */}
@@ -892,16 +988,32 @@ const CreatePageForm = () => {
                 )}
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex flex-col gap-2">
+              {comparisonMode && selectedModels.length < 2 && (
+                <p className="text-xs text-amber-400 text-center">
+                  Select at least 2 models to compare
+                </p>
+              )}
               <Button
                 type="submit"
-                className="w-full bg-pink-600 hover:bg-pink-700 text-white"
-                disabled={isSubmitting}
+                className={`w-full text-white ${
+                  comparisonMode
+                    ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                    : "bg-pink-600 hover:bg-pink-700"
+                }`}
+                disabled={isSubmitting || (comparisonMode && selectedModels.length < 2)}
               >
                 {isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Generate
+                {comparisonMode ? (
+                  <>
+                    <GitCompare className="mr-2 h-4 w-4" />
+                    Compare {selectedModels.length} Model{selectedModels.length !== 1 ? "s" : ""}
+                  </>
+                ) : (
+                  "Generate"
+                )}
               </Button>
             </CardFooter>
           </Card>
@@ -941,48 +1053,73 @@ const CreatePageForm = () => {
 
         {selectedSection === "model" && (
           <ScrollArea className="h-[calc(100vh-10rem)]">
+            {/* Comparison mode hint */}
+            {comparisonMode && (
+              <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg text-purple-200 text-sm">
+                <div className="flex items-center gap-2">
+                  <GitCompare className="w-4 h-4" />
+                  <span>Select 2-{MAX_COMPARISON_MODELS} models to compare. Each model will generate images from your prompt.</span>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-3 gap-4">
-              {modelOptions.map((model) => (
-                <Card
-                  key={model.name}
-                  className={`cursor-pointer border hover:bg-zinc-800 ${
-                    selectedModel.name === model.name
-                      ? "bg-blue-600 hover:bg-blue-600"
-                      : ""
-                  }`}
-                  onClick={() => setSelectedModel(model)}
-                >
-                  <CardContent className="p-4 flex items-start space-x-4 flex-col">
-                    <div className="relative mb-4 ml-auto mr-auto">
-                      <Image src={model.image} alt={model.name} size={140} />
-                    </div>
-                    <div className="flex-1 w-full">
-                      <div className="flex justify-between items-start mb-1">
-                        <h3 className="font-semibold">{model.name}</h3>
-                        {selectedModel.name === model.name && (
-                          <Check className="w-5 h-5 text-white" />
+              {modelOptions.map((model) => {
+                const isSelected = comparisonMode
+                  ? selectedModels.some((m) => m.value === model.value)
+                  : selectedModel.name === model.name;
+
+                return (
+                  <Card
+                    key={model.name}
+                    className={`cursor-pointer border hover:bg-zinc-800 transition-all ${
+                      isSelected
+                        ? comparisonMode
+                          ? "bg-purple-600/50 hover:bg-purple-600/60 border-purple-500"
+                          : "bg-blue-600 hover:bg-blue-600"
+                        : ""
+                    }`}
+                    onClick={() => toggleModelSelection(model)}
+                  >
+                    <CardContent className="p-4 flex items-start space-x-4 flex-col">
+                      <div className="relative mb-4 ml-auto mr-auto">
+                        <Image src={model.image} alt={model.name} size={140} />
+                        {/* Selection indicator for comparison mode */}
+                        {comparisonMode && isSelected && (
+                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                            <span className="text-xs font-bold text-white">
+                              {selectedModels.findIndex((m) => m.value === model.value) + 1}
+                            </span>
+                          </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <ProviderBadge company={model.company} />
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-600/20 text-amber-400 border border-amber-600/30">
-                          <Coins className="w-3 h-3" />
-                          {model.creditCost} credit{model.creditCost !== 1 ? "s" : ""}
-                        </span>
-                        {model.recommended && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-emerald-600/20 text-emerald-400 border border-emerald-600/30">
-                            <Star className="w-3 h-3 fill-current" />
-                            Recommended
+                      <div className="flex-1 w-full">
+                        <div className="flex justify-between items-start mb-1">
+                          <h3 className="font-semibold">{model.name}</h3>
+                          {isSelected && (
+                            <Check className="w-5 h-5 text-white" />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <ProviderBadge company={model.company} />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-600/20 text-amber-400 border border-amber-600/30">
+                            <Coins className="w-3 h-3" />
+                            {model.creditCost} credit{model.creditCost !== 1 ? "s" : ""}
                           </span>
-                        )}
+                          {model.recommended && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-emerald-600/20 text-emerald-400 border border-emerald-600/30">
+                              <Star className="w-3 h-3 fill-current" />
+                              Recommended
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm mt-2 text-gray-300">
+                          {model.description}
+                        </p>
                       </div>
-                      <p className="text-sm mt-2 text-gray-300">
-                        {model.description}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </ScrollArea>
         )}

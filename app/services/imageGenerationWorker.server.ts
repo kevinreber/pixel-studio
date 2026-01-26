@@ -31,7 +31,7 @@ import type { ImageGenerationRequest } from "./imageGenerationProducer.server";
 export interface ProcessingStatusUpdate {
   requestId: string;
   userId: string;
-  status: "queued" | "processing" | "complete" | "failed";
+  status: "queued" | "processing" | "complete" | "failed" | "partial";
   progress: number; // 0-100
   message?: string;
   setId?: string;
