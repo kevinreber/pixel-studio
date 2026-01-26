@@ -1088,7 +1088,7 @@ export interface PlatformSocialStats {
   avgFollowersPerUser: number;
   usersWithFollowers: number;
   usersWithNoFollowers: number;
-  mostFollowedUser: { username: string; followerCount: number } | null;
+  mostFollowedUser: { id: string; username: string; followerCount: number } | null;
   totalLikes: number;
   totalComments: number;
   avgLikesPerImage: number;
@@ -1124,6 +1124,7 @@ export async function getPlatformSocialStats(): Promise<PlatformSocialStats> {
         },
       },
       select: {
+        id: true,
         username: true,
         _count: {
           select: { followedBy: true },
@@ -1141,7 +1142,7 @@ export async function getPlatformSocialStats(): Promise<PlatformSocialStats> {
     usersWithFollowers,
     usersWithNoFollowers: totalUsers - usersWithFollowers,
     mostFollowedUser: mostFollowed
-      ? { username: mostFollowed.username, followerCount: mostFollowed._count.followedBy }
+      ? { id: mostFollowed.id, username: mostFollowed.username, followerCount: mostFollowed._count.followedBy }
       : null,
     totalLikes,
     totalComments,

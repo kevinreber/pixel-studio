@@ -1,5 +1,5 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, Link } from "@remix-run/react";
 import { requireUserLogin } from "~/services/auth.server";
 import { getUserWithRoles, isAdmin } from "~/server/isAdmin.server";
 import {
@@ -88,7 +88,9 @@ function UserCard({
   showEngagement?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+    <Link
+      to={`/profile/${user.id}`}
+      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer">
       {/* Rank */}
       <div
         className={cn(
@@ -153,7 +155,7 @@ function UserCard({
           <div className="text-xs text-muted-foreground">followers</div>
         </div>
       )}
-    </div>
+    </Link>
   );
 }
 
@@ -250,25 +252,27 @@ export default function AdminEngagementPage() {
 
       {/* Most Followed User Highlight */}
       {socialStats.mostFollowedUser && (
-        <Card className="bg-gradient-to-r from-yellow-500/10 to-amber-500/10 border-yellow-500/20">
-          <CardContent className="flex items-center gap-4 py-4">
-            <div className="p-3 rounded-full bg-yellow-500/20">
-              <Crown className="h-6 w-6 text-yellow-500" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Most Followed User</p>
-              <p className="text-xl font-bold">
-                @{socialStats.mostFollowedUser.username}
-              </p>
-            </div>
-            <div className="ml-auto text-right">
-              <p className="text-2xl font-bold text-yellow-500">
-                {socialStats.mostFollowedUser.followerCount.toLocaleString()}
-              </p>
-              <p className="text-xs text-muted-foreground">followers</p>
-            </div>
-          </CardContent>
-        </Card>
+        <Link to={`/profile/${socialStats.mostFollowedUser.id}`}>
+          <Card className="bg-gradient-to-r from-yellow-500/10 to-amber-500/10 border-yellow-500/20 hover:border-yellow-500/40 transition-colors cursor-pointer">
+            <CardContent className="flex items-center gap-4 py-4">
+              <div className="p-3 rounded-full bg-yellow-500/20">
+                <Crown className="h-6 w-6 text-yellow-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Most Followed User</p>
+                <p className="text-xl font-bold">
+                  @{socialStats.mostFollowedUser.username}
+                </p>
+              </div>
+              <div className="ml-auto text-right">
+                <p className="text-2xl font-bold text-yellow-500">
+                  {socialStats.mostFollowedUser.followerCount.toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground">followers</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       )}
 
       {/* Follow Activity Trend */}
@@ -416,7 +420,11 @@ export default function AdminEngagementPage() {
                   {/* Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <div className="flex items-center gap-2 mb-1">
+                      <Link
+                        to={`/profile/${image.user.id}`}
+                        className="flex items-center gap-2 mb-1 hover:opacity-80 transition-opacity"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <Avatar className="h-5 w-5">
                           <AvatarImage
                             src={image.user.image ?? undefined}
@@ -429,7 +437,7 @@ export default function AdminEngagementPage() {
                         <span className="text-xs text-white truncate">
                           @{image.user.username}
                         </span>
-                      </div>
+                      </Link>
                       <div className="flex items-center gap-3 text-xs text-white">
                         <span className="flex items-center gap-1">
                           <Heart className="h-3 w-3" />
