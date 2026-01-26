@@ -110,10 +110,14 @@ function DeletionLogRow({ log }: { log: DeletionLog }) {
           )}
         </div>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1">
+          <Link
+            to={`/profile/${log.imageUserId}`}
+            className="flex items-center gap-1 hover:text-foreground transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
             <User className="w-3 h-3" />
             {log.imageOwnerUsername}
-          </span>
+          </Link>
           <span className="flex items-center gap-1">
             <Calendar className="w-3 h-3" />
             {formatDate(log.deletedAt)}
@@ -126,9 +130,17 @@ function DeletionLogRow({ log }: { log: DeletionLog }) {
         <span className="text-xs uppercase tracking-wide block mb-0.5">
           Deleted by
         </span>
-        <span className="font-medium text-foreground">
-          {log.deletedByUser?.username || "Unknown"}
-        </span>
+        {log.deletedByUser ? (
+          <Link
+            to={`/profile/${log.deletedByUser.id}`}
+            className="font-medium text-foreground hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {log.deletedByUser.username}
+          </Link>
+        ) : (
+          <span className="font-medium text-foreground">Unknown</span>
+        )}
       </div>
 
       {/* Reason */}
@@ -181,7 +193,12 @@ function DeletionLogRow({ log }: { log: DeletionLog }) {
                   )}
                   <div>
                     <span className="text-muted-foreground">Owner: </span>
-                    <span className="font-medium">{log.imageOwnerUsername}</span>
+                    <Link
+                      to={`/profile/${log.imageUserId}`}
+                      className="font-medium hover:underline"
+                    >
+                      {log.imageOwnerUsername}
+                    </Link>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Created: </span>
@@ -200,9 +217,16 @@ function DeletionLogRow({ log }: { log: DeletionLog }) {
                 <div className="flex gap-4 flex-wrap text-sm">
                   <div>
                     <span className="text-muted-foreground">Deleted by: </span>
-                    <span className="font-medium">
-                      {log.deletedByUser?.username || "Unknown"}
-                    </span>
+                    {log.deletedByUser ? (
+                      <Link
+                        to={`/profile/${log.deletedByUser.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {log.deletedByUser.username}
+                      </Link>
+                    ) : (
+                      <span className="font-medium">Unknown</span>
+                    )}
                   </div>
                   <div>
                     <span className="text-muted-foreground">Deleted at: </span>

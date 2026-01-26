@@ -363,8 +363,9 @@ export default function AdminDashboard() {
           <CardContent className="p-0">
             <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
               {adminUsers.map((admin) => (
-                <div
+                <Link
                   key={admin.id}
+                  to={`/profile/${admin.id}`}
                   className="flex items-center gap-4 p-4 hover:bg-accent/30 transition-colors"
                 >
                   <Avatar className="h-10 w-10">
@@ -394,7 +395,7 @@ export default function AdminDashboard() {
                       year: "numeric",
                     })}
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </CardContent>
