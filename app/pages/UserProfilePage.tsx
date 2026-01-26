@@ -17,7 +17,7 @@ import {
   FollowListModal,
 } from "~/components";
 import type { UserProfilePageLoader } from "~/routes/profile.$userId";
-import { Grid, User, Loader2, Image, Film } from "lucide-react";
+import { Grid, User, Loader2, Image, Film, Layers } from "lucide-react";
 import React from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -245,6 +245,18 @@ const UserProfileAccessor = ({
                 isFollowing={initialIsFollowing}
                 onFollowChange={handleFollowChange}
               />
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className="gap-2"
+                data-testid="view-sets-button"
+              >
+                <Link to={`/profile/${profileUserId}/sets`} prefetch="intent">
+                  <Layers className="h-4 w-4" />
+                  View Sets
+                </Link>
+              </Button>
             </div>
 
             <div className="flex gap-8 mb-4">
