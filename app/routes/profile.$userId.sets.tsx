@@ -155,13 +155,14 @@ const SetRow = ({ set }: { set: Set }) => {
   const model = set.images[0]?.model || set.videos[0]?.model || "Unknown";
 
   return (
-    <TableRow>
+    <TableRow data-testid="set-row">
       <td className="p-4 w-[160px]">
         <div className="flex">
           <Link
             to={`/sets/${set.id}`}
             prefetch="intent"
             className="text-foreground hover:text-blue-500 transition-colors line-clamp-2"
+            data-testid="set-link"
           >
             <MediaPreviewGrid images={set.images} videos={set.videos} />
           </Link>
@@ -234,7 +235,7 @@ const SetsTable = ({ username }: { username: string }) => {
 
   if (sets.sets.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12">
+      <div className="flex flex-col items-center justify-center py-12" data-testid="empty-sets-message">
         <div className="p-4 text-center text-muted-foreground">
           {username} hasn&apos;t created any sets yet.
         </div>
@@ -243,7 +244,7 @@ const SetsTable = ({ username }: { username: string }) => {
   }
 
   return (
-    <Table>
+    <Table data-testid="sets-table">
       <TableHeader>
         <TableRow>
           <TableHead className="w-[160px]">Preview</TableHead>
@@ -361,14 +362,14 @@ export default function UserSetsPage() {
 
   return (
     <PageContainer>
-      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12" data-testid="user-sets-page">
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" asChild>
+          <Button variant="ghost" size="icon" asChild data-testid="back-to-profile-button">
             <Link to={`/profile/${loaderData.userId}`} prefetch="intent">
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
-          <h1 className="text-2xl font-bold">{loaderData.username}&apos;s Sets</h1>
+          <h1 className="text-2xl font-bold" data-testid="user-sets-title">{loaderData.username}&apos;s Sets</h1>
         </div>
 
         <SetFilters />
