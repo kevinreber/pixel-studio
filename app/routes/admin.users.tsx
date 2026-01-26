@@ -1,5 +1,5 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, Link } from "@remix-run/react";
 import { requireUserLogin } from "~/services/auth.server";
 import { getUserWithRoles, isAdmin } from "~/server/isAdmin.server";
 import {
@@ -223,8 +223,9 @@ export default function AdminUsersPage() {
           <CardContent className="p-0">
             <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
               {recentSignups.map((user) => (
-                <div
+                <Link
                   key={user.id}
+                  to={`/profile/${user.id}`}
                   className="flex items-center gap-3 p-4 hover:bg-accent/30 transition-colors"
                 >
                   <Avatar className="h-9 w-9">
@@ -253,7 +254,7 @@ export default function AdminUsersPage() {
                       day: "numeric",
                     })}
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </CardContent>
@@ -271,8 +272,9 @@ export default function AdminUsersPage() {
           <CardContent className="p-0">
             <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
               {topCreditHolders.map((user, index) => (
-                <div
+                <Link
                   key={user.id}
+                  to={`/profile/${user.id}`}
                   className="flex items-center gap-3 p-4 hover:bg-accent/30 transition-colors"
                 >
                   <div className="w-6 text-center">
@@ -311,7 +313,7 @@ export default function AdminUsersPage() {
                   >
                     {user.credits.toLocaleString()} credits
                   </Badge>
-                </div>
+                </Link>
               ))}
             </div>
           </CardContent>
@@ -340,8 +342,9 @@ export default function AdminUsersPage() {
           ) : (
             <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
               {zeroCreditUsers.map((user) => (
-                <div
+                <Link
                   key={user.id}
+                  to={`/profile/${user.id}`}
                   className="flex items-center gap-3 p-4 hover:bg-accent/30 transition-colors"
                 >
                   <Avatar className="h-9 w-9">
@@ -370,7 +373,7 @@ export default function AdminUsersPage() {
                     </p>
                   </div>
                   <p className="text-xs text-muted-foreground">{user.email}</p>
-                </div>
+                </Link>
               ))}
             </div>
           )}

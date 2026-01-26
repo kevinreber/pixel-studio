@@ -384,6 +384,159 @@ test.describe("Admin Navigation", () => {
   });
 });
 
+test.describe("Admin Users Page - Profile Links", () => {
+  test("Recent Signups section has clickable links to user profiles", async ({
+    page,
+  }) => {
+    await page.route("**/admin/users", async (route) => {
+      if (route.request().resourceType() === "document") {
+        await route.fulfill({
+          status: 200,
+          contentType: "text/html",
+          body: `
+            <!DOCTYPE html>
+            <html>
+              <body>
+                <h2>Recent Signups</h2>
+                <div data-testid="recent-signups-list">
+                  <a href="/profile/user-123" data-testid="user-profile-link">user1 - 5 credits</a>
+                  <a href="/profile/user-456" data-testid="user-profile-link">user2 - 10 credits</a>
+                </div>
+              </body>
+            </html>
+          `,
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.goto("/admin/users");
+
+    const profileLinks = page.getByTestId("user-profile-link");
+    await expect(profileLinks.first()).toBeVisible();
+    await expect(profileLinks.first()).toHaveAttribute("href", "/profile/user-123");
+  });
+
+  test("Top Credit Holders section has clickable links to user profiles", async ({
+    page,
+  }) => {
+    await page.route("**/admin/users", async (route) => {
+      if (route.request().resourceType() === "document") {
+        await route.fulfill({
+          status: 200,
+          contentType: "text/html",
+          body: `
+            <!DOCTYPE html>
+            <html>
+              <body>
+                <h2>Top Credit Holders</h2>
+                <div data-testid="top-holders-list">
+                  <a href="/profile/top-user-1" data-testid="top-holder-link">topuser1 - 500 credits</a>
+                  <a href="/profile/top-user-2" data-testid="top-holder-link">topuser2 - 300 credits</a>
+                </div>
+              </body>
+            </html>
+          `,
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.goto("/admin/users");
+
+    const holderLinks = page.getByTestId("top-holder-link");
+    await expect(holderLinks.first()).toBeVisible();
+    await expect(holderLinks.first()).toHaveAttribute("href", "/profile/top-user-1");
+  });
+
+  test("Zero Credit Users section has clickable links to user profiles", async ({
+    page,
+  }) => {
+    await page.route("**/admin/users", async (route) => {
+      if (route.request().resourceType() === "document") {
+        await route.fulfill({
+          status: 200,
+          contentType: "text/html",
+          body: `
+            <!DOCTYPE html>
+            <html>
+              <body>
+                <h2>Zero Credit Users</h2>
+                <div data-testid="zero-credit-list">
+                  <a href="/profile/zero-user-1" data-testid="zero-credit-link">user1@example.com - 0 credits</a>
+                  <a href="/profile/zero-user-2" data-testid="zero-credit-link">user2@example.com - 0 credits</a>
+                </div>
+              </body>
+            </html>
+          `,
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.goto("/admin/users");
+
+    const zeroLinks = page.getByTestId("zero-credit-link");
+    await expect(zeroLinks.first()).toBeVisible();
+    await expect(zeroLinks.first()).toHaveAttribute("href", "/profile/zero-user-1");
+  });
+
+  test("Clicking a user profile link navigates to the correct profile page", async ({
+    page,
+  }) => {
+    await page.route("**/admin/users", async (route) => {
+      if (route.request().resourceType() === "document") {
+        await route.fulfill({
+          status: 200,
+          contentType: "text/html",
+          body: `
+            <!DOCTYPE html>
+            <html>
+              <body>
+                <h2>Recent Signups</h2>
+                <div data-testid="recent-signups-list">
+                  <a href="/profile/user-abc-123" data-testid="user-profile-link">testuser - 5 credits</a>
+                </div>
+              </body>
+            </html>
+          `,
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.route("**/profile/user-abc-123", async (route) => {
+      if (route.request().resourceType() === "document") {
+        await route.fulfill({
+          status: 200,
+          contentType: "text/html",
+          body: `
+            <!DOCTYPE html>
+            <html>
+              <body>
+                <h1 data-testid="profile-username">testuser</h1>
+                <p>User profile page</p>
+              </body>
+            </html>
+          `,
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.goto("/admin/users");
+    await page.getByTestId("user-profile-link").click();
+
+    await expect(page).toHaveURL(/\/profile\/user-abc-123/);
+    await expect(page.getByTestId("profile-username")).toContainText("testuser");
+  });
+});
+
 test.describe("Admin API - Authorization", () => {
   test("Admin pages return 403 for non-admin users", async ({ page }) => {
     // Mock the admin route to return 403 Forbidden
