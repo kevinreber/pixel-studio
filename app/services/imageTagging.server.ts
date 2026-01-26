@@ -10,9 +10,22 @@ import OpenAI from "openai";
 import { prisma } from "~/services/prisma.server";
 import { Logger } from "~/utils/logger.server";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization to avoid errors when OPENAI_API_KEY is not set
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error(
+        "OPENAI_API_KEY is not configured. Image tagging feature is unavailable."
+      );
+    }
+    openaiClient = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openaiClient;
+}
 
 // Types for tag analysis results
 interface TagAnalysis {
@@ -107,6 +120,7 @@ export async function analyzeImageWithVision(
   imageUrl: string
 ): Promise<TagAnalysis> {
   try {
+    const openai = getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
