@@ -29,6 +29,7 @@ import {
   Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getS3BucketThumbnailURL } from "~/utils/s3Utils";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
@@ -42,7 +43,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     topByFollowers,
     topByEngagement,
     socialStats,
-    mostLikedContent,
+    mostLikedContentRaw,
     followTrends,
   ] = await Promise.all([
     getTopUsersByFollowers(10),
@@ -51,6 +52,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
     getMostLikedContent(10),
     getFollowTrends(14),
   ]);
+
+  // Add image URLs (constructed from S3 bucket)
+  const mostLikedContent = mostLikedContentRaw.map((image) => ({
+    ...image,
+    url: getS3BucketThumbnailURL(image.id),
+  }));
 
   return json({
     topByFollowers,

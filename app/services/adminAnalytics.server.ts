@@ -1166,7 +1166,6 @@ export async function getMostLikedContent(limit: number = 10) {
       title: true,
       prompt: true,
       model: true,
-      url: true,
       createdAt: true,
       user: {
         select: {
