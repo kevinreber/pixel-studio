@@ -33,6 +33,7 @@ export * from "./createFollow.server";
 export * from "./deleteFollow.server";
 export * from "./getUserFollowData.server";
 export * from "./getFollowingFeed.server";
+export * from "./searchUsers.server";
 
 // Video generation exports
 export * from "./createNewVideo";
