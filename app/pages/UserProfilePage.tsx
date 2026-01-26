@@ -245,18 +245,15 @@ const UserProfileAccessor = ({
                 isFollowing={initialIsFollowing}
                 onFollowChange={handleFollowChange}
               />
-              <Button
-                variant="outline"
-                size="sm"
-                asChild
-                className="gap-2"
+              <Link
+                to={`/profile/${profileUserId}/sets`}
+                prefetch="intent"
+                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
                 data-testid="view-sets-button"
               >
-                <Link to={`/profile/${profileUserId}/sets`} prefetch="intent">
-                  <Layers className="h-4 w-4" />
-                  View Sets
-                </Link>
-              </Button>
+                <Layers className="h-4 w-4" />
+                View Sets
+              </Link>
             </div>
 
             <div className="flex gap-8 mb-4">
