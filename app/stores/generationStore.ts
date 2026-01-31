@@ -262,7 +262,6 @@ export function useJob(requestId: string, type: GenerationType = "image") {
   const job = useGenerationStore((state) => state.jobs.get(requestId));
   const connectionStatus = useGenerationStore((state) => state.connectionStatus);
   const addJob = useGenerationStore((state) => state.addJob);
-  const _startPolling = useGenerationStore((state) => state._startPolling);
 
   // Start tracking if not already tracked
   if (!job) {

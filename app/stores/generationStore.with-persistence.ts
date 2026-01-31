@@ -8,7 +8,7 @@
  */
 
 import { create } from "zustand";
-import { subscribeWithSelector, persist, createJSONStorage } from "zustand/middleware";
+import { subscribeWithSelector, persist } from "zustand/middleware";
 
 // ... same types as generationStore.ts ...
 
@@ -189,35 +189,36 @@ export const useGenerationStore = create<GenerationStore>()(
       }),
       {
         name: "pixel-studio-generation",
-        storage: createJSONStorage(() => sessionStorage),
+        // Custom storage to handle Map serialization
+        storage: {
+          getItem: (name) => {
+            const str = sessionStorage.getItem(name);
+            if (!str) return null;
+            const parsed = JSON.parse(str);
+            // Convert jobs array back to Map
+            if (parsed.state?.jobs) {
+              parsed.state.jobs = new Map(parsed.state.jobs);
+            }
+            return parsed;
+          },
+          setItem: (name, value) => {
+            // Convert jobs Map to array for JSON serialization
+            const toStore = {
+              ...value,
+              state: {
+                ...value.state,
+                jobs: Array.from(value.state.jobs.entries()),
+              },
+            };
+            sessionStorage.setItem(name, JSON.stringify(toStore));
+          },
+          removeItem: (name) => sessionStorage.removeItem(name),
+        },
 
         // Only persist the jobs, not transient state
         partialize: (state) => ({
           jobs: state.jobs,
-        }),
-
-        // Custom serialization for Map
-        serialize: (state) => {
-          return JSON.stringify({
-            ...state,
-            state: {
-              ...state.state,
-              jobs: Array.from(state.state.jobs.entries()),
-            },
-          });
-        },
-
-        // Custom deserialization for Map
-        deserialize: (str) => {
-          const parsed = JSON.parse(str);
-          return {
-            ...parsed,
-            state: {
-              ...parsed.state,
-              jobs: new Map(parsed.state.jobs),
-            },
-          };
-        },
+        }) as GenerationStore,
 
         // Resume polling after rehydration
         onRehydrateStorage: () => (state) => {

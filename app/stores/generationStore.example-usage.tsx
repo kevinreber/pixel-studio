@@ -78,7 +78,6 @@ export default function ProcessingPage() {
   const job = useGenerationStore(selectJobById(requestId));
   const connectionStatus = useGenerationStore((s) => s.connectionStatus);
   const addJob = useGenerationStore((s) => s.addJob);
-  const updateJob = useGenerationStore((s) => s.updateJob);
 
   // Initialize job tracking if not already tracked
   useEffect(() => {
@@ -90,7 +89,7 @@ export default function ProcessingPage() {
         progress: initialStatus?.progress ?? 0,
         message: initialStatus?.message,
         setId: initialStatus?.setId,
-        comparisonMode: isComparisonMode || initialStatus?.comparisonMode,
+        comparisonMode: isComparisonMode,
       });
     }
   }, [requestId, job, addJob, initialStatus, isComparisonMode]);
@@ -110,7 +109,7 @@ export default function ProcessingPage() {
 
       return () => clearTimeout(timer);
     }
-  }, [job?.status, job?.setId, job?.comparisonMode, requestId, navigate, isComparisonMode]);
+  }, [job, requestId, navigate, isComparisonMode]);
 
   // =========================================================================
   // That's it! No more:
