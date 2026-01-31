@@ -20,6 +20,17 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { MODEL_OPTIONS } from "~/config/models";
+import { useGenerationProgress } from "~/contexts/GenerationProgressContext";
+
+interface RemixActionData {
+  success?: boolean;
+  async?: boolean;
+  requestId?: string;
+  processingUrl?: string;
+  message?: string;
+  prompt?: string;
+  error?: string;
+}
 
 /** Props for RemixImageButton component */
 export interface RemixImageButtonProps {
@@ -39,8 +50,10 @@ export const RemixImageButton = ({
   const userData = useLoggedInUser();
   const [isOpen, setIsOpen] = React.useState(false);
   const [selectedModel, setSelectedModel] = React.useState<string>("");
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<RemixActionData>();
   const isLoading = fetcher.state !== "idle";
+  const { addJob } = useGenerationProgress();
+  const processedRequestIdsRef = React.useRef<Set<string>>(new Set());
 
   // Get available models (excluding the current model)
   const availableModels = React.useMemo(
@@ -75,13 +88,29 @@ export const RemixImageButton = ({
     setIsOpen(false);
   };
 
-  // Show error if the remix failed
+  // Handle async generation response - show progress toast
   React.useEffect(() => {
-    if (fetcher.data && 'error' in (fetcher.data as object)) {
-      const errorData = fetcher.data as { error: string };
-      toast.error(errorData.error || "Failed to remix image");
+    if (fetcher.data?.async && fetcher.data?.requestId) {
+      // Prevent adding duplicate jobs
+      if (!processedRequestIdsRef.current.has(fetcher.data.requestId)) {
+        processedRequestIdsRef.current.add(fetcher.data.requestId);
+        addJob({
+          requestId: fetcher.data.requestId,
+          type: "image",
+          status: "queued",
+          progress: 0,
+          message: "Starting remix generation...",
+          prompt: fetcher.data.prompt,
+        });
+      }
+      return;
     }
-  }, [fetcher.data]);
+
+    // Show error if the remix failed
+    if (fetcher.data?.error) {
+      toast.error(fetcher.data.error || "Failed to remix image");
+    }
+  }, [fetcher.data, addJob]);
 
   if (!userData) {
     return null;

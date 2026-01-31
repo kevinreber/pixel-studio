@@ -136,7 +136,15 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
         console.log(`Successfully queued remix request: ${response.requestId}`);
 
-        return redirect(response.processingUrl);
+        // Return JSON with requestId so client can track progress via toast
+        return json({
+          success: true,
+          async: true,
+          requestId: response.requestId,
+          processingUrl: response.processingUrl,
+          message: "Remix generation started",
+          prompt: originalImage.prompt,
+        });
       } catch (error) {
         console.error("Kafka remix failed, falling back to synchronous:", error);
       }
