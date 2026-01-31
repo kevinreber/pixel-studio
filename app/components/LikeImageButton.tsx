@@ -3,11 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
 import { useLoggedInUser } from "~/hooks";
 import { useFetcher } from "@remix-run/react";
+import { cn } from "@/lib/utils";
 
-interface LikeImageButtonProps {
+/** Like data structure for an image */
+export interface ImageLike {
+  userId: string;
+}
+
+/** Props for LikeImageButton component */
+export interface LikeImageButtonProps {
+  /** Image data containing id and likes array. Both can be undefined for safety. */
   imageData: {
     id?: string;
-    likes?: Array<{ userId: string }>;
+    likes?: ImageLike[];
   };
 }
 
@@ -64,6 +72,8 @@ export const LikeImageButton = ({ imageData }: LikeImageButtonProps) => {
         )}
         disabled={disableButton}
         onClick={handleClick}
+        aria-label={isLiked ? "Unlike image" : "Like image"}
+        aria-pressed={isLiked}
       >
         <Heart
           className={cn(
@@ -77,7 +87,3 @@ export const LikeImageButton = ({ imageData }: LikeImageButtonProps) => {
     </div>
   );
 };
-
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(" ");
-}

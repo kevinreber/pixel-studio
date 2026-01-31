@@ -21,12 +21,15 @@ import {
 } from "@/components/ui/dialog";
 import { ChevronDown, Check, Loader2, Sparkles, Coins, Settings2, Star, GitCompare } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 import { CreatePageLoader } from "~/routes/create";
 import { MODEL_OPTIONS, STYLE_OPTIONS } from "~/config/models";
 import { toast } from "sonner";
 import type { ActionData } from "~/routes/create";
 import { ProviderBadge } from "./ModelBadge";
 import { useGenerationProgress } from "~/contexts/GenerationProgressContext";
+import { parseActionError } from "~/utils/errors";
+import { MOBILE_BREAKPOINT } from "~/config/breakpoints";
 
 // Size options per model type
 type SizeOption = { label: string; ratio: string; width: number; height: number };
@@ -90,7 +93,6 @@ const PROMPT_EXAMPLES = [
   "A magical forest with bioluminescent mushrooms and fireflies",
 ];
 
-const MOBILE_WIDTH = 768;
 const MAX_TEXT_AREA_CHAR_COUNT = 500;
 
 type ModelOption = {
@@ -175,11 +177,12 @@ const NumberSelector = ({
               disabled={disabled}
               onClick={() => onChange(number)}
               variant={value === number ? "secondary" : "outline"}
-              className={`w-14 h-[40px] text-lg ${
+              className={cn(
+                "w-14 h-[40px] text-lg",
                 value === number
                   ? "bg-zinc-700 hover:bg-zinc-600"
                   : "bg-zinc-800/50 hover:bg-zinc-700/50"
-              }`}
+              )}
             >
               {number}
             </Button>
@@ -194,11 +197,12 @@ const NumberSelector = ({
               disabled={disabled}
               onClick={() => onChange(number)}
               variant={value === number ? "secondary" : "outline"}
-              className={`w-14 h-[40px] text-lg ${
+              className={cn(
+                "w-14 h-[40px] text-lg",
                 value === number
                   ? "bg-zinc-700 hover:bg-zinc-600"
                   : "bg-zinc-800/50 hover:bg-zinc-700/50"
-              }`}
+              )}
             >
               {number}
             </Button>
@@ -252,7 +256,7 @@ const CreatePageForm = () => {
   const [showAdvanced, setShowAdvanced] = React.useState(false);
 
   React.useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_WIDTH);
+    const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
@@ -291,29 +295,9 @@ const CreatePageForm = () => {
 
     // Show error toast if we get an error from the action
     if (actionData?.error) {
-      let errorMessage: string;
-
-      // Handle both string errors and validation errors
-      if (typeof actionData.error === "object") {
-        // Handle Zod validation errors
-        const firstError = Object.values(actionData.error)[0]?.[0];
-        errorMessage = firstError || "Validation error";
-      } else {
-        errorMessage = actionData.error;
-      }
-
-      // Try to parse the error if it's a JSON string
-      try {
-        const parsedError = JSON.parse(errorMessage);
-        if (parsedError.message) {
-          errorMessage = parsedError.message;
-        }
-      } catch {
-        // Not JSON, use as-is
-      }
-
+      const errorMessage = parseActionError(actionData.error, "Please try again");
       toast.error("Error", {
-        description: errorMessage || actionData.message || "Please try again",
+        description: errorMessage,
       });
     }
   }, [actionData, addJob]);
@@ -340,20 +324,20 @@ const CreatePageForm = () => {
   };
 
   // Calculate total credits for comparison mode
-  const getTotalCredits = () => {
+  const totalCredits = React.useMemo(() => {
     if (comparisonMode) {
       return selectedModels.reduce((sum, m) => sum + m.creditCost * numImages, 0);
     }
     return selectedModel.creditCost * numImages;
-  };
+  }, [comparisonMode, selectedModels, selectedModel.creditCost, numImages]);
 
   // Get credit cost per image (for display purposes)
-  const getCreditCostPerImage = () => {
+  const creditCostPerImage = React.useMemo(() => {
     if (comparisonMode) {
       return selectedModels.reduce((sum, m) => sum + m.creditCost, 0);
     }
     return selectedModel.creditCost;
-  };
+  }, [comparisonMode, selectedModels, selectedModel.creditCost]);
 
   const handleModelClick = () => {
     if (isMobile) {
@@ -446,11 +430,12 @@ const CreatePageForm = () => {
                     }}
                     disabled={isSubmitting}
                     className="flex items-center gap-1 text-xs text-pink-400 hover:text-pink-300 transition-colors disabled:opacity-50"
+                    aria-label="Fill prompt with a random example"
                   >
-                    <Sparkles className="w-3 h-3" />
+                    <Sparkles className="w-3 h-3" aria-hidden="true" />
                     Try an example
                   </button>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-400" aria-live="polite">
                     {prompt.length}/{MAX_TEXT_AREA_CHAR_COUNT}
                   </span>
                 </div>
@@ -633,7 +618,7 @@ const CreatePageForm = () => {
                     {comparisonMode && selectedModels.length > 0 && (
                       <div className="flex items-center gap-1.5 text-xs text-purple-400">
                         <Coins className="w-3 h-3" />
-                        <span>{getTotalCredits()} credits total</span>
+                        <span>{totalCredits} credits total</span>
                       </div>
                     )}
                   </div>
@@ -808,11 +793,12 @@ const CreatePageForm = () => {
                     }}
                     disabled={isSubmitting}
                     className="flex items-center gap-1 text-xs text-pink-400 hover:text-pink-300 transition-colors disabled:opacity-50"
+                    aria-label="Fill prompt with a random example"
                   >
-                    <Sparkles className="w-3 h-3" />
+                    <Sparkles className="w-3 h-3" aria-hidden="true" />
                     Try an example
                   </button>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-400" aria-live="polite">
                     {prompt.length}/{MAX_TEXT_AREA_CHAR_COUNT}
                   </span>
                 </div>
@@ -823,7 +809,7 @@ const CreatePageForm = () => {
                   value={numImages}
                   onChange={setNumImages}
                   disabled={isSubmitting}
-                  creditCostPerImage={getCreditCostPerImage()}
+                  creditCostPerImage={creditCostPerImage}
                 />
                 {comparisonMode && selectedModels.length > 1 && (
                   <p className="text-xs text-gray-400 mt-2">
@@ -838,18 +824,21 @@ const CreatePageForm = () => {
                   type="button"
                   onClick={() => setShowAdvanced(!showAdvanced)}
                   className="flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-white transition-colors w-full"
+                  aria-expanded={showAdvanced}
+                  aria-controls="advanced-options"
                 >
-                  <Settings2 className="w-4 h-4" />
+                  <Settings2 className="w-4 h-4" aria-hidden="true" />
                   Advanced Options
                   <ChevronDown
                     className={`w-4 h-4 ml-auto transition-transform ${
                       showAdvanced ? "rotate-180" : ""
                     }`}
+                    aria-hidden="true"
                   />
                 </button>
 
                 {showAdvanced && (
-                  <div className="mt-4 space-y-4">
+                  <div id="advanced-options" className="mt-4 space-y-4">
                     {/* Hidden inputs for advanced options */}
                     <input type="hidden" name="negativePrompt" value={negativePrompt} />
                     <input type="hidden" name="seed" value={seed ?? ""} />

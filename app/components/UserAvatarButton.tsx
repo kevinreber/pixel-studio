@@ -59,7 +59,10 @@ const UserAvatarButton = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-md text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+        <button
+          className="w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-md text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+          aria-label="User menu"
+        >
           <Avatar>
             <AvatarImage
               src={avatarSrc}
@@ -76,10 +79,7 @@ const UserAvatarButton = () => {
           </div>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        className="w-56"
-        style={{ zIndex: 9999, backgroundColor: "rgba(0, 0, 0, 1)" }}
-      >
+      <DropdownMenuContent className="w-56 z-50 bg-black">
         <DropdownMenuLabel>
           <div className="flex justify-between">
             My Account

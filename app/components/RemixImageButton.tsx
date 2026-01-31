@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { MODEL_OPTIONS } from "~/routes/create";
+import { MODEL_OPTIONS } from "~/config/models";
 import { useGenerationProgress } from "~/contexts/GenerationProgressContext";
 
 interface RemixActionData {
@@ -32,9 +32,13 @@ interface RemixActionData {
   error?: string;
 }
 
-interface RemixImageButtonProps {
+/** Props for RemixImageButton component */
+export interface RemixImageButtonProps {
+  /** ID of the image to remix */
   imageId: string;
+  /** Current model used for the image (will be excluded from options). Accepts any string for flexibility. */
   currentModel?: string | null;
+  /** Whether the button is disabled */
   disabled?: boolean;
 }
 
@@ -52,11 +56,15 @@ export const RemixImageButton = ({
   const processedRequestIdsRef = React.useRef<Set<string>>(new Set());
 
   // Get available models (excluding the current model)
-  const availableModels = MODEL_OPTIONS.filter(
-    (model) => model.value !== currentModel
+  const availableModels = React.useMemo(
+    () => MODEL_OPTIONS.filter((model) => model.value !== currentModel),
+    [currentModel]
   );
 
-  const selectedModelData = availableModels.find((m) => m.value === selectedModel);
+  const selectedModelData = React.useMemo(
+    () => availableModels.find((m) => m.value === selectedModel),
+    [availableModels, selectedModel]
+  );
   const userCredits = userData?.credits ?? 0;
   const canAffordRemix = selectedModelData ? userCredits >= selectedModelData.creditCost : true;
 
