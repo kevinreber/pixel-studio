@@ -16,7 +16,7 @@ import {
   FollowButton,
   FollowListModal,
 } from "~/components";
-import type { UserProfilePageLoader } from "~/routes/profile.$userId";
+import type { UserProfilePageLoader } from "~/routes/profile.$userId._index";
 import { Grid, User, Loader2, Image, Film, Layers } from "lucide-react";
 import React from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -26,6 +26,13 @@ import type { ProfileMediaItem, ProfileVideo } from "~/server/getUserDataByUserI
 interface FollowStats {
   followersCount: number;
   followingCount: number;
+}
+
+// Type for the resolved combined promise data
+interface ResolvedProfileData {
+  userData: Awaited<Awaited<ReturnType<UserProfilePageLoader>>["userData"]>;
+  followStats: FollowStats;
+  isFollowing: boolean;
 }
 
 const UserDoesNotExist = () => {
@@ -471,7 +478,7 @@ export default function UserProfilePage() {
         }
       >
         <Await
-          resolve={combinedPromise}
+          resolve={combinedPromise as unknown as Promise<ResolvedProfileData>}
           errorElement={
             <ErrorList
               errors={["There was an error loading the user profile"]}

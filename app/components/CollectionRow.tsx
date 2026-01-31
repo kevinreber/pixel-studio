@@ -10,7 +10,8 @@ interface CollectionRowProps {
     id: string;
     title: string;
     description?: string | null;
-    images: { id: string }[];
+    images?: { id: string }[];
+    imageCount?: number;
   };
 }
 
@@ -46,7 +47,7 @@ export function CollectionRow({ collection }: CollectionRowProps) {
       </TableCell>
       <TableCell className="text-zinc-500">{collection.description}</TableCell>
       <TableCell className="text-right text-zinc-500">
-        {convertNumberToLocaleString(collection.images.length)}
+        {convertNumberToLocaleString(collection.imageCount ?? collection.images?.length ?? 0)}
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-4">

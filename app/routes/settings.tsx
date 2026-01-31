@@ -215,13 +215,13 @@ export default function Index() {
                   </p>
                 </div>
 
-                {actionData?.error && (
+                {actionData && 'error' in actionData && actionData.error && (
                   <div className="text-red-500 text-sm font-medium bg-red-500/10 px-3 py-2 rounded-md">
                     {actionData.error}
                   </div>
                 )}
 
-                {actionData?.success && (
+                {actionData && 'success' in actionData && actionData.success && (
                   <div className="text-green-500 text-sm font-medium bg-green-500/10 px-3 py-2 rounded-md">
                     Username updated successfully!
                   </div>

@@ -55,7 +55,7 @@ export const getLoggedInUserData = async (userData: User | UserGoogleData) => {
   });
 
   if (!user || !user.id) {
-    if (userData.provider && userData.provider === "google") {
+    if ('provider' in userData && userData.provider === "google") {
       console.log("Creating new user with Google SSO data");
       return createNewUserWithGoogleSSOData(userData as UserGoogleData);
     }

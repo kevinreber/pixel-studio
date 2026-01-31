@@ -499,7 +499,8 @@ export class ProcessingWebSocketServer {
 
   // Health check methods
   isHealthy(): boolean {
-    return this.isRunning && this.wss.readyState === this.wss.OPEN;
+    // WebSocketServer doesn't have readyState - use isRunning instead
+    return this.isRunning;
   }
 
   getConnectionStats(): Record<string, unknown> {

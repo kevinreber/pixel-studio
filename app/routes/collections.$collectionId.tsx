@@ -10,13 +10,14 @@ import CollectionDetailsPage from "~/pages/CollectionDetailsPage";
 import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
 import { Link } from "@remix-run/react";
 
-export const meta: MetaFunction<typeof loader> = ({ data }) => {
-  const collection = data?.collection;
+export const meta: MetaFunction<typeof loader> = () => {
+  // Note: With defer, collection is a Promise that hasn't resolved yet
+  // so we use a generic title that will be updated by the page
   return [
-    { title: `${collection?.title || "Collection"} | AI Image Gallery` },
+    { title: "Collection | AI Image Gallery" },
     {
       name: "description",
-      content: `View images in collection "${collection?.title}"`,
+      content: "View images in this collection",
     },
   ];
 };

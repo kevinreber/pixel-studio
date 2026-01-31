@@ -61,7 +61,9 @@ const prisma = singleton("prisma", () => {
   });
 
   // Add connection error handling
-  client.$on("error", (e) => {
+  // Note: Prisma $on only supports "query" event type in the type system
+  // Using "error" as a string to handle error events at runtime
+  (client.$on as (event: string, callback: (e: unknown) => void) => void)("error", (e) => {
     console.error("Prisma Client error:", e);
     client.$disconnect();
   });

@@ -30,8 +30,10 @@ export const meta: MetaFunction<
 
   // Incase our Profile loader ever fails, we can get logged in user data from root
   const userMatch = matches.find((match) => match.id === "root");
+  // Root loader returns { userData, ENV, csrfToken, honeyProps }
+  const rootData = userMatch?.data as { userData?: { username?: string; name?: string | null } } | undefined;
   const username =
-    userMatch?.data.data?.username || userMatch?.data.data?.name || userId;
+    rootData?.userData?.username || rootData?.userData?.name || userId;
 
   return [
     { title: `${username} | Profile` },

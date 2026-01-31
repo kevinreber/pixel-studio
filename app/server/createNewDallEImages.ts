@@ -136,7 +136,7 @@ const createDallEImages = async (
           quality: (options?.quality as "standard" | "hd") || "standard",
           style: (options?.generationStyle as "vivid" | "natural") || "vivid",
         });
-        const encodedImage = response.data[0].b64_json;
+        const encodedImage = response.data?.[0]?.b64_json;
         if (encodedImage) {
           Logger.info({
             message: `Successfully created ${model} image ${i + 1}`,
@@ -153,7 +153,7 @@ const createDallEImages = async (
         n: numberOfImagesToGenerate,
       });
 
-      const allEncodedImages = response.data.map((result) => result.b64_json);
+      const allEncodedImages = response.data?.map((result) => result.b64_json) ?? [];
       base64EncodedImages.push(...allEncodedImages);
     }
 

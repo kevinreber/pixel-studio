@@ -90,7 +90,8 @@ describe("deleteImageWithAudit", () => {
           delete: vi.fn().mockResolvedValue(mockImage),
         },
       };
-      return callback(tx);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return callback(tx as any);
     });
     vi.mocked(deleteImageFromS3Bucket).mockResolvedValue({ success: true } as never);
 
@@ -134,7 +135,8 @@ describe("deleteImageWithAudit", () => {
           delete: vi.fn().mockResolvedValue(mockImage),
         },
       };
-      return callback(tx);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return callback(tx as any);
     });
     vi.mocked(deleteImageFromS3Bucket).mockResolvedValue({ success: true } as never);
 
@@ -163,7 +165,8 @@ describe("deleteImageWithAudit", () => {
           delete: vi.fn().mockResolvedValue(mockImage),
         },
       };
-      return callback(tx);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return callback(tx as any);
     });
     vi.mocked(deleteImageFromS3Bucket).mockResolvedValue({ success: true } as never);
 
@@ -221,7 +224,8 @@ describe("deleteImageWithAudit", () => {
           delete: vi.fn().mockResolvedValue(mockImage),
         },
       };
-      return callback(tx);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return callback(tx as any);
     });
     // S3 deletion fails
     vi.mocked(deleteImageFromS3Bucket).mockRejectedValue(new Error("S3 error"));

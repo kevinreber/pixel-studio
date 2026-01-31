@@ -75,7 +75,8 @@ export async function logGenerationStart(
         prompt,
         model,
         creditCost,
-        metadata: metadata || {},
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        metadata: (metadata || {}) as any,
         createdAt: new Date(),
       },
     });

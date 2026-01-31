@@ -14,7 +14,7 @@ interface ImageComment {
   id: string;
   message: string;
   createdAt: Date;
-  updatedAt: Date;
+  updatedAt: Date | null;
   parentId: string | null;
   user: ImageUser;
   likes: Array<{ userId: string }>;
@@ -35,27 +35,27 @@ export interface ImageData {
   title: string | null;
   prompt: string;
   model: string | null;
-  stylePreset: string | null;
+  stylePreset?: string | null;
   private: boolean | null;
   user: ImageUser;
   createdAt: Date;
-  comments: ImageComment[];
+  comments?: ImageComment[];
   likes: ImageLike[];
-  setId: string | null;
-  // Generation parameters
-  width: number | null;
-  height: number | null;
-  quality: string | null;
-  generationStyle: string | null;
-  negativePrompt: string | null;
-  seed: number | null;
-  cfgScale: number | null;
-  steps: number | null;
-  promptUpsampling: boolean | null;
-  // Remix fields
-  isRemix: boolean | null;
-  parentImageId: string | null;
-  parentImage: ParentImageInfo | null;
+  setId?: string | null;
+  // Generation parameters (optional - not always available from all data sources)
+  width?: number | null;
+  height?: number | null;
+  quality?: string | null;
+  generationStyle?: string | null;
+  negativePrompt?: string | null;
+  seed?: number | null;
+  cfgScale?: number | null;
+  steps?: number | null;
+  promptUpsampling?: boolean | null;
+  // Remix fields (optional - not always available from all data sources)
+  isRemix?: boolean | null;
+  parentImageId?: string | null;
+  parentImage?: ParentImageInfo | null;
 }
 
 export interface FormattedImageData extends ImageData {

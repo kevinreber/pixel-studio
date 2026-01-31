@@ -68,7 +68,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       // Make sure we have a user in our database
       dbUser = await createNewUserWithSupabaseData(
         authState.user,
-        authState.user.app_metadata.provider
+        authState.user.app_metadata.provider ?? "google"
       );
     }
 
