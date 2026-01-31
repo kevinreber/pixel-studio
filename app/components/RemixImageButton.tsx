@@ -104,7 +104,7 @@ export const RemixImageButton = ({
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      <DialogContent className="sm:max-w-[500px] bg-zinc-900 border-zinc-700 text-white">
+      <DialogContent className="sm:max-w-[500px] bg-zinc-900 border-zinc-700 text-white z-[200]" overlayClassName="z-[199]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-purple-400" />

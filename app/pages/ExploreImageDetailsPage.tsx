@@ -6,6 +6,7 @@ import { convertUtcDateToLocalDateString } from "~/client";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -746,6 +747,12 @@ const ExploreImageDetailsPage = ({ onClose }: ExploreImageDetailsPageProps) => {
           errorElement={
             <Dialog open={true} onOpenChange={onClose}>
               <DialogContent>
+                <VisuallyHidden asChild>
+                  <DialogTitle>Error</DialogTitle>
+                </VisuallyHidden>
+                <VisuallyHidden asChild>
+                  <DialogDescription>Error loading image details</DialogDescription>
+                </VisuallyHidden>
                 <div className="p-4">
                   <p className="text-red-500">Error loading image details</p>
                 </div>
@@ -760,6 +767,9 @@ const ExploreImageDetailsPage = ({ onClose }: ExploreImageDetailsPageProps) => {
             >
               <VisuallyHidden asChild>
                 <DialogTitle>Image Details</DialogTitle>
+              </VisuallyHidden>
+              <VisuallyHidden asChild>
+                <DialogDescription>View and interact with image details, comments, and generation parameters</DialogDescription>
               </VisuallyHidden>
               <ExploreImageDetailsPageAccessor onClose={onClose} />
             </DialogContent>
