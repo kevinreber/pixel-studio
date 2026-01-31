@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Shuffle } from "lucide-react";
+import { Shuffle, Coins } from "lucide-react";
 import { useLoggedInUser } from "~/hooks";
 import { useFetcher } from "@remix-run/react";
 import {
@@ -38,8 +38,17 @@ export const RemixImageButton = ({
     (model) => model.value !== currentModel
   );
 
+  const selectedModelData = availableModels.find((m) => m.value === selectedModel);
+  const userCredits = userData?.credits ?? 0;
+  const canAffordRemix = selectedModelData ? userCredits >= selectedModelData.creditCost : true;
+
   const handleRemix = () => {
     if (!userData || isLoading || !selectedModel) return;
+
+    if (!canAffordRemix) {
+      toast.error("Not enough credits for this remix");
+      return;
+    }
 
     fetcher.submit(
       { model: selectedModel },
@@ -49,7 +58,7 @@ export const RemixImageButton = ({
       }
     );
 
-    toast.success("Remixing image with " + availableModels.find(m => m.value === selectedModel)?.name);
+    toast.success("Remixing image with " + selectedModelData?.name);
     setIsOpen(false);
   };
 
@@ -90,60 +99,94 @@ export const RemixImageButton = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
+        {/* User's credit balance */}
+        <div className="flex items-center gap-2 px-3 py-2 bg-zinc-800/50 rounded-lg border border-zinc-700">
+          <Coins className="h-4 w-4 text-yellow-500" />
+          <span className="text-sm text-zinc-300">Your balance:</span>
+          <span className="text-sm font-medium text-yellow-500">{userCredits} credits</span>
+        </div>
+
+        <div className="grid gap-4 py-2">
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-zinc-300">Select AI Model</h4>
-            <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-2">
-              {availableModels.map((model) => (
-                <button
-                  key={model.value}
-                  onClick={() => setSelectedModel(model.value)}
-                  className={cn(
-                    "flex flex-col items-start p-3 rounded-lg border transition-all text-left",
-                    selectedModel === model.value
-                      ? "border-rose-500 bg-rose-500/10"
-                      : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-600 hover:bg-zinc-800"
-                  )}
-                >
-                  <div className="flex items-center gap-2 w-full">
-                    {model.image && (
-                      <img
-                        src={model.image}
-                        alt={model.name}
-                        className="w-8 h-8 rounded object-cover"
-                      />
+            <div className="grid grid-cols-2 gap-2 max-h-[280px] overflow-y-auto pr-2">
+              {availableModels.map((model) => {
+                const canAfford = userCredits >= model.creditCost;
+                return (
+                  <button
+                    key={model.value}
+                    onClick={() => setSelectedModel(model.value)}
+                    disabled={!canAfford}
+                    className={cn(
+                      "flex flex-col items-start p-3 rounded-lg border transition-all text-left",
+                      selectedModel === model.value
+                        ? "border-rose-500 bg-rose-500/10"
+                        : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-600 hover:bg-zinc-800",
+                      !canAfford && "opacity-50 cursor-not-allowed"
                     )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-zinc-100 truncate">
-                        {model.name}
-                      </p>
-                      <p className="text-xs text-zinc-500">{model.company}</p>
+                  >
+                    <div className="flex items-center gap-2 w-full">
+                      {model.image && (
+                        <img
+                          src={model.image}
+                          alt={model.name}
+                          className="w-8 h-8 rounded object-cover"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-zinc-100 truncate">
+                          {model.name}
+                        </p>
+                        <p className="text-xs text-zinc-500">{model.company}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between w-full">
-                    <span className="text-xs text-zinc-400 line-clamp-1">
-                      {model.description.slice(0, 50)}...
-                    </span>
-                    <span className="text-xs font-medium text-rose-400 whitespace-nowrap ml-2">
-                      {model.creditCost} {model.creditCost === 1 ? "credit" : "credits"}
-                    </span>
-                  </div>
-                </button>
-              ))}
+                    <div className="mt-2 flex items-center justify-between w-full">
+                      <span className={cn(
+                        "text-xs font-semibold px-2 py-0.5 rounded-full",
+                        canAfford
+                          ? "bg-rose-500/20 text-rose-400"
+                          : "bg-red-500/20 text-red-400"
+                      )}>
+                        {model.creditCost} {model.creditCost === 1 ? "credit" : "credits"}
+                      </span>
+                      {!canAfford && (
+                        <span className="text-xs text-red-400">Not enough</span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {selectedModel && (
-            <div className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700">
+          {selectedModel && selectedModelData && (
+            <div className={cn(
+              "rounded-lg p-3 border",
+              canAffordRemix
+                ? "bg-zinc-800/50 border-zinc-700"
+                : "bg-red-900/20 border-red-500/50"
+            )}>
               <p className="text-sm text-zinc-300">
                 <span className="font-medium">Selected:</span>{" "}
-                {availableModels.find((m) => m.value === selectedModel)?.name}
+                {selectedModelData.name}
               </p>
-              <p className="text-xs text-zinc-500 mt-1">
-                This will cost{" "}
-                <span className="text-rose-400 font-medium">
-                  {availableModels.find((m) => m.value === selectedModel)?.creditCost} credits
+              <p className="text-sm mt-1">
+                <span className="text-zinc-500">Cost:</span>{" "}
+                <span className={cn(
+                  "font-semibold",
+                  canAffordRemix ? "text-rose-400" : "text-red-400"
+                )}>
+                  {selectedModelData.creditCost} credits
                 </span>
+                {canAffordRemix ? (
+                  <span className="text-zinc-500 ml-2">
+                    ({userCredits - selectedModelData.creditCost} remaining after remix)
+                  </span>
+                ) : (
+                  <span className="text-red-400 ml-2">
+                    (need {selectedModelData.creditCost - userCredits} more)
+                  </span>
+                )}
               </p>
             </div>
           )}
@@ -159,10 +202,17 @@ export const RemixImageButton = ({
           </Button>
           <Button
             onClick={handleRemix}
-            disabled={!selectedModel || isLoading}
-            className="bg-rose-600 hover:bg-rose-700 text-white"
+            disabled={!selectedModel || isLoading || !canAffordRemix}
+            className={cn(
+              "text-white",
+              canAffordRemix
+                ? "bg-rose-600 hover:bg-rose-700"
+                : "bg-zinc-600 cursor-not-allowed"
+            )}
           >
-            {isLoading ? "Remixing..." : "Remix Image"}
+            {isLoading ? "Remixing..." : selectedModelData
+              ? `Remix (${selectedModelData.creditCost} credits)`
+              : "Remix Image"}
           </Button>
         </DialogFooter>
       </DialogContent>
