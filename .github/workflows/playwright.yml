@@ -7,33 +7,54 @@ on:
 
 jobs:
   test:
-    timeout-minutes: 60
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     env:
       USE_MOCK_DALLE: "true"
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: "lts/*"
+          node-version: "20"
+          cache: "npm"
+
       - name: Install dependencies
         run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install Playwright Browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps
+
+      - name: Install Playwright system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps
+
       - name: Create .env file
         run: |
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
           echo "SESSION_SECRET=${{ secrets.SESSION_SECRET }}" >> .env
           echo "USE_MOCK_DALLE=true" >> .env
+
       - name: Generate Prisma Client
         run: npx prisma generate
+
       - name: Start Server
         run: npm run dev & npx wait-on http://localhost:5173
+
       - name: Run Playwright tests
         run: npx playwright test
         env:
           CI: true
           USE_MOCK_DALLE: "true"
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
