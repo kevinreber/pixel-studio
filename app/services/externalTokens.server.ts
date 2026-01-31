@@ -26,11 +26,6 @@ interface OpenAISubscriptionResponse {
   system_hard_limit_usd: number;
 }
 
-interface ReplicateBillingResponse {
-  total_compute_time_seconds?: number;
-  total_predictions?: number;
-}
-
 interface TogetherBalanceResponse {
   available_balance?: number;
   current_balance?: number;
