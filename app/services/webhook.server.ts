@@ -2,6 +2,11 @@ import type Stripe from "stripe";
 import { prisma } from "./prisma.server";
 import { Logger } from "~/utils/logger.server";
 import { invalidateCache } from "~/utils/cache.server";
+import { logCreditPurchase } from "./creditTransaction.server";
+import {
+  trackPayment,
+  AnalyticsEvents,
+} from "~/services/analytics.server";
 
 const CHECKOUT_SESSION_COMPLETED = "checkout.session.completed";
 
@@ -54,10 +59,10 @@ const handleCheckoutSession = async (session: Stripe.Checkout.Session) => {
     throw new Error("No userId found in session metadata");
   }
 
-  return await updateUserCredits(session.metadata.userId);
+  return await updateUserCredits(session.metadata.userId, session.id);
 };
 
-const updateUserCredits = async (userId: string) => {
+const updateUserCredits = async (userId: string, stripeSessionId?: string) => {
   const creditsToAdd = 100;
 
   Logger.info({
@@ -80,6 +85,29 @@ const updateUserCredits = async (userId: string) => {
   });
   const cacheKey = `user-login:${userId}`;
   await invalidateCache(cacheKey);
+
+  // Log the credit purchase transaction
+  await logCreditPurchase({
+    userId,
+    amount: creditsToAdd,
+    stripeSessionId: stripeSessionId || "unknown",
+    description: `Purchased ${creditsToAdd} credits via Stripe`,
+    metadata: {
+      previousBalance: userData.credits - creditsToAdd,
+      newBalance: userData.credits,
+    },
+  });
+
+  // Track payment completed and credits purchased
+  trackPayment(userId, AnalyticsEvents.PAYMENT_COMPLETED, {
+    credits: creditsToAdd,
+    stripeSessionId: stripeSessionId || "unknown",
+  });
+
+  trackPayment(userId, AnalyticsEvents.CREDITS_PURCHASED, {
+    credits: creditsToAdd,
+    stripeSessionId: stripeSessionId || "unknown",
+  });
 
   Logger.info({
     message: "[webhook.server]: Successfully updated user credits",

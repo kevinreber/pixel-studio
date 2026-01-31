@@ -1,9 +1,11 @@
 import React from "react";
 import PixelStudioIcon from "components/PixelStudioIcon";
 import { Link } from "@remix-run/react";
-import { Search, PenTool, User, Images, Heart, Rss } from "lucide-react";
+import { Search, PenTool, User, Users, Images, Heart, Video, Rss, Shield } from "lucide-react";
 import { UserAvatarButton } from "./UserAvatarButton";
 import { useLoggedInUser } from "~/hooks";
+import { NotificationDropdown } from "./NotificationDropdown";
+import { isUserAdmin, type UserWithRoles } from "~/utils/isAdmin";
 
 const NavButton = ({
   title,
@@ -31,12 +33,18 @@ const NavigationSidebar = () => {
   // const userData = React.useContext(UserContext);
   const userData = useLoggedInUser();
   const isLoggedIn = Boolean(userData?.id);
+  const isAdmin = isUserAdmin(userData as UserWithRoles);
 
   const NAV_LINKS = [
     {
       title: "Explore",
       icon: <Search className="md:h-4 md:w-4" />,
       href: "/explore",
+    },
+    {
+      title: "Users",
+      icon: <Users className="md:h-4 md:w-4" />,
+      href: "/users",
     },
     {
       title: "Feed",
@@ -47,6 +55,11 @@ const NavigationSidebar = () => {
       title: "Create",
       icon: <PenTool className="md:h-4 md:w-4" />,
       href: "/create",
+    },
+    {
+      title: "Create Video",
+      icon: <Video className="md:h-4 md:w-4" />,
+      href: "/create-video",
     },
     {
       title: "Sets",
@@ -76,7 +89,18 @@ const NavigationSidebar = () => {
     // },
   ];
 
-  const navLinksToRender = isLoggedIn ? NAV_LINKS : [];
+  // Add admin link for admin users
+  const adminLink = {
+    title: "Admin",
+    icon: <Shield className="md:h-4 md:w-4" />,
+    href: "/admin",
+  };
+
+  const navLinksToRender = isLoggedIn
+    ? isAdmin
+      ? [...NAV_LINKS, adminLink]
+      : NAV_LINKS
+    : [];
 
   return (
     <>
@@ -103,7 +127,8 @@ const NavigationSidebar = () => {
           ))}
         </nav>
         {isLoggedIn && (
-          <div className="mt-auto pt-4">
+          <div className="mt-auto pt-4 space-y-1">
+            <NotificationDropdown showLabel />
             <UserAvatarButton />
           </div>
         )}
@@ -126,7 +151,8 @@ const NavigationSidebar = () => {
             </Link>
           </div>
           {isLoggedIn && (
-            <div className="flex items-center">
+            <div className="flex items-center gap-2">
+              <NotificationDropdown />
               <UserAvatarButton />
             </div>
           )}

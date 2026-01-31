@@ -8,6 +8,11 @@ import {
 import { createNewUserWithSupabaseData } from "~/server/createNewUser";
 import { commitSession, getSessionCookie } from "~/services/session.server";
 import { AUTH_KEY, USER_ID_KEY } from "~/services/auth.server";
+import {
+  trackUserSignUp,
+  trackUserLogin,
+  identifyUser,
+} from "~/services/analytics.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   console.log("HITTING callback-google loader with URL:", request.url);
@@ -60,10 +65,29 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     if (user) {
       console.log("User data:", JSON.stringify(user, null, 2));
-      await createNewUserWithSupabaseData(
+      const existingUser = await createNewUserWithSupabaseData(
         user,
         user.app_metadata?.provider || "google"
       );
+
+      // Track analytics for login/signup
+      const isNewUser = !existingUser;
+      const provider = user.app_metadata?.provider || "google";
+
+      if (isNewUser) {
+        trackUserSignUp(user.id, { provider, isNewUser: true });
+      } else {
+        trackUserLogin(user.id, { provider, isNewUser: false });
+      }
+
+      // Identify user in analytics
+      identifyUser(user.id, {
+        email: user.email,
+        name: user.user_metadata?.full_name,
+        avatar: user.user_metadata?.avatar_url,
+        provider,
+        createdAt: user.created_at,
+      });
     }
 
     const cookieSession = await getSessionCookie(request);

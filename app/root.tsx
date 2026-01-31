@@ -22,6 +22,7 @@ import { combineHeaders } from "./utils/combineHeaders";
 import { AuthenticityTokenProvider } from "remix-utils/csrf/react";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
 import { honeypot } from "utils/honeypot.server";
+import { GenerationProgressProvider } from "~/contexts/GenerationProgressContext";
 // import { getToast, type Toast } from "utils/toast.server";
 import { getLoggedInUserData } from "./server";
 import { GeneralErrorBoundary } from "./components/GeneralErrorBoundary";
@@ -97,13 +98,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 function Document({
   children,
-}: // env,
-{
+  env,
+}: {
   children: React.ReactNode;
-  // env?: Record<string, string>;
+  env?: Record<string, string | undefined>;
 }) {
   return (
-    <html lang="en" className="dark h-full overflow-x-hidden">
+    <html lang="en" className="dark h-full overflow-x-hidden" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -132,14 +133,15 @@ function Document({
           }}
         />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         {children}
-        {/* <script
-          dangerouslySetInnerHTML={{
-            __html: `window.ENV = ${JSON.stringify(env)}`,
-          }}
-        /> */}
-        {/* <Toaster closeButton position="top-center" /> */}
+        {env && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `window.ENV = ${JSON.stringify(env)}`,
+            }}
+          />
+        )}
         <ScrollRestoration />
         <Scripts />
         <Analytics />
@@ -150,18 +152,13 @@ function Document({
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const loaderData = useLoaderData<typeof loader>();
-  console.log("loaderData in Layout:", loaderData);
   const location = useLocation();
   const isHome = location.pathname === "/";
 
   return (
     <>
-      {/* <Document env={loaderData.ENV}> */}
-      <Document>
+      <Document env={loaderData?.ENV}>
         {!isHome && <NavigationSidebar />} {children}
-        {/* {loaderData && loaderData.toast ? (
-          <ShowToast toast={loaderData.toast} />
-        ) : null} */}
       </Document>
     </>
   );
@@ -173,8 +170,10 @@ export default function App() {
   return (
     <HoneypotProvider {...loaderData.honeyProps}>
       <AuthenticityTokenProvider token={loaderData.csrfToken}>
-        <Outlet context={{ userData: loaderData.userData }} />
-        <Toaster richColors position="top-right" />
+        <GenerationProgressProvider>
+          <Outlet context={{ userData: loaderData.userData }} />
+          <Toaster richColors position="top-right" />
+        </GenerationProgressProvider>
       </AuthenticityTokenProvider>
     </HoneypotProvider>
   );

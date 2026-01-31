@@ -25,7 +25,14 @@
 import { Client } from "@upstash/qstash";
 import { createId } from "@paralleldrive/cuid2";
 import type { CreateImagesFormData } from "~/routes/create";
+import type { CreateVideoFormData } from "~/routes/create-video";
 import { publishProcessingUpdate } from "./processingStatus.server";
+import {
+  logGenerationStart,
+  logGenerationComplete,
+  logGenerationFailed,
+} from "./generationLog.server";
+import { getModelCreditCost , getVideoModelCreditCost } from "~/config/pricing";
 
 // Initialize QStash client
 const getQStashClient = () => {
@@ -47,6 +54,19 @@ export interface QStashImageGenerationRequest {
   numberOfImages: number;
   model: string;
   stylePreset?: string;
+  private?: boolean;
+  timestamp: string;
+}
+
+export interface QStashVideoGenerationRequest {
+  requestId: string;
+  userId: string;
+  prompt: string;
+  model: string;
+  duration?: number;
+  aspectRatio?: string;
+  sourceImageUrl?: string;
+  sourceImageId?: string;
   private?: boolean;
   timestamp: string;
 }
@@ -208,6 +228,97 @@ export async function checkQStashHealth(): Promise<boolean> {
 }
 
 /**
+ * Queue a video generation request via QStash
+ * Returns immediately with a request ID for tracking
+ *
+ * In local development: Processes the job immediately (simulates QStash callback)
+ * In production: Queues to QStash which calls back to your webhook
+ */
+export async function queueVideoGenerationQStash(
+  formData: CreateVideoFormData,
+  userId: string
+): Promise<QueueResponse> {
+  const requestId = createId();
+
+  const request: QStashVideoGenerationRequest = {
+    requestId,
+    userId,
+    prompt: formData.prompt,
+    model: formData.model,
+    duration: formData.duration,
+    aspectRatio: formData.aspectRatio,
+    sourceImageUrl: formData.sourceImageUrl,
+    sourceImageId: formData.sourceImageId,
+    private: formData.private || false,
+    timestamp: new Date().toISOString(),
+  };
+
+  try {
+    // Set initial status to queued
+    console.log(`[QStash Video] Setting initial status for request: ${requestId}`);
+    await publishProcessingUpdate(requestId, {
+      userId,
+      status: "queued",
+      progress: 0,
+      message: "Your video generation request has been queued...",
+      timestamp: new Date(),
+    });
+    console.log(`[QStash Video] Initial status set successfully for request: ${requestId}`);
+
+    if (isLocalDevelopment()) {
+      // LOCAL DEV: Process immediately in background (don't await)
+      // This simulates QStash calling back to our webhook
+      console.log(
+        `[QStash Video] Local dev mode - processing request ${requestId} immediately`
+      );
+
+      // Import and call the processor directly (non-blocking)
+      processVideoGenerationLocally(request).catch((err) => {
+        console.error(`[QStash Video] Local processing failed for ${requestId}:`, err);
+      });
+    } else {
+      // PRODUCTION: Queue to QStash for async processing
+      const client = getQStashClient();
+      const baseUrl = process.env.BASE_URL || "http://localhost:5173";
+      const callbackUrl = `${baseUrl}/api/queue/process-video`;
+
+      await client.publishJSON({
+        url: callbackUrl,
+        body: request,
+        retries: 3,
+      });
+
+      console.log(
+        `[QStash Video] Queued video generation request: ${requestId} for user: ${userId}`
+      );
+    }
+
+    return {
+      requestId,
+      processingUrl: `/processing/${requestId}?type=video`,
+    };
+  } catch (error) {
+    console.error("[QStash Video] Failed to queue video generation:", error);
+
+    // Update status to failed
+    await publishProcessingUpdate(requestId, {
+      userId,
+      status: "failed",
+      progress: 0,
+      message: "Failed to queue video generation request",
+      error: error instanceof Error ? error.message : "Unknown error",
+      timestamp: new Date(),
+    });
+
+    throw new Error(
+      `Failed to queue video generation: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
+}
+
+/**
  * Process image generation locally (for development)
  * This runs the same logic as the QStash webhook but without HTTP
  */
@@ -223,6 +334,24 @@ async function processImageGenerationLocally(
     request;
 
   console.log(`[Local Worker] Processing request: ${requestId}`);
+
+  // Calculate credit cost
+  const creditCostPerImage = getModelCreditCost(model);
+  const totalCreditCost = creditCostPerImage * numberOfImages;
+
+  // Log generation start
+  await logGenerationStart({
+    requestId,
+    userId,
+    type: "image",
+    prompt,
+    model,
+    creditCost: totalCreditCost,
+    metadata: {
+      numberOfImages,
+      stylePreset,
+    },
+  });
 
   try {
     // Claim the request (prevents duplicate processing)
@@ -303,6 +432,32 @@ async function processImageGenerationLocally(
       timestamp: new Date(),
     });
 
+    // Create notification for image completion (non-blocking)
+    // Wrapped in try-catch to prevent notification failures from overwriting success status
+    const firstImageId = result.images[0]?.id;
+    if (firstImageId) {
+      try {
+        const { createNotification } = await import("~/server/notifications");
+        await createNotification({
+          type: "IMAGE_COMPLETED",
+          recipientId: userId,
+          imageId: firstImageId,
+        });
+      } catch (notificationError) {
+        console.error(
+          `[Local Worker] Failed to create notification for ${requestId}:`,
+          notificationError
+        );
+        // Don't rethrow - notification failure shouldn't affect image generation success
+      }
+    }
+
+    // Log successful generation
+    await logGenerationComplete({
+      requestId,
+      setId: result.setId,
+    });
+
     console.log(
       `[Local Worker] Completed request ${requestId}, setId: ${result.setId}`
     );
@@ -319,6 +474,164 @@ async function processImageGenerationLocally(
       error: errorMessage,
       message: "Failed to generate images. Please try again.",
       timestamp: new Date(),
+    });
+
+    // Log failed generation
+    await logGenerationFailed({
+      requestId,
+      errorMessage,
+      refundCredits: false, // Credits already deducted in route action
+    });
+  }
+}
+
+/**
+ * Process video generation locally (for development)
+ * This runs the same logic as the QStash webhook but without HTTP
+ */
+async function processVideoGenerationLocally(
+  request: QStashVideoGenerationRequest
+): Promise<void> {
+  const { createNewVideos } = await import("~/server/createNewVideos");
+  const { getProcessingStatusService } = await import(
+    "./processingStatus.server"
+  );
+
+  const { requestId, userId, prompt, model, duration, aspectRatio, sourceImageUrl, sourceImageId } =
+    request;
+
+  console.log(`[Local Video Worker] Processing request: ${requestId}`);
+
+  // Calculate credit cost based on duration
+  const videoDuration = duration || 5;
+  const totalCreditCost = getVideoModelCreditCost(model, videoDuration);
+
+  // Log generation start
+  await logGenerationStart({
+    requestId,
+    userId,
+    type: "video",
+    prompt,
+    model,
+    creditCost: totalCreditCost,
+    metadata: {
+      duration,
+      aspectRatio,
+      sourceImageUrl,
+      sourceImageId,
+    },
+  });
+
+  try {
+    // Claim the request (prevents duplicate processing)
+    const statusService = getProcessingStatusService();
+    const claimResult = await statusService.claimProcessingRequest(
+      requestId,
+      userId,
+      "local-video-worker"
+    );
+
+    if (!claimResult.claimed) {
+      console.log(
+        `[Local Video Worker] Request ${requestId} already processing, skipping`
+      );
+      return;
+    }
+
+    // Update status to processing
+    await publishProcessingUpdate(requestId, {
+      userId,
+      status: "processing",
+      progress: 10,
+      message: "Starting video generation...",
+      timestamp: new Date(),
+    });
+
+    // Prepare form data
+    const formData: CreateVideoFormData = {
+      prompt,
+      model,
+      duration,
+      aspectRatio,
+      sourceImageUrl,
+      sourceImageId,
+      private: request.private || false,
+    };
+
+    // Update progress
+    await publishProcessingUpdate(requestId, {
+      userId,
+      status: "processing",
+      progress: 30,
+      message: "Calling AI model...",
+      timestamp: new Date(),
+    });
+
+    // Generate video
+    const result = await createNewVideos(formData, userId);
+
+    // Check for errors
+    if ("error" in result && result.error) {
+      throw new Error(
+        typeof result.error === "string"
+          ? result.error
+          : "Unknown error from AI provider"
+      );
+    }
+
+    if (!result.setId || !result.videos?.length) {
+      throw new Error("Failed to create video - incomplete response");
+    }
+
+    // Update to near completion
+    await publishProcessingUpdate(requestId, {
+      userId,
+      status: "processing",
+      progress: 90,
+      message: "Finalizing video...",
+      timestamp: new Date(),
+    });
+
+    // Success!
+    await publishProcessingUpdate(requestId, {
+      userId,
+      status: "complete",
+      progress: 100,
+      message: "Successfully generated video",
+      setId: result.setId,
+      videos: result.videos,
+      timestamp: new Date(),
+    });
+
+    // Log successful generation
+    await logGenerationComplete({
+      requestId,
+      setId: result.setId,
+    });
+
+    console.log(
+      `[Local Video Worker] Completed request ${requestId}, setId: ${result.setId}`
+    );
+  } catch (error) {
+    console.error(`[Local Video Worker] Error processing ${requestId}:`, error);
+
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+
+    await publishProcessingUpdate(requestId, {
+      userId,
+      status: "failed",
+      progress: 0,
+      error: errorMessage,
+      message: "Failed to generate video. Please try again.",
+      timestamp: new Date(),
+    });
+
+    // Log failed generation
+    await logGenerationFailed({
+      requestId,
+      errorMessage,
+      refundCredits: false, // Credits already deducted in route action
     });
   }
 }

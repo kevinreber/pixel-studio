@@ -36,6 +36,7 @@ export interface ProcessingStatusUpdate {
   message?: string;
   setId?: string;
   images?: unknown[];
+  videos?: unknown[];
   error?: string;
   timestamp: Date;
 }

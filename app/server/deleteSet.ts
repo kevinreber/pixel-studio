@@ -1,5 +1,5 @@
 import { prisma } from "~/services/prisma.server";
-import { cacheDelete } from "~/utils/cache.server";
+import { cacheDeletePattern } from "~/utils/cache.server";
 
 /**
  * @description
@@ -19,9 +19,8 @@ export const deleteSet = async ({ setId }: { setId: string }) => {
       },
     });
     console.log(`Successfully deleted set in DB: ${setId}`);
-    // Clear cache for the set
-    // undefined is for `prompt` and `model`
-    await cacheDelete(`sets:user:${set.userId}:undefined:undefined`);
+    // Clear all cached set lists for this user (any filter combination)
+    await cacheDeletePattern(`sets:user:${set.userId}:*`);
 
     return set;
   } catch (error) {

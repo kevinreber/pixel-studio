@@ -59,13 +59,7 @@ export const getUserDataByUsername = async (
   // If UserA is visiting UserB's profile, we do not want to show UserB's Private images to UserA
   const selectImageQuery = createImageSelectQuery();
 
-  const count = await prisma.image.count({
-    where: {
-      user: {
-        username,
-      },
-    },
-  });
+  // Use _count to get total image count in a single query instead of separate count query
   const userData = await prisma.user.findUnique({
     where: {
       username,
@@ -76,6 +70,9 @@ export const getUserDataByUsername = async (
       username: true,
       image: true,
       createdAt: true,
+      _count: {
+        select: { images: true },
+      },
       // @ts-expect-error - Prisma type inference issue with nested select
       images: {
         take: pageSize,
@@ -87,6 +84,8 @@ export const getUserDataByUsername = async (
       },
     },
   });
+
+  const count = userData?._count.images ?? 0;
 
   // Append images source URL since we cannot use `env` variables in our UI
   // @ts-expect-error - Prisma type inference issue with nested select
