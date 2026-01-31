@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Shuffle, Coins } from "lucide-react";
+import { Sparkles, Coins } from "lucide-react";
 import { useLoggedInUser } from "~/hooks";
 import { useFetcher } from "@remix-run/react";
 import {
@@ -12,6 +12,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { MODEL_OPTIONS } from "~/routes/create";
@@ -76,26 +82,39 @@ export const RemixImageButton = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          disabled={disabled || isLoading}
-          className="hover:bg-transparent"
-          title="Remix with different AI model"
-        >
-          <Shuffle className={cn("h-6 w-6", isLoading && "animate-pulse")} />
-        </Button>
-      </DialogTrigger>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={disabled || isLoading}
+                className={cn(
+                  "gap-1.5 text-zinc-600 dark:text-zinc-400 hover:text-purple-600 dark:hover:text-purple-400",
+                  "hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-colors",
+                  isLoading && "opacity-70"
+                )}
+              >
+                <Sparkles className={cn("h-5 w-5", isLoading && "animate-pulse")} />
+                <span className="font-medium">Remix</span>
+              </Button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-[200px] text-center">
+            <p>Try this prompt with a different AI model</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <DialogContent className="sm:max-w-[500px] bg-zinc-900 border-zinc-700 text-white">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Shuffle className="h-5 w-5" />
-            Remix Image
+            <Sparkles className="h-5 w-5 text-purple-400" />
+            Remix with Different AI
           </DialogTitle>
           <DialogDescription className="text-zinc-400">
-            Generate a new version of this image using a different AI model.
-            The same prompt will be used with your selected model.
+            Create a new version of this image using a different AI model.
+            Your prompt stays the same—just pick a new model to see different results.
           </DialogDescription>
         </DialogHeader>
 
@@ -120,7 +139,7 @@ export const RemixImageButton = ({
                     className={cn(
                       "flex flex-col items-start p-3 rounded-lg border transition-all text-left",
                       selectedModel === model.value
-                        ? "border-rose-500 bg-rose-500/10"
+                        ? "border-purple-500 bg-purple-500/10"
                         : "border-zinc-700 bg-zinc-800/50 hover:border-zinc-600 hover:bg-zinc-800",
                       !canAfford && "opacity-50 cursor-not-allowed"
                     )}
@@ -144,7 +163,7 @@ export const RemixImageButton = ({
                       <span className={cn(
                         "text-xs font-semibold px-2 py-0.5 rounded-full",
                         canAfford
-                          ? "bg-rose-500/20 text-rose-400"
+                          ? "bg-purple-500/20 text-purple-400"
                           : "bg-red-500/20 text-red-400"
                       )}>
                         {model.creditCost} {model.creditCost === 1 ? "credit" : "credits"}
@@ -174,7 +193,7 @@ export const RemixImageButton = ({
                 <span className="text-zinc-500">Cost:</span>{" "}
                 <span className={cn(
                   "font-semibold",
-                  canAffordRemix ? "text-rose-400" : "text-red-400"
+                  canAffordRemix ? "text-purple-400" : "text-red-400"
                 )}>
                   {selectedModelData.creditCost} credits
                 </span>
@@ -206,7 +225,7 @@ export const RemixImageButton = ({
             className={cn(
               "text-white",
               canAffordRemix
-                ? "bg-rose-600 hover:bg-rose-700"
+                ? "bg-purple-600 hover:bg-purple-700"
                 : "bg-zinc-600 cursor-not-allowed"
             )}
           >
