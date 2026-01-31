@@ -50,3 +50,6 @@ export * from "./deleteVideoLike.server";
 export * from "./createVideoComment";
 export * from "./deleteVideoComment";
 export * from "./videoCommentLikes";
+
+// Permissions and feature flags
+export * from "./isAdmin.server";

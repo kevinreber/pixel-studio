@@ -57,6 +57,7 @@ model User {
   password     Password?
   image        String?
   credits      Int           @default(5)
+  featureFlags String[]      @default([]) // A/B testing flags: ["new_ui", "video_beta", etc.]
   accounts     Account[]
   sessions     Session[]
   images       Image[]
