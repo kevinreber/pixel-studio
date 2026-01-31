@@ -1,5 +1,5 @@
 import { json, type ActionFunctionArgs } from "@remix-run/node";
-import { Form, useActionData, Link, Outlet, useLocation } from "@remix-run/react";
+import { Form, useActionData, Link, Outlet, useLocation, useFetcher } from "@remix-run/react";
 import { prisma } from "~/services/prisma.server";
 import { requireUserLogin } from "~/services/auth.server";
 import { z } from "zod";
@@ -22,6 +22,7 @@ import {
   User,
   ChevronRight,
   Settings as SettingsIcon,
+  RefreshCw,
 } from "lucide-react";
 
 const UsernameSchema = z
@@ -100,6 +101,16 @@ export default function Index() {
   const user = useLoggedInUser();
   const actionData = useActionData<typeof action>();
   const location = useLocation();
+  const cacheClearFetcher = useFetcher<{ success?: boolean }>();
+  const isClearingCache = cacheClearFetcher.state !== "idle";
+  const cacheCleared = cacheClearFetcher.data?.success === true;
+
+  const handleClearCache = () => {
+    cacheClearFetcher.submit(null, {
+      method: "POST",
+      action: "/api/cache/clear",
+    });
+  };
 
   // Check if we're on a child route
   const isChildRoute = location.pathname !== "/settings";
@@ -231,6 +242,50 @@ export default function Index() {
                   Save Changes
                 </Button>
               </Form>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Cache Management Section */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-muted-foreground">
+            Advanced
+          </h2>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-orange-500/10">
+                  <RefreshCw className="w-5 h-5 text-orange-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Clear Cache</CardTitle>
+                  <CardDescription>
+                    Clear cached data to see fresh content
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                If you&apos;re seeing outdated information on your profile, feed, or collections,
+                clearing your cache will fetch fresh data from the server.
+              </p>
+
+              {cacheCleared && (
+                <div className="text-green-500 text-sm font-medium bg-green-500/10 px-3 py-2 rounded-md">
+                  Cache cleared successfully!
+                </div>
+              )}
+
+              <Button
+                variant="outline"
+                onClick={handleClearCache}
+                disabled={isClearingCache}
+                data-testid="clear-cache-button"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isClearingCache ? "animate-spin" : ""}`} />
+                {isClearingCache ? "Clearing..." : "Clear Cache"}
+              </Button>
             </CardContent>
           </Card>
         </div>
