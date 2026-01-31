@@ -251,3 +251,12 @@ export const STYLE_OPTIONS = [
 
 export type ModelOption = (typeof MODEL_OPTIONS)[number];
 export type StyleOption = (typeof STYLE_OPTIONS)[number];
+
+/** Union type of all valid model values */
+export type ModelValue = ModelOption["value"];
+
+/** Union type of all valid style values */
+export type StyleValue = StyleOption["value"];
+
+/** Union type of all model provider companies */
+export type ModelCompany = ModelOption["company"];

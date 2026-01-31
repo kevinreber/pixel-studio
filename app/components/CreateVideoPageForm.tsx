@@ -39,6 +39,7 @@ import type { ActionData, CreateVideoPageLoader } from "~/routes/create-video";
 import { ProviderBadge } from "./ModelBadge";
 import { ImagePicker } from "./ImagePicker";
 import { useGenerationProgress } from "~/contexts/GenerationProgressContext";
+import { MOBILE_BREAKPOINT } from "~/config/breakpoints";
 
 const PROMPT_EXAMPLES = [
   "A serene lake at dawn with mist rising from the water, cinematic camera movement",
@@ -48,7 +49,6 @@ const PROMPT_EXAMPLES = [
   "A cozy coffee shop interior with steam rising from cups, people chatting",
 ];
 
-const MOBILE_WIDTH = 768;
 const MAX_TEXT_AREA_CHAR_COUNT = 500;
 
 const DEFAULT_SELECTED_MODEL: VideoModelOption = VIDEO_MODEL_OPTIONS[0];
@@ -122,7 +122,7 @@ const CreateVideoPageForm = () => {
   );
 
   React.useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_WIDTH);
+    const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);

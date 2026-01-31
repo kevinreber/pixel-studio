@@ -40,7 +40,9 @@ interface NotificationsResponse {
   count?: number;
 }
 
-interface NotificationDropdownProps {
+/** Props for NotificationDropdown component */
+export interface NotificationDropdownProps {
+  /** Whether to show the "Notifications" label text alongside the icon */
   showLabel?: boolean;
 }
 
@@ -48,6 +50,7 @@ export const NotificationDropdown = ({
   showLabel = false,
 }: NotificationDropdownProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
+  const markAllReadButtonRef = React.useRef<HTMLButtonElement>(null);
   const [notifications, setNotifications] = React.useState<
     SerializedNotification[]
   >([]);
@@ -163,6 +166,17 @@ export const NotificationDropdown = ({
   // Only show loading spinner on initial load, not during background refreshes
   const isInitialLoading = fetcherLoad.state === "loading" && !hasLoadedOnce;
 
+  // Focus management: focus the "Mark all read" button when popover opens with unread notifications
+  React.useEffect(() => {
+    if (isOpen && hasLoadedOnce && unreadCount > 0 && markAllReadButtonRef.current) {
+      // Small delay to ensure the popover content is rendered
+      const timeoutId = setTimeout(() => {
+        markAllReadButtonRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isOpen, hasLoadedOnce, unreadCount]);
+
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
@@ -177,7 +191,10 @@ export const NotificationDropdown = ({
           <span className="relative">
             <Bell className={showLabel ? "md:h-4 md:w-4" : "h-5 w-5"} />
             {unreadCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
+              <span
+                className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center"
+                aria-label={`${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`}
+              >
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
@@ -195,12 +212,14 @@ export const NotificationDropdown = ({
           <h3 className="font-semibold text-gray-100">Notifications</h3>
           {unreadCount > 0 && (
             <Button
+              ref={markAllReadButtonRef}
               variant="ghost"
               size="sm"
               className="text-xs text-blue-400 hover:text-blue-300 h-auto p-1"
               onClick={handleMarkAllRead}
+              aria-label={`Mark all ${unreadCount} notifications as read`}
             >
-              <Check className="h-3 w-3 mr-1" />
+              <Check className="h-3 w-3 mr-1" aria-hidden="true" />
               Mark all read
             </Button>
           )}

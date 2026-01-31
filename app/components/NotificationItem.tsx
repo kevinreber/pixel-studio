@@ -1,3 +1,4 @@
+import React from "react";
 import { Link } from "@remix-run/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, MessageCircle, UserPlus, ImageIcon, X } from "lucide-react";
@@ -5,9 +6,13 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import type { SerializedNotification } from "./NotificationDropdown";
 
-interface NotificationItemProps {
+/** Props for NotificationItem component */
+export interface NotificationItemProps {
+  /** The notification data to display */
   notification: SerializedNotification;
+  /** Callback when notification is marked as read */
   onMarkRead?: (id: string) => void;
+  /** Callback when notification is deleted */
   onDelete?: (id: string) => void;
 }
 
@@ -77,27 +82,34 @@ const getNotificationLink = (notification: SerializedNotification) => {
   }
 };
 
-export const NotificationItem = ({
+/**
+ * NotificationItem component displays a single notification.
+ * Wrapped in React.memo to prevent unnecessary re-renders when parent updates.
+ */
+export const NotificationItem = React.memo(function NotificationItem({
   notification,
   onMarkRead,
   onDelete,
-}: NotificationItemProps) => {
+}: NotificationItemProps) {
   const link = getNotificationLink(notification);
   const timeAgo = formatDistanceToNow(new Date(notification.createdAt), {
     addSuffix: true,
   });
 
-  const handleClick = () => {
+  const handleClick = React.useCallback(() => {
     if (!notification.read && onMarkRead) {
       onMarkRead(notification.id);
     }
-  };
+  }, [notification.id, notification.read, onMarkRead]);
 
-  const handleDelete = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onDelete?.(notification.id);
-  };
+  const handleDelete = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onDelete?.(notification.id);
+    },
+    [notification.id, onDelete]
+  );
 
   return (
     <Link
@@ -149,8 +161,8 @@ export const NotificationItem = ({
         className="opacity-0 group-hover:opacity-100 p-1 hover:bg-zinc-700 rounded transition-opacity"
         aria-label="Delete notification"
       >
-        <X className="h-4 w-4 text-gray-400" />
+        <X className="h-4 w-4 text-gray-400" aria-hidden="true" />
       </button>
     </Link>
   );
-};
+});
