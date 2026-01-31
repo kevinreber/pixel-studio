@@ -3,6 +3,7 @@ import {
   useLoaderData,
   Link,
   useNavigation,
+  useFetcher,
 } from "@remix-run/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,8 @@ import {
   FollowListModal,
 } from "~/components";
 import type { UserProfilePageLoader } from "~/routes/profile.$userId._index";
-import { Grid, User, Loader2, Image, Film, Layers } from "lucide-react";
+import { Grid, User, Loader2, Image, Film, Layers, RefreshCw } from "lucide-react";
+import { useOptionalUser } from "~/hooks/useLoggedInUser";
 import React from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -124,6 +126,10 @@ const UserProfileAccessor = ({
   const userData = resolvedData.user;
   const userItems = resolvedData.items || [];
   const totalCount = resolvedData.count || 0;
+  const currentUser = useOptionalUser();
+  const isOwnProfile = currentUser?.id === profileUserId;
+  const cacheClearFetcher = useFetcher();
+  const isClearingCache = cacheClearFetcher.state !== "idle";
 
   const [followersCount, setFollowersCount] = React.useState(
     followStats.followersCount
@@ -132,6 +138,13 @@ const UserProfileAccessor = ({
   const [followListTab, setFollowListTab] = React.useState<"followers" | "following">("followers");
   const [selectedVideo, setSelectedVideo] = React.useState<ProfileVideo | null>(null);
   const [contentFilter, setContentFilter] = React.useState<ContentFilter>("all");
+
+  const handleClearCache = () => {
+    cacheClearFetcher.submit(null, {
+      method: "POST",
+      action: "/api/cache/clear",
+    });
+  };
 
   // Filter items based on selected content filter
   const filteredItems = React.useMemo(() => {
@@ -261,6 +274,19 @@ const UserProfileAccessor = ({
                 <Layers className="h-4 w-4" />
                 View Sets
               </Link>
+              {isOwnProfile && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearCache}
+                  disabled={isClearingCache}
+                  title="Clear cached data to see fresh content"
+                  data-testid="clear-cache-button"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isClearingCache ? "animate-spin" : ""}`} />
+                  {isClearingCache ? "Clearing..." : "Clear Cache"}
+                </Button>
+              )}
             </div>
 
             <div className="flex gap-8 mb-4">
