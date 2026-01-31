@@ -69,9 +69,14 @@ const prisma = singleton("prisma", () => {
   });
 
   // Properly handle connection
+  // In production, exit on connection failure
+  // In dev/test, log the error but continue (allows E2E tests to check page rendering)
   client.$connect().catch((e) => {
     console.error("Failed to connect to database:", e);
-    process.exit(1);
+    if (process.env.NODE_ENV === "production") {
+      process.exit(1);
+    }
+    // In dev/test, continue without database - some routes may still work
   });
 
   return client;
