@@ -13,6 +13,7 @@ interface UserWithRoles {
       access: string;
     }>;
   }>;
+  featureFlags?: string[];
 }
 
 /**
@@ -101,4 +102,32 @@ export async function getUserWithRoles(
   });
 
   return user;
+}
+
+/**
+ * Check if a user has a specific feature flag enabled
+ * @param user - User object with featureFlags array
+ * @param flag - The feature flag key to check (e.g., "new_ui", "video_beta")
+ * @returns True if user has the feature flag
+ *
+ * @example
+ * // In a loader or component:
+ * if (hasFeatureFlag(user, "new_generation_ui")) {
+ *   // Show new UI
+ * }
+ *
+ * // To enable a flag for a user, update via Prisma:
+ * await prisma.user.update({
+ *   where: { id: userId },
+ *   data: { featureFlags: { push: "new_generation_ui" } }
+ * });
+ */
+export function hasFeatureFlag(
+  user: UserWithRoles | null | undefined,
+  flag: string
+): boolean {
+  if (!user?.featureFlags) {
+    return false;
+  }
+  return user.featureFlags.includes(flag);
 }
