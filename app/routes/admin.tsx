@@ -4,7 +4,7 @@ import { requireUserLogin } from "~/services/auth.server";
 import { getUserWithRoles, isAdmin } from "~/server/isAdmin.server";
 import { PageContainer } from "~/components";
 import { cn } from "@/lib/utils";
-import { Shield, Trash2, LayoutDashboard, Users, Coins, BarChart3, Heart, UserCog } from "lucide-react";
+import { Shield, Trash2, LayoutDashboard, Users, Coins, BarChart3, Heart, UserCog, Wallet } from "lucide-react";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
@@ -47,6 +47,11 @@ const navItems = [
     label: "Engagement",
     href: "/admin/engagement",
     icon: Heart,
+  },
+  {
+    label: "External Services",
+    href: "/admin/external-services",
+    icon: Wallet,
   },
   {
     label: "Deletion Logs",
