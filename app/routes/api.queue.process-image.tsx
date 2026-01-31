@@ -15,12 +15,94 @@ import { createNewImages } from "~/server/createNewImages";
 import {
   publishProcessingUpdate,
   getProcessingStatusService,
-} from "~/services/processingStatus.server";
+ getProcessingStatus } from "~/services/processingStatus.server";
 import {
   verifyQStashSignature,
   type QStashImageGenerationRequest,
+  type QStashComparisonChildRequest,
 } from "~/services/qstash.server";
 import { createNotification } from "~/server/notifications";
+
+// Type guard for comparison child requests
+function isComparisonChildRequest(
+  req: QStashImageGenerationRequest
+): req is QStashComparisonChildRequest {
+  return "parentRequestId" in req && !!req.parentRequestId;
+}
+
+// Helper to update parent comparison status when a child completes
+async function updateParentComparisonStatus(
+  parentRequestId: string,
+  userId: string,
+  model: string,
+  modelUpdate: { status: string; progress: number; setId?: string; error?: string }
+): Promise<void> {
+  // Get current parent status
+  const parentStatus = await getProcessingStatus(parentRequestId);
+  if (!parentStatus) {
+    console.warn(`[QStash Worker] Parent status not found for ${parentRequestId}`);
+    return;
+  }
+
+  // Update model status
+  const modelStatuses = (parentStatus as unknown as { modelStatuses?: Record<string, unknown> })
+    .modelStatuses || {};
+  modelStatuses[model] = modelUpdate;
+
+  // Calculate overall progress and status
+  const statuses = Object.values(modelStatuses) as Array<{ status: string; progress: number }>;
+  const completedCount = statuses.filter(
+    (s) => s.status === "complete" || s.status === "failed"
+  ).length;
+  const totalModels = statuses.length;
+  const overallProgress = Math.round(
+    statuses.reduce((sum, s) => sum + s.progress, 0) / totalModels
+  );
+
+  // Determine overall status
+  let overallStatus = "processing";
+  if (completedCount === totalModels) {
+    const failedCount = statuses.filter((s) => s.status === "failed").length;
+    if (failedCount === totalModels) {
+      overallStatus = "failed";
+    } else if (failedCount > 0) {
+      overallStatus = "partial";
+    } else {
+      overallStatus = "complete";
+    }
+  }
+
+  // Update parent status
+  await publishProcessingUpdate(parentRequestId, {
+    userId,
+    status: overallStatus,
+    progress: overallProgress,
+    message:
+      overallStatus === "complete"
+        ? `Successfully generated images with ${totalModels} models`
+        : overallStatus === "partial"
+        ? `Completed with ${completedCount - statuses.filter((s) => s.status === "failed").length} of ${totalModels} models`
+        : overallStatus === "failed"
+        ? "All model generations failed"
+        : `Generating... (${completedCount}/${totalModels} models complete)`,
+    timestamp: new Date(),
+    models: Object.keys(modelStatuses),
+    modelStatuses,
+    comparisonMode: true,
+    totalModels,
+    completedModels: completedCount,
+  } as Parameters<typeof publishProcessingUpdate>[1] & {
+    models: string[];
+    modelStatuses: Record<string, unknown>;
+    comparisonMode: boolean;
+    totalModels: number;
+    completedModels: number;
+  });
+
+  console.log(
+    `[QStash Worker] Updated parent ${parentRequestId} status: ${overallStatus} (${completedCount}/${totalModels})`
+  );
+}
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   // Only allow POST requests
@@ -41,7 +123,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
   }
 
-  let jobRequest: QStashImageGenerationRequest;
+  let jobRequest: QStashImageGenerationRequest | QStashComparisonChildRequest;
   try {
     jobRequest = JSON.parse(body);
   } catch (error) {
@@ -51,6 +133,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   const { requestId, userId, prompt, numberOfImages, model, stylePreset } =
     jobRequest;
+
+  // Check if this is a comparison child request
+  const isComparisonChild = isComparisonChildRequest(jobRequest);
+  const parentRequestId = isComparisonChild
+    ? (jobRequest as QStashComparisonChildRequest).parentRequestId
+    : undefined;
 
   console.log(`[QStash Worker] Processing request: ${requestId}`);
 
@@ -137,10 +225,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       timestamp: new Date(),
     });
 
+    // If this is a comparison child, update the parent status
+    if (isComparisonChild && parentRequestId) {
+      await updateParentComparisonStatus(parentRequestId, userId, model, {
+        status: "complete",
+        progress: 100,
+        setId: result.setId,
+      });
+    }
+
     // Create notification for image completion (non-blocking)
     // Wrapped in try-catch to prevent notification failures from overwriting success status
+    // Only create notification for non-comparison requests (parent will handle notification)
     const firstImageId = result.images[0]?.id;
-    if (firstImageId) {
+    if (firstImageId && !isComparisonChild) {
       try {
         await createNotification({
           type: "IMAGE_COMPLETED",
@@ -157,7 +255,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
 
     console.log(
-      `[QStash Worker] Completed request ${requestId}, setId: ${result.setId}`
+      `[QStash Worker] Completed request ${requestId}${isComparisonChild ? ` (child of ${parentRequestId})` : ""}, setId: ${result.setId}`
     );
 
     return json({
@@ -165,6 +263,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       requestId,
       setId: result.setId,
       imageCount: result.images.length,
+      parentRequestId,
     });
   } catch (error) {
     console.error(
@@ -205,12 +304,22 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       timestamp: new Date(),
     });
 
+    // If this is a comparison child, update the parent status
+    if (isComparisonChild && parentRequestId) {
+      await updateParentComparisonStatus(parentRequestId, userId, model, {
+        status: "failed",
+        progress: 0,
+        error: userFriendlyMessage,
+      });
+    }
+
     // Return 200 so QStash doesn't retry (we've handled the error)
     // Return 500 if you want QStash to retry
     return json({
       status: "failed",
       requestId,
       error: userFriendlyMessage,
+      parentRequestId,
     });
   }
 };

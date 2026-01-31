@@ -5,7 +5,8 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { PageContainer } from "~/components";
 import { getProcessingStatus } from "~/services/processingStatus.server";
 import type { ProcessingStatusData } from "~/services/processingStatus.server";
-import { Loader2, CheckCircle2, XCircle, Clock, Wifi, WifiOff, ArrowRight, RefreshCw } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Clock, Wifi, WifiOff, ArrowRight, RefreshCw, GitCompare } from "lucide-react";
+import { MODEL_OPTIONS } from "~/config/models";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Generating Images - Pixel Studio" }];
@@ -16,10 +17,25 @@ interface LoaderData {
   initialStatus: ProcessingStatusData | null;
   wsUrl: string;
   isKafkaEnabled: boolean;
+  isComparisonMode: boolean;
 }
 
-export const loader = async ({ params }: LoaderFunctionArgs) => {
+// Extended status for comparison mode
+interface ComparisonStatus extends ProcessingStatus {
+  models?: string[];
+  modelStatuses?: Record<
+    string,
+    { status: string; progress: number; setId?: string; error?: string }
+  >;
+  comparisonMode?: boolean;
+  totalModels?: number;
+  completedModels?: number;
+}
+
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const requestId = params.requestId;
+  const url = new URL(request.url);
+  const isComparisonMode = url.searchParams.get("comparison") === "true";
 
   if (!requestId) {
     throw new Response("Request ID is required", { status: 400 });
@@ -49,13 +65,14 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
     initialStatus,
     wsUrl,
     isKafkaEnabled: isQueueEnabled,
+    isComparisonMode,
   });
 };
 
 interface ProcessingStatus {
   requestId: string;
   userId: string;
-  status: "queued" | "processing" | "complete" | "failed";
+  status: "queued" | "processing" | "complete" | "failed" | "partial";
   progress: number;
   message?: string;
   setId?: string;
@@ -64,11 +81,17 @@ interface ProcessingStatus {
   timestamp: Date;
 }
 
+// Helper to get model display name
+const getModelName = (modelValue: string): string => {
+  const model = MODEL_OPTIONS.find((m) => m.value === modelValue);
+  return model?.name || modelValue;
+};
+
 export default function ProcessingPage() {
-  const { requestId, initialStatus, wsUrl, isKafkaEnabled } =
+  const { requestId, initialStatus, wsUrl, isKafkaEnabled, isComparisonMode } =
     useLoaderData<LoaderData>();
   const navigate = useNavigate();
-  const [status, setStatus] = useState<ProcessingStatus | null>(
+  const [status, setStatus] = useState<ComparisonStatus | null>(
     initialStatus
       ? {
           ...initialStatus,
@@ -83,6 +106,9 @@ export default function ProcessingPage() {
   const wsRef = useRef<WebSocket | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasRedirectedRef = useRef(false);
+
+  // Check if this is a comparison request from status or URL
+  const isComparison = isComparisonMode || status?.comparisonMode;
 
   // Polling function to fetch status via HTTP
   const pollStatus = useCallback(async () => {
@@ -101,12 +127,18 @@ export default function ProcessingPage() {
       setConnectionStatus("connected");
       setError(null);
 
-      // Handle completion - redirect to set page
-      if (data.status === "complete" && data.setId && !hasRedirectedRef.current) {
+      // Handle completion - redirect based on mode
+      if ((data.status === "complete" || data.status === "partial") && !hasRedirectedRef.current) {
         hasRedirectedRef.current = true;
         // Small delay to show completion state
         setTimeout(() => {
-          navigate(`/sets/${data.setId}`);
+          if (data.comparisonMode || isComparison) {
+            // Comparison mode: go to comparison results page
+            navigate(`/compare/${requestId}`);
+          } else if (data.setId) {
+            // Standard mode: go to set page
+            navigate(`/sets/${data.setId}`);
+          }
         }, 1500);
       }
     } catch (err) {
@@ -114,7 +146,7 @@ export default function ProcessingPage() {
       // Don't show error for transient polling failures
       setConnectionStatus("disconnected");
     }
-  }, [requestId, navigate]);
+  }, [requestId, navigate, isComparison]);
 
   // Primary: Polling-based status updates (works everywhere)
   useEffect(() => {
@@ -209,17 +241,24 @@ export default function ProcessingPage() {
   const getStatusDisplay = () => {
     if (!status) {
       return {
-        title: "Preparing to generate images...",
+        title: isComparison
+          ? "Preparing comparison generation..."
+          : "Preparing to generate images...",
         message: "Please wait while we set up your image generation.",
         progress: 0,
         isError: false,
       };
     }
 
+    const modelCount = status.totalModels || status.models?.length || 0;
+    const completedCount = status.completedModels || 0;
+
     switch (status.status) {
       case "queued":
         return {
-          title: "Your images are queued for generation",
+          title: isComparison
+            ? `Comparison with ${modelCount} models queued`
+            : "Your images are queued for generation",
           message: status.message || "Waiting in the generation queue...",
           progress: 5,
           isError: false,
@@ -227,25 +266,47 @@ export default function ProcessingPage() {
 
       case "processing":
         return {
-          title: "Generating your images...",
-          message: status.message || "Creating amazing images with AI...",
+          title: isComparison
+            ? `Generating with ${modelCount} models...`
+            : "Generating your images...",
+          message:
+            status.message ||
+            (isComparison
+              ? `${completedCount}/${modelCount} models complete`
+              : "Creating amazing images with AI..."),
           progress: Math.max(status.progress, 10),
           isError: false,
         };
 
       case "complete":
         return {
-          title: "🎉 Images generated successfully!",
+          title: isComparison
+            ? "🎉 Comparison complete!"
+            : "🎉 Images generated successfully!",
           message:
             status.message ||
-            `Generated ${status.images?.length || 0} images successfully`,
+            (isComparison
+              ? `Generated images with ${modelCount} models`
+              : `Generated ${status.images?.length || 0} images successfully`),
+          progress: 100,
+          isError: false,
+        };
+
+      case "partial":
+        return {
+          title: "⚠️ Comparison partially complete",
+          message:
+            status.message ||
+            `Some models completed successfully, others failed`,
           progress: 100,
           isError: false,
         };
 
       case "failed":
         return {
-          title: "❌ Image generation failed",
+          title: isComparison
+            ? "❌ Comparison generation failed"
+            : "❌ Image generation failed",
           message:
             status.error ||
             status.message ||
@@ -276,17 +337,21 @@ export default function ProcessingPage() {
           <div className="flex items-center gap-4 mb-6">
             <div
               className={`flex items-center justify-center w-16 h-16 rounded-full ${
-                status?.status === "complete"
+                status?.status === "complete" || status?.status === "partial"
                   ? "bg-green-500/20"
                   : status?.status === "failed"
                   ? "bg-red-500/20"
+                  : isComparison
+                  ? "bg-purple-500/20"
                   : "bg-blue-500/20"
               }`}
             >
-              {status?.status === "complete" ? (
+              {status?.status === "complete" || status?.status === "partial" ? (
                 <CheckCircle2 className="w-8 h-8 text-green-500" />
               ) : status?.status === "failed" ? (
                 <XCircle className="w-8 h-8 text-red-500" />
+              ) : isComparison ? (
+                <GitCompare className="w-8 h-8 text-purple-500 animate-pulse" />
               ) : (
                 <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
               )}
@@ -297,7 +362,7 @@ export default function ProcessingPage() {
                 className={`text-xl font-semibold ${
                   displayState.isError
                     ? "text-red-400"
-                    : status?.status === "complete"
+                    : status?.status === "complete" || status?.status === "partial"
                     ? "text-green-400"
                     : "text-zinc-100"
                 }`}
@@ -310,10 +375,10 @@ export default function ProcessingPage() {
             </div>
           </div>
 
-          {/* Progress Bar */}
+          {/* Overall Progress Bar */}
           <div className="mb-4">
             <div className="flex justify-between text-sm text-zinc-400 mb-2">
-              <span>Progress</span>
+              <span>Overall Progress</span>
               <span className="font-mono">{displayState.progress}%</span>
             </div>
             <div className="w-full bg-zinc-800 rounded-full h-2">
@@ -323,12 +388,69 @@ export default function ProcessingPage() {
                     ? "bg-red-500"
                     : displayState.progress === 100
                     ? "bg-green-500"
+                    : isComparison
+                    ? "bg-purple-500"
                     : "bg-blue-500"
                 }`}
                 style={{ width: `${Math.max(displayState.progress, 5)}%` }}
               ></div>
             </div>
           </div>
+
+          {/* Per-Model Progress (Comparison Mode) */}
+          {isComparison && status?.modelStatuses && (
+            <div className="mt-6 pt-4 border-t border-zinc-800">
+              <h3 className="text-sm font-medium text-zinc-300 mb-3">Model Progress</h3>
+              <div className="space-y-3">
+                {Object.entries(status.modelStatuses).map(([modelValue, modelStatus]) => {
+                  const isModelComplete = modelStatus.status === "complete";
+                  const isModelFailed = modelStatus.status === "failed";
+                  const isModelProcessing = modelStatus.status === "processing";
+
+                  return (
+                    <div key={modelValue} className="flex items-center gap-3">
+                      {/* Model status icon */}
+                      <div className="w-5 h-5 flex items-center justify-center">
+                        {isModelComplete ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        ) : isModelFailed ? (
+                          <XCircle className="w-4 h-4 text-red-500" />
+                        ) : isModelProcessing ? (
+                          <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
+                        ) : (
+                          <Clock className="w-4 h-4 text-zinc-500" />
+                        )}
+                      </div>
+
+                      {/* Model name */}
+                      <span className="w-32 text-sm text-zinc-300 truncate">
+                        {getModelName(modelValue)}
+                      </span>
+
+                      {/* Progress bar */}
+                      <div className="flex-1 bg-zinc-800 rounded-full h-1.5">
+                        <div
+                          className={`h-1.5 rounded-full transition-all duration-300 ${
+                            isModelComplete
+                              ? "bg-green-500"
+                              : isModelFailed
+                              ? "bg-red-500"
+                              : "bg-purple-500"
+                          }`}
+                          style={{ width: `${modelStatus.progress}%` }}
+                        />
+                      </div>
+
+                      {/* Progress percentage */}
+                      <span className="w-10 text-xs text-zinc-500 text-right font-mono">
+                        {modelStatus.progress}%
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Connection Status */}
           <div className="flex items-center gap-2 text-sm text-zinc-500">
@@ -359,14 +481,25 @@ export default function ProcessingPage() {
 
         {/* Actions */}
         <div className="flex flex-col gap-4">
-          {status?.status === "complete" && status.setId && (
-            <Link
-              to={`/sets/${status.setId}`}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-            >
-              View Your Images
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+          {(status?.status === "complete" || status?.status === "partial") && (
+            isComparison ? (
+              <Link
+                to={`/compare/${requestId}`}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-colors"
+              >
+                <GitCompare className="w-4 h-4" />
+                View Comparison Results
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            ) : status.setId ? (
+              <Link
+                to={`/sets/${status.setId}`}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              >
+                View Your Images
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            ) : null
           )}
 
           {status?.status === "failed" && (

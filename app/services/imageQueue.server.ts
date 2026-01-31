@@ -18,8 +18,12 @@
  * =============================================================================
  */
 
-import type { CreateImagesFormData } from "~/routes/create";
-import { queueImageGenerationQStash, checkQStashHealth } from "./qstash.server";
+import type { CreateImagesFormData, ComparisonFormData } from "~/routes/create";
+import {
+  queueImageGenerationQStash,
+  queueComparisonGenerationQStash,
+  checkQStashHealth,
+} from "./qstash.server";
 import { getImageGenerationProducer } from "./imageGenerationProducer.server";
 
 export type QueueBackend = "qstash" | "kafka";
@@ -88,6 +92,31 @@ export async function queueImageGeneration(
 
   // Default: QStash
   return queueImageGenerationQStash(formData, userId);
+}
+
+/**
+ * Queue a comparison generation request (multiple models)
+ * Creates a parent request that tracks multiple child generations
+ */
+export async function queueComparisonGeneration(
+  formData: ComparisonFormData,
+  userId: string,
+  totalCreditCost: number
+): Promise<QueueResult> {
+  const backend = getQueueBackend();
+
+  console.log(
+    `[Queue] Using ${backend} backend for comparison generation with ${formData.models.length} models`
+  );
+
+  if (backend === "kafka") {
+    // For Kafka, we could implement parallel generation per partition
+    // For now, fall back to QStash which handles it well
+    console.log("[Queue] Kafka comparison mode not yet implemented, using QStash");
+  }
+
+  // Use QStash for comparison (handles parallel requests well)
+  return queueComparisonGenerationQStash(formData, userId, totalCreditCost);
 }
 
 /**

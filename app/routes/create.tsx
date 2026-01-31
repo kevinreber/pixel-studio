@@ -14,6 +14,7 @@ import {
 } from "~/server";
 import {
   queueImageGeneration,
+  queueComparisonGeneration,
   isQueueEnabled,
   getQueueHealth,
 } from "~/services/imageQueue.server";
@@ -40,6 +41,7 @@ export const meta: MetaFunction = () => {
 const MAX_PROMPT_CHARACTERS = 3500;
 const MIN_NUMBER_OF_IMAGES = 1;
 const MAX_NUMBER_OF_IMAGES = 10;
+const MAX_COMPARISON_MODELS = 4; // Max models for comparison mode
 
 const CreateImagesFormSchema = z.object({
   prompt: z
@@ -64,6 +66,7 @@ const CreateImagesFormSchema = z.object({
         message: "Invalid preset selected",
       }
     ),
+  // Single model for standard mode
   model: z
     .string()
     .min(1, { message: "Language model can not be empty" })
@@ -75,7 +78,25 @@ const CreateImagesFormSchema = z.object({
         // overrides the error message here
         message: "Invalid language model selected",
       }
-    ),
+    )
+    .optional(),
+  // Multiple models for comparison mode
+  models: z
+    .array(z.string())
+    .min(2, { message: "Select at least 2 models for comparison" })
+    .max(MAX_COMPARISON_MODELS, {
+      message: `Maximum ${MAX_COMPARISON_MODELS} models allowed for comparison`,
+    })
+    .refine(
+      (values) =>
+        values.every((value) =>
+          MODEL_OPTIONS.some((model) => model.value.includes(value))
+        ),
+      { message: "One or more selected models are invalid" }
+    )
+    .optional(),
+  // Flag to indicate comparison mode
+  comparisonMode: z.boolean().optional().default(false),
   numberOfImages: z
     .number()
     .min(MIN_NUMBER_OF_IMAGES, {
@@ -94,7 +115,19 @@ const CreateImagesFormSchema = z.object({
   cfgScale: z.number().min(1).max(35).optional(),
   steps: z.number().int().min(10).max(50).optional(),
   promptUpsampling: z.boolean().optional(),
-});
+}).refine(
+  (data) => {
+    // Must have either model (standard) or models (comparison)
+    if (data.comparisonMode) {
+      return data.models && data.models.length >= 2;
+    }
+    return !!data.model;
+  },
+  {
+    message: "Select a model for standard mode or at least 2 models for comparison mode",
+    path: ["model"],
+  }
+);
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await requireUserLogin(request);
@@ -121,14 +154,40 @@ export type CreateImagesFormData = {
   promptUpsampling?: boolean;
 };
 
+// Extended form data for comparison mode
+export type ComparisonFormData = {
+  prompt: string;
+  numberOfImages: number;
+  models: string[]; // Multiple models
+  stylePreset?: string;
+  private?: boolean;
+  comparisonMode: true;
+  // Generation parameters
+  width?: number;
+  height?: number;
+};
+
 export const action = async ({ request }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
   const formData = await request.formData();
 
   const prompt = formData.get("prompt") || "";
   const model = formData.get("model") || "";
+  const modelsJson = formData.get("models"); // JSON array for comparison mode
+  const comparisonModeStr = formData.get("comparisonMode");
   let stylePreset = formData.get("style") || undefined;
   const numberOfImages = formData.get("numberOfImages") || "1";
+
+  // Parse comparison mode
+  const comparisonMode = comparisonModeStr === "true";
+  let models: string[] | undefined;
+  if (comparisonMode && modelsJson) {
+    try {
+      models = JSON.parse(modelsJson.toString());
+    } catch {
+      models = undefined;
+    }
+  }
 
   // Parse new generation parameters
   const widthStr = formData.get("width");
@@ -156,7 +215,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const validateFormData = CreateImagesFormSchema.safeParse({
     prompt: prompt.toString(),
     numberOfImages: parseInt(numberOfImages.toString()),
-    model: model.toString(),
+    model: comparisonMode ? undefined : model.toString(),
+    models: comparisonMode ? models : undefined,
+    comparisonMode,
     stylePreset,
     // New generation parameters
     width: isNaN(width as number) ? undefined : width,
@@ -183,11 +244,21 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     );
   }
 
-  // Calculate total credit cost based on model and number of images
-  const modelValue = validateFormData.data.model;
-  const creditCostPerImage = getModelCreditCost(modelValue);
-  const totalCreditCost =
-    creditCostPerImage * validateFormData.data.numberOfImages;
+  // Calculate total credit cost based on model(s) and number of images
+  const isComparisonMode = validateFormData.data.comparisonMode;
+  let totalCreditCost: number;
+
+  if (isComparisonMode && validateFormData.data.models) {
+    // Comparison mode: sum of credit costs for all models
+    totalCreditCost = validateFormData.data.models.reduce((sum, modelValue) => {
+      return sum + getModelCreditCost(modelValue) * validateFormData.data.numberOfImages;
+    }, 0);
+  } else {
+    // Standard mode: single model cost
+    const modelValue = validateFormData.data.model!;
+    const creditCostPerImage = getModelCreditCost(modelValue);
+    totalCreditCost = creditCostPerImage * validateFormData.data.numberOfImages;
+  }
 
   // Check if user has enough credits (without deducting yet)
   try {
@@ -238,35 +309,85 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const setsCacheKey = `sets:user:${user.id}:undefined:undefined`;
       await cacheDelete(setsCacheKey);
 
-      // Queue the image generation request (returns immediately!)
-      const response = await queueImageGeneration(validateFormData.data, user.id);
+      let response;
 
-      console.log(
-        `Successfully queued image generation request: ${response.requestId} via ${queueHealth.backend}`
-      );
+      if (isComparisonMode && validateFormData.data.models) {
+        // 🔄 Comparison mode: Queue generations for multiple models
+        console.log(`[Create] Comparison mode with ${validateFormData.data.models.length} models`);
+        response = await queueComparisonGeneration(
+          {
+            prompt: validateFormData.data.prompt,
+            numberOfImages: validateFormData.data.numberOfImages,
+            models: validateFormData.data.models,
+            stylePreset: validateFormData.data.stylePreset,
+            private: false,
+            comparisonMode: true,
+            width: validateFormData.data.width,
+            height: validateFormData.data.height,
+          },
+          user.id,
+          totalCreditCost
+        );
 
-      // Track image generation started
-      trackImageGenerationStarted(user.id, {
-        prompt: validateFormData.data.prompt,
-        model: validateFormData.data.model,
-        numberOfImages: validateFormData.data.numberOfImages,
-        width: validateFormData.data.width,
-        height: validateFormData.data.height,
-        stylePreset: validateFormData.data.stylePreset,
-        creditCost: totalCreditCost,
-        isAsync: true,
-        setId: response.requestId,
-      });
+        // Track comparison generation started
+        trackImageGenerationStarted(user.id, {
+          prompt: validateFormData.data.prompt,
+          model: validateFormData.data.models.join(","), // Comma-separated list
+          numberOfImages: validateFormData.data.numberOfImages * validateFormData.data.models.length,
+          width: validateFormData.data.width,
+          height: validateFormData.data.height,
+          stylePreset: validateFormData.data.stylePreset,
+          creditCost: totalCreditCost,
+          isAsync: true,
+          setId: response.requestId,
+        });
 
-      // Return JSON with requestId so client can track progress via toast
-      return json({
-        success: true,
-        async: true,
-        requestId: response.requestId,
-        processingUrl: response.processingUrl,
-        message: "Image generation started",
-        prompt: validateFormData.data.prompt,
-      });
+        // Return JSON with requestId and comparison flag
+        return json({
+          success: true,
+          async: true,
+          comparisonMode: true,
+          requestId: response.requestId,
+          processingUrl: response.processingUrl,
+          message: `Comparison generation started with ${validateFormData.data.models.length} models`,
+          prompt: validateFormData.data.prompt,
+          models: validateFormData.data.models,
+        });
+      } else {
+        // Standard single-model mode
+        const standardFormData: CreateImagesFormData = {
+          ...validateFormData.data,
+          model: validateFormData.data.model!,
+        };
+        response = await queueImageGeneration(standardFormData, user.id);
+
+        console.log(
+          `Successfully queued image generation request: ${response.requestId} via ${queueHealth.backend}`
+        );
+
+        // Track image generation started
+        trackImageGenerationStarted(user.id, {
+          prompt: validateFormData.data.prompt,
+          model: validateFormData.data.model!,
+          numberOfImages: validateFormData.data.numberOfImages,
+          width: validateFormData.data.width,
+          height: validateFormData.data.height,
+          stylePreset: validateFormData.data.stylePreset,
+          creditCost: totalCreditCost,
+          isAsync: true,
+          setId: response.requestId,
+        });
+
+        // Return JSON with requestId so client can track progress via toast
+        return json({
+          success: true,
+          async: true,
+          requestId: response.requestId,
+          processingUrl: response.processingUrl,
+          message: "Image generation started",
+          prompt: validateFormData.data.prompt,
+        });
+      }
     } catch (error) {
       console.error(
         "Async queue image generation failed, falling back to synchronous:",
@@ -276,11 +397,29 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
   }
 
-  // 🔄 Synchronous generation (used when Kafka is disabled or fails)
+  // 🔄 Synchronous generation (used when async queue is disabled or fails)
+  // Note: Comparison mode is NOT supported in synchronous mode
+  if (isComparisonMode) {
+    return json(
+      {
+        success: false,
+        message: "Comparison mode requires async processing",
+        error: "The async queue is not available. Please try again later or use single model mode.",
+      },
+      { status: 503 }
+    );
+  }
+
   console.log("Using synchronous image generation...");
 
+  // Build form data with required model field
+  const syncFormData: CreateImagesFormData = {
+    ...validateFormData.data,
+    model: validateFormData.data.model!,
+  };
+
   try {
-    const result = await createNewImages(validateFormData.data, user.id);
+    const result = await createNewImages(syncFormData, user.id);
 
     // If there's an error from any AI provider, don't charge
     if ("error" in result) {
@@ -316,7 +455,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // Track successful synchronous generation
     trackImageGenerationCompleted(user.id, {
       prompt: validateFormData.data.prompt,
-      model: validateFormData.data.model,
+      model: syncFormData.model,
       numberOfImages: validateFormData.data.numberOfImages,
       width: validateFormData.data.width,
       height: validateFormData.data.height,
@@ -336,7 +475,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // Track failed generation
     trackImageGenerationFailed(user.id, {
       prompt: validateFormData.data.prompt,
-      model: validateFormData.data.model,
+      model: syncFormData.model,
       numberOfImages: validateFormData.data.numberOfImages,
       creditCost: totalCreditCost,
       isAsync: false,
@@ -369,6 +508,9 @@ export type ActionData = {
   requestId?: string;
   processingUrl?: string;
   prompt?: string;
+  // Comparison mode fields
+  comparisonMode?: boolean;
+  models?: string[];
 };
 
 export type CreatePageActionData = typeof action;
