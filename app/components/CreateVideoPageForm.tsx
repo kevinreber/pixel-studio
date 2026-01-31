@@ -37,6 +37,7 @@ import {
 import { toast } from "sonner";
 import type { ActionData, CreateVideoPageLoader } from "~/routes/create-video";
 import { ProviderBadge } from "./ModelBadge";
+import { ImagePicker } from "./ImagePicker";
 import { useGenerationProgress } from "~/contexts/GenerationProgressContext";
 
 const PROMPT_EXAMPLES = [
@@ -107,6 +108,7 @@ const CreateVideoPageForm = () => {
   const [selectedAspectRatio, setSelectedAspectRatio] = React.useState("16:9");
   const [selectedDuration, setSelectedDuration] = React.useState(5);
   const [sourceImageUrl, setSourceImageUrl] = React.useState("");
+  const [sourceImageId, setSourceImageId] = React.useState("");
   const [generationMode, setGenerationMode] = React.useState<
     "text-to-video" | "image-to-video"
   >("text-to-video");
@@ -192,6 +194,16 @@ const CreateVideoPageForm = () => {
     setModelDialogOpen(true);
   };
 
+  const handleImageSelect = (image: { id: string; url: string } | null) => {
+    if (image) {
+      setSourceImageUrl(image.url);
+      setSourceImageId(image.id);
+    } else {
+      setSourceImageUrl("");
+      setSourceImageId("");
+    }
+  };
+
   const renderMobileLayout = () => (
     <div className="mb-8">
       <main className="flex-1 overflow-auto">
@@ -275,25 +287,37 @@ const CreateVideoPageForm = () => {
               {/* Source Image Input for Image-to-Video */}
               {generationMode === "image-to-video" && (
                 <div>
-                  <Label htmlFor="sourceImageUrl">Source Image URL</Label>
+                  <Label>Source Image</Label>
                   <input
                     type="hidden"
                     name="sourceImageUrl"
                     value={sourceImageUrl}
                   />
-                  <div className="flex gap-2 mt-1">
-                    <Input
-                      id="sourceImageUrl"
-                      placeholder="Enter image URL..."
-                      value={sourceImageUrl}
-                      onChange={(e) => setSourceImageUrl(e.target.value)}
+                  <input
+                    type="hidden"
+                    name="sourceImageId"
+                    value={sourceImageId}
+                  />
+                  <div className="mt-1 space-y-2">
+                    <ImagePicker
+                      onSelect={handleImageSelect}
+                      selectedImageUrl={sourceImageUrl}
                       disabled={isSubmitting}
-                      className="flex-1 bg-zinc-800/50"
+                    />
+                    <div className="text-xs text-gray-500">
+                      Or enter a URL directly:
+                    </div>
+                    <Input
+                      placeholder="https://example.com/image.jpg"
+                      value={sourceImageUrl}
+                      onChange={(e) => {
+                        setSourceImageUrl(e.target.value);
+                        setSourceImageId("");
+                      }}
+                      disabled={isSubmitting}
+                      className="bg-zinc-800/50"
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Enter a URL to an image to animate
-                  </p>
                 </div>
               )}
 
@@ -564,25 +588,37 @@ const CreateVideoPageForm = () => {
                 {/* Source Image Input for Image-to-Video */}
                 {generationMode === "image-to-video" && (
                   <div>
-                    <Label htmlFor="sourceImageUrl">Source Image URL</Label>
+                    <Label>Source Image</Label>
                     <input
                       type="hidden"
                       name="sourceImageUrl"
                       value={sourceImageUrl}
                     />
-                    <div className="flex gap-2 mt-1">
-                      <Input
-                        id="sourceImageUrl"
-                        placeholder="Enter image URL..."
-                        value={sourceImageUrl}
-                        onChange={(e) => setSourceImageUrl(e.target.value)}
+                    <input
+                      type="hidden"
+                      name="sourceImageId"
+                      value={sourceImageId}
+                    />
+                    <div className="mt-1 space-y-2">
+                      <ImagePicker
+                        onSelect={handleImageSelect}
+                        selectedImageUrl={sourceImageUrl}
                         disabled={isSubmitting}
-                        className="flex-1 bg-zinc-800/50"
+                      />
+                      <div className="text-xs text-gray-500">
+                        Or enter a URL directly:
+                      </div>
+                      <Input
+                        placeholder="https://example.com/image.jpg"
+                        value={sourceImageUrl}
+                        onChange={(e) => {
+                          setSourceImageUrl(e.target.value);
+                          setSourceImageId("");
+                        }}
+                        disabled={isSubmitting}
+                        className="bg-zinc-800/50"
                       />
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Enter a URL to an image to animate into a video
-                    </p>
                   </div>
                 )}
 
