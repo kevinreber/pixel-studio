@@ -69,23 +69,21 @@ test.describe("Create Video Page - Authentication", () => {
 });
 
 test.describe("Create Video Page - API Endpoints", () => {
-  test("user images API endpoint exists and responds", async ({ request }) => {
-    const response = await request.get("/api/user/images");
-    const status = response.status();
-    // Should redirect to login (302) or return unauthorized (401) when not authenticated
-    expect([302, 401, 403]).toContain(status);
+  test("user images API endpoint requires authentication", async ({ page }) => {
+    // Navigate to API endpoint - should redirect to login
+    await page.goto("/api/user/images");
+    // After redirect, should be on login page
+    await expect(page).toHaveURL(/login/);
   });
 
-  test("user images API supports pagination params", async ({ request }) => {
-    const response = await request.get("/api/user/images?page=1&pageSize=24");
-    const status = response.status();
-    expect([302, 401, 403]).toContain(status);
+  test("user images API with params requires authentication", async ({ page }) => {
+    await page.goto("/api/user/images?page=1&pageSize=24");
+    await expect(page).toHaveURL(/login/);
   });
 
-  test("user images API supports search param", async ({ request }) => {
-    const response = await request.get("/api/user/images?search=landscape");
-    const status = response.status();
-    expect([302, 401, 403]).toContain(status);
+  test("user images API with search requires authentication", async ({ page }) => {
+    await page.goto("/api/user/images?search=landscape");
+    await expect(page).toHaveURL(/login/);
   });
 });
 

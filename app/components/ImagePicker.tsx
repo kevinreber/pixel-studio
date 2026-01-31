@@ -244,7 +244,7 @@ export function ImagePicker({
         <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-zinc-700 bg-zinc-800">
           <img
             src={selectedImageUrl}
-            alt="Selected source image"
+            alt="Selected source for video generation"
             className="w-full h-full object-contain"
           />
         </div>
