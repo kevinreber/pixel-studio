@@ -50,7 +50,7 @@ const UserCollectionsPage = () => {
             <div className="relative min-h-[400px]">
               <React.Suspense fallback={<CollectionsTableSkeleton />}>
                 <Await
-                  resolve={data}
+                  resolve={data as Promise<GetUserCollectionsResponse>}
                   errorElement={
                     <div className="p-4 text-red-500">
                       Error loading collections

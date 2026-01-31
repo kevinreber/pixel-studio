@@ -56,6 +56,7 @@ export type ProfileVideo = {
   duration: number | null;
   aspectRatio: string | null;
   status: string | null;
+  userId: string;
   user: {
     id: string;
     username: string;
@@ -186,6 +187,7 @@ export const getUserDataByUserId = async (
       type: "video" as const,
       url: getS3VideoURL(video.id),
       thumbnailURL: getS3VideoThumbnailURL(video.id),
+      userId: video.user.id,
     })) || [];
 
   // Combine and sort by createdAt descending

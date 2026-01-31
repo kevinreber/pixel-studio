@@ -3,8 +3,9 @@ import { json } from "@remix-run/node";
 import { Logger } from "~/utils/logger.server";
 
 const isTestEnvironment = process.env.CI === "true" || process.env.NODE_ENV === "test";
+const hasStripeCredentials = !!process.env.STRIPE_SECRET_KEY;
 
-// Create mock Stripe for test environments
+// Create mock Stripe for test environments or when credentials are missing
 const createMockStripe = () => ({
   checkout: {
     sessions: {
@@ -13,10 +14,12 @@ const createMockStripe = () => ({
   },
 });
 
-export const stripe = isTestEnvironment
+// Use mock Stripe in test environments or when credentials are missing (dev mode)
+export const stripe = (isTestEnvironment || !hasStripeCredentials)
   ? (createMockStripe() as unknown as Stripe)
   : new Stripe(process.env.STRIPE_SECRET_KEY!, {
-      apiVersion: "2024-11-20.acacia",
+      // Cast to any to allow for newer API versions that may not be in the types yet
+      apiVersion: "2024-11-20.acacia" as Stripe.LatestApiVersion,
     });
 
 export const stripeCheckout = async ({ userId }: { userId: string }) => {

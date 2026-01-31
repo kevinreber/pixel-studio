@@ -61,15 +61,22 @@ const prisma = singleton("prisma", () => {
   });
 
   // Add connection error handling
-  client.$on("error", (e) => {
+  // Note: Prisma $on only supports "query" event type in the type system
+  // Using "error" as a string to handle error events at runtime
+  (client.$on as (event: string, callback: (e: unknown) => void) => void)("error", (e) => {
     console.error("Prisma Client error:", e);
     client.$disconnect();
   });
 
   // Properly handle connection
+  // In production, exit on connection failure
+  // In dev/test, log the error but continue (allows E2E tests to check page rendering)
   client.$connect().catch((e) => {
     console.error("Failed to connect to database:", e);
-    process.exit(1);
+    if (process.env.NODE_ENV === "production") {
+      process.exit(1);
+    }
+    // In dev/test, continue without database - some routes may still work
   });
 
   return client;

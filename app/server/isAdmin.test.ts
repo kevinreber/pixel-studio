@@ -27,7 +27,8 @@ describe("isAdmin", () => {
   });
 
   it("returns false for user with undefined roles", () => {
-    const user = { id: "user-1" } as { id: string; roles?: Array<{ name: string }> };
+    // Cast through unknown to test edge case where roles might be undefined at runtime
+    const user = { id: "user-1" } as unknown as { id: string; roles: Array<{ name: string }> };
     expect(isAdmin(user)).toBe(false);
   });
 

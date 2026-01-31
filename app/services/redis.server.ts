@@ -1,15 +1,17 @@
 import { Redis } from "@upstash/redis";
 
 const isTestEnvironment = process.env.CI === "true" || process.env.NODE_ENV === "test";
+const hasRedisCredentials = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN;
 
+// Only throw in production if credentials are missing
 if (
-  !isTestEnvironment &&
-  (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN)
+  process.env.NODE_ENV === "production" &&
+  !hasRedisCredentials
 ) {
   throw new Error("Redis credentials not found in environment variables");
 }
 
-// Create a mock Redis client for test environments
+// Create a mock Redis client for test environments or when credentials are missing
 const createMockRedis = () => ({
   get: async () => null,
   set: async () => "OK",
@@ -18,7 +20,8 @@ const createMockRedis = () => ({
   keys: async () => [],
 });
 
-export const redis = isTestEnvironment
+// Use mock Redis in test environments or when credentials are missing (dev mode)
+export const redis = (isTestEnvironment || !hasRedisCredentials)
   ? (createMockRedis() as unknown as Redis)
   : new Redis({
       url: process.env.UPSTASH_REDIS_REST_URL!,

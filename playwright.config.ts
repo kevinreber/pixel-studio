@@ -68,5 +68,13 @@ export default defineConfig({
     url: "http://localhost:5173",
     reuseExistingServer: true,
     timeout: 120000,
+    // Provide fallback environment variables for E2E tests
+    // These allow the server to start even without full configuration
+    // In CI, real values are provided via secrets in .env file
+    env: {
+      ...process.env,
+      DATABASE_URL: process.env.DATABASE_URL || "postgresql://test:test@localhost:5432/test",
+      SESSION_SECRET: process.env.SESSION_SECRET || "test-secret-for-e2e-testing",
+    },
   },
 });

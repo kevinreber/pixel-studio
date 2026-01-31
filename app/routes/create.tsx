@@ -152,6 +152,9 @@ export type CreateImagesFormData = {
   cfgScale?: number;
   steps?: number;
   promptUpsampling?: boolean;
+  // Remix fields
+  isRemix?: boolean;
+  parentImageId?: string;
 };
 
 // Extended form data for comparison mode

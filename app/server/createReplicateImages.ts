@@ -211,6 +211,9 @@ const processReplicateBatch = async (
         negativePrompt: formData.negativePrompt,
         cfgScale: formData.cfgScale,
         steps: formData.steps,
+        // Remix fields
+        isRemix: formData.isRemix,
+        parentImageId: formData.parentImageId,
       });
 
       await addBase64EncodedImageToAWS(base64Image, imageData.id);

@@ -83,7 +83,8 @@ export const getUserData = async (
     },
   });
 
-  const count = userData?._count.images ?? 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const count = (userData as any)?._count?.images ?? 0;
 
   // Append images source URL since we cannot use `env` variables in our UI
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment

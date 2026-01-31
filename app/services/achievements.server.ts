@@ -477,10 +477,13 @@ export async function checkAndUnlockAchievements(
       }
     } catch (error) {
       // Log the error but continue processing other achievements
-      Logger.error("Failed to process achievement unlock", {
-        userId,
-        achievementCode: achievement.code,
-        error: error instanceof Error ? error.message : String(error),
+      Logger.error({
+        message: "Failed to process achievement unlock",
+        metadata: {
+          userId,
+          achievementCode: achievement.code,
+          errorMessage: error instanceof Error ? error.message : String(error),
+        },
       });
     }
   }

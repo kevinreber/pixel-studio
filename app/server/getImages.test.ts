@@ -14,6 +14,9 @@ vi.mock("utils/s3Utils", () => ({
   getS3BucketThumbnailURL: vi.fn(
     (id: string) => `https://s3.example.com/thumbnails/${id}`
   ),
+  getS3BucketBlurURL: vi.fn(
+    (id: string) => `https://s3.example.com/blur/${id}`
+  ),
   getS3VideoURL: vi.fn((id: string) => `https://s3.example.com/videos/${id}`),
   getS3VideoThumbnailURL: vi.fn(
     (id: string) => `https://s3.example.com/video-thumbnails/${id}`

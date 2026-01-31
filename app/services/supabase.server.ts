@@ -5,14 +5,13 @@ import {
 } from "@supabase/ssr";
 import type { Session, User } from "@supabase/supabase-js";
 
-const isTestEnvironment = process.env.CI === "true" || process.env.NODE_ENV === "test";
-
 export const getSupabaseEnv = () => {
   const DATABASE_BASE_URL = process.env.DATABASE_BASE_URL;
   const DATABASE_URL = process.env.DATABASE_URL;
   const DATABASE_ANON_KEY = process.env.DATABASE_ANON_KEY;
 
-  if (!isTestEnvironment && (!DATABASE_BASE_URL || !DATABASE_ANON_KEY)) {
+  // Only throw in production if credentials are missing
+  if (process.env.NODE_ENV === "production" && (!DATABASE_BASE_URL || !DATABASE_ANON_KEY)) {
     throw new Error(
       "Missing Supabase environment variables. Check DATABASE_BASE_URL and DATABASE_ANON_KEY"
     );

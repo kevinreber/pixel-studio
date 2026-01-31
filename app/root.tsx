@@ -9,7 +9,7 @@ import {
   useLoaderData,
   useLocation,
   ShouldRevalidateFunctionArgs,
-  // useRouteLoaderData,
+  useRouteLoaderData,
 } from "@remix-run/react";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { Analytics } from "@vercel/analytics/react";
@@ -151,7 +151,9 @@ function Document({
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const loaderData = useLoaderData<typeof loader>();
+  // Use useRouteLoaderData instead of useLoaderData to avoid errors in ErrorBoundary
+  // useRouteLoaderData returns undefined when data isn't available (e.g., during error rendering)
+  const loaderData = useRouteLoaderData<typeof loader>("root");
   const location = useLocation();
   const isHome = location.pathname === "/";
 

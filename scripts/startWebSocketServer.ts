@@ -42,7 +42,7 @@ async function main() {
 
     // Keep the process alive and show periodic stats
     const statsInterval = setInterval(() => {
-      const stats = server.getConnectionStats();
+      const stats = server.getConnectionStats() as { totalClients: number; activeRequests: number };
       if (stats.totalClients > 0) {
         console.log(
           `📈 Active: ${stats.totalClients} clients, ${stats.activeRequests} requests`
