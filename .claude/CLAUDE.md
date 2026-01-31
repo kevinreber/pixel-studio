@@ -208,6 +208,53 @@ Required variables (see `env.example`):
 - **E2E tests**: Playwright in `tests/` or `tests-examples/`
 - Run `npm run test` before committing
 
+## Pre-Commit Requirements
+
+**IMPORTANT**: Before creating any commit, you MUST ensure all of the following checks pass:
+
+```bash
+# Required checks (run in order)
+npm run lint          # ESLint - must pass with no errors
+npm run typecheck     # TypeScript - must pass with no errors
+npm run test:run      # Unit tests - must pass
+npm run build         # Build - must succeed
+```
+
+### Quick Pre-Commit Command
+
+Run all checks at once:
+
+```bash
+npm run lint && npm run typecheck && npm run test:run && npm run build
+```
+
+### What Each Check Validates
+
+| Check      | Command             | Purpose                                    |
+| ---------- | ------------------- | ------------------------------------------ |
+| Lint       | `npm run lint`      | Code style, best practices, potential bugs |
+| TypeCheck  | `npm run typecheck` | Type safety, catches type errors           |
+| Unit Tests | `npm run test:run`  | Ensures existing functionality works       |
+| Build      | `npm run build`     | Verifies production build succeeds         |
+
+### CI Pipeline Checks
+
+These checks run automatically on every PR:
+
+1. **Lint** - ESLint validation
+2. **Type Check** - TypeScript compilation
+3. **Unit Tests** - Vitest with coverage
+4. **Build** - Production build (depends on lint + typecheck)
+5. **Security Scan** - CodeQL static analysis
+6. **Dependency Review** - Vulnerability scanning for new dependencies
+
+### If a Check Fails
+
+- **Lint errors**: Fix the reported issues or run `npm run lint -- --fix` for auto-fixable issues
+- **Type errors**: Fix the TypeScript errors shown in the output
+- **Test failures**: Fix the failing tests or update them if behavior changed intentionally
+- **Build failures**: Usually caused by lint/type errors - fix those first
+
 ## Things to Avoid
 
 - Don't use `any` type - use proper typing or `unknown`
