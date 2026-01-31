@@ -10,7 +10,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Tooltip,
@@ -85,21 +84,20 @@ export const RemixImageButton = ({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <DialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={disabled || isLoading}
-                className={cn(
-                  "gap-1.5 text-zinc-600 dark:text-zinc-400 hover:text-purple-600 dark:hover:text-purple-400",
-                  "hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-colors",
-                  isLoading && "opacity-70"
-                )}
-              >
-                <Sparkles className={cn("h-5 w-5", isLoading && "animate-pulse")} />
-                <span className="font-medium">Remix</span>
-              </Button>
-            </DialogTrigger>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={disabled || isLoading}
+              onClick={() => setIsOpen(true)}
+              className={cn(
+                "gap-1.5 text-zinc-600 dark:text-zinc-400 hover:text-purple-600 dark:hover:text-purple-400",
+                "hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-colors",
+                isLoading && "opacity-70"
+              )}
+            >
+              <Sparkles className={cn("h-5 w-5", isLoading && "animate-pulse")} />
+              <span className="font-medium">Remix</span>
+            </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-[200px] text-center">
             <p>Try this prompt with a different AI model</p>
