@@ -85,14 +85,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       select: { id: true, username: true, credits: true },
     });
 
+    // Get admin identifier (handle both Supabase User and UserProfile types)
+    const adminEmail = "email" in adminUser ? adminUser.email : undefined;
+    const adminDisplayName = "displayName" in adminUser ? adminUser.displayName : undefined;
+    const adminIdentifier = adminDisplayName || adminEmail || adminUser.id;
+
     // Log the admin adjustment
     await logAdminCreditAdjustment({
       userId,
       amount,
-      description: `Admin adjustment by ${adminUser.username || adminUser.email}: ${reason}`,
+      description: `Admin adjustment by ${adminIdentifier}: ${reason}`,
       metadata: {
         adminId: adminUser.id,
-        adminUsername: adminUser.username,
+        adminIdentifier,
         reason,
         previousBalance: targetUser.credits,
         newBalance: updatedUser.credits,

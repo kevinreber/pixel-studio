@@ -46,6 +46,14 @@
     ]
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash(git commit*)",
+        "hooks": [
+          "echo '⚠️  REMINDER: Ensure npm run lint && npm run typecheck && npm run test:run && npm run build all pass before committing!'"
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit(prisma/schema.prisma)",
