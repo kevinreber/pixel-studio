@@ -4,7 +4,7 @@ import { requireUserLogin } from "~/services/auth.server";
 import { getUserWithRoles, isAdmin } from "~/server/isAdmin.server";
 import { PageContainer } from "~/components";
 import { cn } from "@/lib/utils";
-import { Shield, Trash2, LayoutDashboard, Users, Coins, BarChart3, Heart, Wallet } from "lucide-react";
+import { Shield, Trash2, LayoutDashboard, Users, Coins, BarChart3, Heart, UserCog, Wallet } from "lucide-react";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
@@ -34,6 +34,11 @@ const navItems = [
     icon: Coins,
   },
   {
+    label: "Tokens",
+    href: "/admin/tokens",
+    icon: UserCog,
+  },
+  {
     label: "Models",
     href: "/admin/models",
     icon: BarChart3,
@@ -44,8 +49,8 @@ const navItems = [
     icon: Heart,
   },
   {
-    label: "API Tokens",
-    href: "/admin/tokens",
+    label: "External Services",
+    href: "/admin/external-services",
     icon: Wallet,
   },
   {

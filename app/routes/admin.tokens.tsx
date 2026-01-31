@@ -1,8 +1,13 @@
-import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useRevalidator } from "@remix-run/react";
+import {
+  json,
+  type LoaderFunctionArgs,
+  type ActionFunctionArgs,
+} from "@remix-run/node";
+import { useLoaderData, useFetcher, useSearchParams } from "@remix-run/react";
+import { useState, useEffect } from "react";
 import { requireUserLogin } from "~/services/auth.server";
 import { getUserWithRoles, isAdmin } from "~/server/isAdmin.server";
-import { getAllTokenBalances, type TokenBalance } from "~/services/externalTokens.server";
+import { prisma } from "~/services/prisma.server";
 import {
   Card,
   CardContent,
@@ -10,359 +15,586 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  RefreshCw,
-  ExternalLink,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
+import {
+  Coins,
+  Search,
+  Plus,
+  Minus,
+  UserCog,
+  History,
+  AlertCircle,
   CheckCircle2,
-  AlertTriangle,
-  XCircle,
-  HelpCircle,
-  Wallet,
-  Cpu,
-  Video,
-  CreditCard,
-  Database,
+  Loader2,
 } from "lucide-react";
-import { useState } from "react";
+import { cn } from "@/lib/utils";
+
+interface SearchedUser {
+  id: string;
+  username: string | null;
+  email: string;
+  image: string | null;
+  credits: number;
+  createdAt: string;
+  _count: {
+    images: number;
+    generationLogs: number;
+  };
+}
+
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
   const userWithRoles = await getUserWithRoles(user.id);
 
   if (!isAdmin(userWithRoles)) {
-    throw new Response("Forbidden - Admin access required", { status: 403 });
+    throw new Response("Forbidden", { status: 403 });
   }
 
-  const tokenBalances = await getAllTokenBalances();
+  const url = new URL(request.url);
+  const searchQuery = url.searchParams.get("q")?.trim() || "";
+
+  // Search users if query provided
+  let searchResults: SearchedUser[] = [];
+  if (searchQuery.length >= 2) {
+    const users = await prisma.user.findMany({
+      where: {
+        OR: [
+          { username: { contains: searchQuery, mode: "insensitive" } },
+          { email: { contains: searchQuery, mode: "insensitive" } },
+        ],
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        image: true,
+        credits: true,
+        createdAt: true,
+        _count: {
+          select: {
+            images: true,
+            generationLogs: true,
+          },
+        },
+      },
+      take: 10,
+      orderBy: { createdAt: "desc" },
+    });
+    searchResults = users.map((u) => ({
+      ...u,
+      createdAt: u.createdAt.toISOString(),
+    }));
+  }
+
+  // Get recent admin adjustments
+  const recentAdjustments = await prisma.creditTransaction.findMany({
+    where: { type: "admin_adjustment" },
+    select: {
+      id: true,
+      amount: true,
+      description: true,
+      createdAt: true,
+      user: {
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          image: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+  });
 
   return json({
-    tokenBalances,
-    fetchedAt: new Date().toISOString(),
+    searchQuery,
+    searchResults,
+    recentAdjustments: recentAdjustments.map((adj) => ({
+      ...adj,
+      createdAt: adj.createdAt.toISOString(),
+    })),
   });
 }
 
-function getStatusIcon(status: TokenBalance["status"]) {
-  switch (status) {
-    case "available":
-      return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-    case "low":
-      return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
-    case "depleted":
-      return <XCircle className="h-5 w-5 text-red-500" />;
-    case "error":
-      return <XCircle className="h-5 w-5 text-red-500" />;
-    case "unknown":
-      return <HelpCircle className="h-5 w-5 text-zinc-400" />;
+export async function action({ request }: ActionFunctionArgs) {
+  const user = await requireUserLogin(request);
+  const userWithRoles = await getUserWithRoles(user.id);
+
+  if (!isAdmin(userWithRoles)) {
+    return json({ error: "Forbidden" }, { status: 403 });
   }
+
+  // This action is only used for revalidation after credit adjustment
+  return json({ success: true });
 }
 
-function getStatusBadge(status: TokenBalance["status"]) {
-  switch (status) {
-    case "available":
-      return <Badge className="bg-green-500/10 text-green-600 hover:bg-green-500/20">Active</Badge>;
-    case "low":
-      return <Badge className="bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20">Low Balance</Badge>;
-    case "depleted":
-      return <Badge className="bg-red-500/10 text-red-600 hover:bg-red-500/20">Depleted</Badge>;
-    case "error":
-      return <Badge variant="destructive">Error</Badge>;
-    case "unknown":
-      return <Badge variant="secondary">Unknown</Badge>;
-  }
-}
+export default function AdminTokensPage() {
+  const { searchQuery, searchResults, recentAdjustments } =
+    useLoaderData<typeof loader>();
+  const [, setSearchParams] = useSearchParams();
+  const [selectedUser, setSelectedUser] = useState<SearchedUser | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [adjustmentType, setAdjustmentType] = useState<"add" | "remove">("add");
+  const [amount, setAmount] = useState("");
+  const [reason, setReason] = useState("");
 
-function getServiceIcon(service: string) {
-  // Image generation services
-  if (["openai", "huggingface", "replicate", "fal", "together", "blackforest"].includes(service)) {
-    return <Cpu className="h-5 w-5" />;
-  }
-  // Video generation services
-  if (["runway", "luma", "stability"].includes(service)) {
-    return <Video className="h-5 w-5" />;
-  }
-  // Payment services
-  if (service === "stripe") {
-    return <CreditCard className="h-5 w-5" />;
-  }
-  // Database/cache services
-  if (service === "upstash") {
-    return <Database className="h-5 w-5" />;
-  }
-  return <Wallet className="h-5 w-5" />;
-}
+  const searchFetcher = useFetcher<typeof loader>();
+  const adjustFetcher = useFetcher<{
+    success?: boolean;
+    error?: string;
+    message?: string;
+    user?: { previousCredits: number; newCredits: number };
+  }>();
 
-function getServiceColor(service: string): string {
-  const colors: Record<string, string> = {
-    openai: "text-green-500",
-    huggingface: "text-yellow-500",
-    replicate: "text-blue-500",
-    fal: "text-purple-500",
-    together: "text-indigo-500",
-    blackforest: "text-emerald-500",
-    stability: "text-violet-500",
-    runway: "text-pink-500",
-    luma: "text-cyan-500",
-    stripe: "text-blue-600",
-    upstash: "text-teal-500",
-  };
-  return colors[service] || "text-zinc-500";
-}
+  const isSearching = searchFetcher.state === "loading";
+  const isAdjusting = adjustFetcher.state === "submitting";
 
-function formatBalance(balance: number | undefined, unit: string): string {
-  if (balance === undefined) return "—";
-  if (unit === "USD") {
-    return `$${balance.toFixed(2)}`;
-  }
-  return `${balance.toLocaleString()} ${unit}`;
-}
+  // Use fetcher results for search or fall back to loader data
+  const displayResults =
+    searchFetcher.data?.searchResults ?? searchResults;
 
-// Group services by category
-function groupServices(balances: TokenBalance[]) {
-  const imageGen = balances.filter((b) =>
-    ["openai", "huggingface", "replicate", "fal", "together", "blackforest"].includes(b.service)
-  );
-  const videoGen = balances.filter((b) =>
-    ["runway", "luma", "stability"].includes(b.service)
-  );
-  const infrastructure = balances.filter((b) =>
-    ["stripe", "upstash"].includes(b.service)
-  );
+  // Handle search input
+  const handleSearch = (query: string) => {
+    setSearchParams((prev) => {
+      if (query.length >= 2) {
+        prev.set("q", query);
+      } else {
+        prev.delete("q");
+      }
+      return prev;
+    });
 
-  return { imageGen, videoGen, infrastructure };
-}
-
-export default function AdminTokens() {
-  const { tokenBalances, fetchedAt } = useLoaderData<typeof loader>();
-  const revalidator = useRevalidator();
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    revalidator.revalidate();
-    // Small delay to show the spinning animation
-    setTimeout(() => setIsRefreshing(false), 1000);
+    if (query.length >= 2) {
+      searchFetcher.load(`/admin/tokens?q=${encodeURIComponent(query)}`);
+    }
   };
 
-  const { imageGen, videoGen, infrastructure } = groupServices(tokenBalances);
+  // Handle user selection for credit adjustment
+  const handleSelectUser = (user: SearchedUser, type: "add" | "remove") => {
+    setSelectedUser(user);
+    setAdjustmentType(type);
+    setAmount("");
+    setReason("");
+    setIsDialogOpen(true);
+  };
 
-  // Count services by status
-  const statusCounts = tokenBalances.reduce(
-    (acc, b) => {
-      acc[b.status] = (acc[b.status] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
-  );
+  // Handle credit adjustment submission
+  const handleAdjustCredits = () => {
+    if (!selectedUser || !amount || !reason.trim()) return;
+
+    const numAmount = parseInt(amount, 10);
+    if (isNaN(numAmount) || numAmount <= 0) return;
+
+    const finalAmount = adjustmentType === "remove" ? -numAmount : numAmount;
+
+    adjustFetcher.submit(
+      {
+        userId: selectedUser.id,
+        amount: finalAmount.toString(),
+        reason: reason.trim(),
+      },
+      {
+        method: "POST",
+        action: "/api/admin/users/credits",
+        encType: "application/json",
+      }
+    );
+  };
+
+  // Handle adjustment result
+  useEffect(() => {
+    if (adjustFetcher.data?.success) {
+      setIsDialogOpen(false);
+      setSelectedUser(null);
+      setAmount("");
+      setReason("");
+      // Reload the page data to show updated user credits and recent adjustments
+      searchFetcher.load(
+        `/admin/tokens${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ""}`
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adjustFetcher.data]);
 
   return (
     <div className="space-y-8">
-      {/* Header with refresh button */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">External Services</h2>
-          <p className="text-muted-foreground">
-            Monitor token balances and API status across all integrated services
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-muted-foreground">
-            Last updated: {new Date(fetchedAt).toLocaleTimeString()}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isRefreshing || revalidator.state === "loading"}
-          >
-            <RefreshCw
-              className={cn(
-                "h-4 w-4 mr-2",
-                (isRefreshing || revalidator.state === "loading") && "animate-spin"
-              )}
+      {/* Header */}
+      <div>
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <UserCog className="h-5 w-5" />
+          Token Management
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Search for users and manually adjust their credit balance
+        </p>
+      </div>
+
+      {/* Search Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            Search Users
+          </CardTitle>
+          <CardDescription>
+            Search by username or email to find a user
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by username or email..."
+              defaultValue={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="pl-9"
             />
-            Refresh
-          </Button>
-        </div>
-      </div>
-
-      {/* Status Summary */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Services</CardTitle>
-            <Wallet className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{tokenBalances.length}</div>
-            <p className="text-xs text-muted-foreground">Integrated APIs</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-green-500/5 border-green-500/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {statusCounts.available || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">Services healthy</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-yellow-500/5 border-yellow-500/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Low Balance</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
-              {statusCounts.low || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">Need attention</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-red-500/5 border-red-500/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Issues</CardTitle>
-            <XCircle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {(statusCounts.depleted || 0) + (statusCounts.error || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">Require action</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Image Generation Services */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Cpu className="h-5 w-5 text-purple-500" />
-          <h3 className="text-lg font-semibold">Image Generation</h3>
-          <Badge variant="secondary">{imageGen.length}</Badge>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {imageGen.map((service) => (
-            <ServiceCard key={service.service} service={service} />
-          ))}
-        </div>
-      </div>
-
-      {/* Video Generation Services */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Video className="h-5 w-5 text-pink-500" />
-          <h3 className="text-lg font-semibold">Video Generation</h3>
-          <Badge variant="secondary">{videoGen.length}</Badge>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {videoGen.map((service) => (
-            <ServiceCard key={service.service} service={service} />
-          ))}
-        </div>
-      </div>
-
-      {/* Infrastructure Services */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Database className="h-5 w-5 text-teal-500" />
-          <h3 className="text-lg font-semibold">Infrastructure</h3>
-          <Badge variant="secondary">{infrastructure.length}</Badge>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {infrastructure.map((service) => (
-            <ServiceCard key={service.service} service={service} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ServiceCard({ service }: { service: TokenBalance }) {
-  return (
-    <Card className="relative overflow-hidden">
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div
-              className={cn(
-                "p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800",
-                getServiceColor(service.service)
-              )}
-            >
-              {getServiceIcon(service.service)}
-            </div>
-            <div>
-              <CardTitle className="text-base">{service.displayName}</CardTitle>
-              <CardDescription className="text-xs">
-                {service.unit}
-              </CardDescription>
-            </div>
+            {isSearching && (
+              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+            )}
           </div>
-          {getStatusIcon(service.status)}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {/* Balance display */}
-          {service.balance !== undefined ? (
-            <div>
-              <div className="text-2xl font-bold">
-                {formatBalance(service.balance, service.unit)}
-              </div>
-              {service.used !== undefined && service.limit !== undefined && (
-                <div className="mt-2">
-                  <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                    <span>Used: {formatBalance(service.used, service.unit)}</span>
-                    <span>Limit: {formatBalance(service.limit, service.unit)}</span>
-                  </div>
-                  <div className="h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
-                    <div
-                      className={cn(
-                        "h-full rounded-full transition-all",
-                        service.status === "available" && "bg-green-500",
-                        service.status === "low" && "bg-yellow-500",
-                        service.status === "depleted" && "bg-red-500"
-                      )}
-                      style={{
-                        width: `${Math.min(100, (service.used / service.limit) * 100)}%`,
-                      }}
+
+          {/* Search Results */}
+          {displayResults.length > 0 && (
+            <div className="mt-4 border rounded-lg divide-y divide-zinc-200 dark:divide-zinc-800">
+              {displayResults.map((user) => (
+                <div
+                  key={user.id}
+                  className="flex items-center gap-3 p-4 hover:bg-accent/30 transition-colors"
+                >
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage
+                      src={user.image ?? undefined}
+                      alt={user.username ?? "User"}
                     />
+                    <AvatarFallback>
+                      {user.username?.charAt(0).toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium truncate">
+                        {user.username || "No username"}
+                      </span>
+                      <Badge
+                        variant={user.credits > 0 ? "secondary" : "destructive"}
+                        className="text-xs"
+                      >
+                        {user.credits} credits
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {user.email}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {user._count.generationLogs} generations ·{" "}
+                      {user._count.images} images
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSelectUser(user, "add")}
+                      className="text-green-600 border-green-600 hover:bg-green-50 dark:hover:bg-green-950"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSelectUser(user, "remove")}
+                      className="text-red-600 border-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                      disabled={user.credits === 0}
+                    >
+                      <Minus className="h-4 w-4 mr-1" />
+                      Remove
+                    </Button>
                   </div>
                 </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-sm text-muted-foreground">
-              {service.error || "Balance not available via API"}
+              ))}
             </div>
           )}
 
-          {/* Status badge and dashboard link */}
-          <div className="flex items-center justify-between pt-2 border-t border-zinc-200 dark:border-zinc-800">
-            {getStatusBadge(service.status)}
-            {service.dashboardUrl && (
-              <a
-                href={service.dashboardUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-              >
-                Dashboard
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+          {searchQuery.length >= 2 && displayResults.length === 0 && !isSearching && (
+            <div className="mt-4 text-center text-muted-foreground py-8">
+              No users found matching &quot;{searchQuery}&quot;
+            </div>
+          )}
+
+          {searchQuery.length > 0 && searchQuery.length < 2 && (
+            <div className="mt-4 text-center text-muted-foreground py-4 text-sm">
+              Enter at least 2 characters to search
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Recent Admin Adjustments */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="h-5 w-5" />
+            Recent Admin Adjustments
+          </CardTitle>
+          <CardDescription>
+            History of manual credit adjustments made by admins
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          {recentAdjustments.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">
+              No admin adjustments yet
+            </div>
+          ) : (
+            <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              {recentAdjustments.map((adj) => (
+                <div
+                  key={adj.id}
+                  className="flex items-center gap-3 p-4 hover:bg-accent/30 transition-colors"
+                >
+                  <div
+                    className={cn(
+                      "p-2 rounded-lg",
+                      adj.amount > 0
+                        ? "bg-green-100 dark:bg-green-900/30"
+                        : "bg-red-100 dark:bg-red-900/30"
+                    )}
+                  >
+                    {adj.amount > 0 ? (
+                      <Plus className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Minus className="h-4 w-4 text-red-600" />
+                    )}
+                  </div>
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage
+                      src={adj.user.image ?? undefined}
+                      alt={adj.user.username ?? "User"}
+                    />
+                    <AvatarFallback>
+                      {adj.user.username?.charAt(0).toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm truncate">
+                        {adj.user.username || adj.user.email}
+                      </span>
+                      <Badge variant="outline" className="text-xs">
+                        Admin
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {adj.description}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span
+                      className={cn(
+                        "font-medium text-sm",
+                        adj.amount > 0 ? "text-green-600" : "text-red-600"
+                      )}
+                    >
+                      {adj.amount > 0 ? "+" : ""}
+                      {adj.amount}
+                    </span>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(adj.createdAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Credit Adjustment Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {adjustmentType === "add" ? (
+                <>
+                  <Plus className="h-5 w-5 text-green-600" />
+                  Add Credits
+                </>
+              ) : (
+                <>
+                  <Minus className="h-5 w-5 text-red-600" />
+                  Remove Credits
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {adjustmentType === "add"
+                ? "Add credits to this user's account"
+                : "Remove credits from this user's account"}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedUser && (
+            <div className="space-y-4">
+              {/* User Info */}
+              <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage
+                    src={selectedUser.image ?? undefined}
+                    alt={selectedUser.username ?? "User"}
+                  />
+                  <AvatarFallback>
+                    {selectedUser.username?.charAt(0).toUpperCase() || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <p className="font-medium">
+                    {selectedUser.username || "No username"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedUser.email}
+                  </p>
+                </div>
+                <Badge variant="secondary">
+                  <Coins className="h-3 w-3 mr-1" />
+                  {selectedUser.credits} credits
+                </Badge>
+              </div>
+
+              {/* Amount Input */}
+              <div className="space-y-2">
+                <Label htmlFor="amount">
+                  Amount to {adjustmentType === "add" ? "add" : "remove"}
+                </Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  min="1"
+                  max={
+                    adjustmentType === "remove"
+                      ? selectedUser.credits
+                      : undefined
+                  }
+                  placeholder="Enter amount"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+                {adjustmentType === "remove" && (
+                  <p className="text-xs text-muted-foreground">
+                    Maximum: {selectedUser.credits} credits
+                  </p>
+                )}
+              </div>
+
+              {/* Reason Input */}
+              <div className="space-y-2">
+                <Label htmlFor="reason">Reason (required)</Label>
+                <Textarea
+                  id="reason"
+                  placeholder="Enter the reason for this adjustment..."
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  rows={3}
+                />
+              </div>
+
+              {/* Preview */}
+              {amount && parseInt(amount, 10) > 0 && (
+                <div className="p-3 bg-muted rounded-lg text-sm">
+                  <p className="font-medium">Preview:</p>
+                  <p className="text-muted-foreground">
+                    {selectedUser.credits} credits{" "}
+                    {adjustmentType === "add" ? "+" : "-"} {amount} ={" "}
+                    <span className="font-medium text-foreground">
+                      {adjustmentType === "add"
+                        ? selectedUser.credits + parseInt(amount, 10)
+                        : selectedUser.credits - parseInt(amount, 10)}{" "}
+                      credits
+                    </span>
+                  </p>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {adjustFetcher.data?.error && (
+                <div className="flex items-center gap-2 p-3 bg-destructive/10 text-destructive rounded-lg text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  {adjustFetcher.data.error}
+                </div>
+              )}
+
+              {/* Success Message */}
+              {adjustFetcher.data?.success && (
+                <div className="flex items-center gap-2 p-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg text-sm">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {adjustFetcher.data.message}
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+              disabled={isAdjusting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAdjustCredits}
+              disabled={
+                !amount ||
+                parseInt(amount, 10) <= 0 ||
+                !reason.trim() ||
+                isAdjusting
+              }
+              className={cn(
+                adjustmentType === "add"
+                  ? "bg-green-600 hover:bg-green-700"
+                  : "bg-red-600 hover:bg-red-700"
+              )}
+            >
+              {isAdjusting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  {adjustmentType === "add" ? (
+                    <Plus className="h-4 w-4 mr-2" />
+                  ) : (
+                    <Minus className="h-4 w-4 mr-2" />
+                  )}
+                  {adjustmentType === "add" ? "Add" : "Remove"} Credits
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
