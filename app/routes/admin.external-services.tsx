@@ -119,8 +119,13 @@ function formatBalance(balance: number | undefined, unit: string): string {
   return `${balance.toLocaleString()} ${unit}`;
 }
 
+// Serialized version of TokenBalance (Date becomes string in JSON)
+type SerializedTokenBalance = Omit<TokenBalance, "lastUpdated"> & {
+  lastUpdated: string;
+};
+
 // Group services by category
-function groupServices(balances: TokenBalance[]) {
+function groupServices(balances: SerializedTokenBalance[]) {
   const imageGen = balances.filter((b) =>
     ["openai", "huggingface", "replicate", "fal", "together", "blackforest"].includes(b.service)
   );
@@ -286,7 +291,7 @@ export default function AdminExternalServices() {
   );
 }
 
-function ServiceCard({ service }: { service: TokenBalance }) {
+function ServiceCard({ service }: { service: SerializedTokenBalance }) {
   return (
     <Card className="relative overflow-hidden">
       <CardHeader className="pb-2">
