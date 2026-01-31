@@ -1,0 +1,24 @@
+# Pixel Studio AI - Robots.txt
+# https://pixelstudio.ai
+
+User-agent: *
+Allow: /
+
+# Allow crawling of main content
+Allow: /explore
+Allow: /explore/
+Allow: /profile/
+Allow: /marketplace
+Allow: /trending
+Allow: /create
+Allow: /create-video
+
+# Disallow private/authenticated areas
+Disallow: /api/
+Disallow: /admin/
+Disallow: /settings
+Disallow: /checkout
+Disallow: /auth/
+
+# Sitemap location
+Sitemap: https://pixelstudio.ai/sitemap.xml

@@ -108,12 +108,35 @@ function Document({
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
-        <title>Pixel Studio AI</title>
-        <meta property="og:title" content="Pixel Studio AI" />
+        {/* Default SEO tags - overridden by route-specific meta functions */}
+        <title>Pixel Studio AI - Create Stunning AI Art & Videos</title>
         <meta
           name="description"
-          content="Generate images with the power of AI"
+          content="Generate beautiful AI images and videos with DALL-E, Stable Diffusion, Flux, Runway, and more. Join our creative community of AI artists today."
         />
+        {/* Default Open Graph tags */}
+        <meta property="og:title" content="Pixel Studio AI - Create Stunning AI Art & Videos" />
+        <meta
+          property="og:description"
+          content="Generate beautiful AI images and videos with DALL-E, Stable Diffusion, Flux, Runway, and more. Join our creative community of AI artists today."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Pixel Studio AI" />
+        <meta property="og:image" content="https://pixelstudio.ai/og-image.png" />
+        <meta property="og:url" content="https://pixelstudio.ai" />
+        <meta property="og:locale" content="en_US" />
+        {/* Twitter Card tags */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Pixel Studio AI - Create Stunning AI Art & Videos" />
+        <meta
+          name="twitter:description"
+          content="Generate beautiful AI images and videos with DALL-E, Stable Diffusion, Flux, Runway, and more."
+        />
+        <meta name="twitter:image" content="https://pixelstudio.ai/og-image.png" />
+        {/* Additional SEO meta tags */}
+        <meta name="theme-color" content="#000000" />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href="https://pixelstudio.ai" />
         <Meta />
         <Links />
         {/* Google Analytics Script */}

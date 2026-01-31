@@ -29,13 +29,27 @@ import {
   trackImageGenerationFailed,
   trackCreditsSpent,
 } from "~/services/analytics.server";
+import { generateMetaTags, SITE_CONFIG } from "~/utils/seo";
 
 // Re-export for backwards compatibility
 export { MODEL_OPTIONS, STYLE_OPTIONS } from "~/config/models";
 export type { ModelOption, StyleOption } from "~/config/models";
 
 export const meta: MetaFunction = () => {
-  return [{ title: "Create AI Generated Images" }];
+  return generateMetaTags({
+    title: "Create AI Generated Images",
+    description:
+      "Create stunning AI-generated images using DALL-E, Stable Diffusion, Flux, and more. Turn your text prompts into beautiful artwork instantly.",
+    url: `${SITE_CONFIG.url}/create`,
+    keywords: [
+      "AI image generator",
+      "text to image",
+      "DALL-E",
+      "Stable Diffusion",
+      "Flux",
+      "create AI art",
+    ],
+  });
 };
 
 const MAX_PROMPT_CHARACTERS = 3500;
