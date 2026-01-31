@@ -5,7 +5,7 @@
  * Supports search, pagination, and shows a preview of selected image.
  */
 
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useFetcher } from "@remix-run/react";
 import {
   Dialog,
