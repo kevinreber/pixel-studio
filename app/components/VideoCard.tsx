@@ -21,13 +21,18 @@ export interface VideoCardData {
   };
 }
 
+/** Props for VideoCard component */
+export interface VideoCardProps {
+  /** Video data to display */
+  videoData: VideoCardData;
+  /** Optional custom redirect URL when card is clicked */
+  onClickRedirectTo?: string;
+}
+
 export const VideoCard = ({
   videoData,
   onClickRedirectTo = "",
-}: {
-  videoData: VideoCardData;
-  onClickRedirectTo?: string;
-}) => {
+}: VideoCardProps) => {
   const redirectTo = onClickRedirectTo || `/explore/video/${videoData.id}`;
 
   // Format duration as MM:SS

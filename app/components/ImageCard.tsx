@@ -5,7 +5,13 @@ import { OptimizedImage } from "./OptimizedImage";
 import { useImagePreload } from "~/hooks";
 import { fallbackImageSource } from "~/client";
 
-export const ImageGrid = ({ images }: { images: ImageDetail[] }) => {
+/** Props for ImageGrid component */
+export interface ImageGridProps {
+  /** Array of images to display in the grid */
+  images: ImageDetail[];
+}
+
+export const ImageGrid = ({ images }: ImageGridProps) => {
   if (!images || images.length === 0) {
     return (
       <p className="text-center w-full block italic font-light">
@@ -28,13 +34,18 @@ export const ImageGrid = ({ images }: { images: ImageDetail[] }) => {
   );
 };
 
+/** Props for ImageCard component */
+export interface ImageCardProps {
+  /** Image data to display */
+  imageData: ImageDetail;
+  /** Optional custom redirect URL when card is clicked */
+  onClickRedirectTo?: string;
+}
+
 export const ImageCard = ({
   imageData,
   onClickRedirectTo = "",
-}: {
-  imageData: ImageDetail;
-  onClickRedirectTo?: string;
-}) => {
+}: ImageCardProps) => {
   const redirectTo = onClickRedirectTo || `/explore/${imageData!.id}`;
   const { preloadImage } = useImagePreload();
 

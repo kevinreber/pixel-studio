@@ -8,6 +8,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Loader2 } from "lucide-react";
 import { useFetcher } from "@remix-run/react";
@@ -59,19 +60,26 @@ export function CreateCollectionDialog() {
           <DialogTitle>Create New Collection</DialogTitle>
         </DialogHeader>
         <fetcher.Form onSubmit={handleSubmit} className="space-y-4">
-          <div>
+          <div className="space-y-2">
+            <Label htmlFor="collection-title">
+              Title <span className="text-red-500" aria-hidden="true">*</span>
+            </Label>
             <Input
+              id="collection-title"
               name="title"
-              placeholder="Collection Title"
+              placeholder="Enter collection title"
               disabled={isPending}
               required
+              aria-required="true"
               className="disabled:opacity-50"
             />
           </div>
-          <div>
+          <div className="space-y-2">
+            <Label htmlFor="collection-description">Description</Label>
             <Textarea
+              id="collection-description"
               name="description"
-              placeholder="Collection Description (optional)"
+              placeholder="Enter collection description (optional)"
               disabled={isPending}
               className="disabled:opacity-50"
             />
