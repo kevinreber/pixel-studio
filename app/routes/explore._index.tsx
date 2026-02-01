@@ -64,7 +64,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const cacheKey = `explore-images?q=${searchTerm}&page=${currentPage}&pageSize=${pageSize}&type=${mediaType}&model=${model}`;
 
-  // Use defer() to stream data to the client for faster initial page load
+  // Use defer() to stream data for faster initial page load
   const imagesDataPromise = getCachedDataWithRevalidate(
     cacheKey,
     () =>

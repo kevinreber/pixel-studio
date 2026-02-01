@@ -136,7 +136,7 @@ const MediaGrid = ({
                   comments: [],
                   likes: [],
                   setId: null,
-                  blurURL: "",
+                  // Keep blurURL from item spread - don't override with empty string
                 } as ImageDetail
               }
             />
@@ -151,7 +151,7 @@ const MediaGrid = ({
   );
 };
 
-const ExplorePageAccessor = () => {
+const ExplorePageContent = () => {
   const imagesData = useAsyncValue() as GetImagesResponse | undefined;
   const navigation = useNavigation();
   const navigate = useNavigate();
@@ -379,7 +379,7 @@ const ExplorePage = () => {
                   </div>
                 </div>
               )}
-              <ExplorePageAccessor />
+              <ExplorePageContent />
             </div>
           </Await>
         </React.Suspense>
