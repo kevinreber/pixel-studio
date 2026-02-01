@@ -208,6 +208,9 @@ model Video {
 
   @@index([userId])
   @@index([setId])
+  @@index([createdAt])
+  @@index([private, status, createdAt])
+  @@index([userId, createdAt])
 }
 
 model Image {
@@ -258,6 +261,9 @@ model Image {
   @@index([userId])
   @@index([setId])
   @@index([parentImageId])
+  @@index([createdAt])
+  @@index([private, createdAt])
+  @@index([userId, createdAt])
 }
 
 model ImageLike {

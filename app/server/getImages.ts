@@ -157,7 +157,11 @@ export const getImages = async (
     const hasNextPage = currentPage < totalPages;
     const hasPrevPage = currentPage > 1;
 
-    // Get images and videos
+    // Calculate pagination offset
+    const skip = (currentPage - 1) * currentPageSize;
+
+    // Use database-level pagination with LIMIT/OFFSET for efficiency
+    // Fetch only what we need instead of all records
     const [rawImages, rawVideos] = await Promise.all([
       shouldFetchImages
         ? prisma.$queryRaw`
@@ -167,6 +171,7 @@ export const getImages = async (
               AND (i.title LIKE ${like} OR i.prompt LIKE ${like} OR i."stylePreset" LIKE ${like})
               AND i.model LIKE ${modelLike}
             ORDER BY i."createdAt" DESC
+            LIMIT ${currentPageSize + skip}
           `
         : Promise.resolve([]),
       shouldFetchVideos
@@ -177,6 +182,7 @@ export const getImages = async (
               AND (v.title LIKE ${like} OR v.prompt LIKE ${like})
               AND (v.model LIKE ${modelLike} OR v.model IS NULL)
             ORDER BY v."createdAt" DESC
+            LIMIT ${currentPageSize + skip}
           `
         : Promise.resolve([]),
     ]);
@@ -221,14 +227,13 @@ export const getImages = async (
         }))
       : [];
 
-    // Combine and sort by createdAt descending
+    // Combine and sort by createdAt descending (limited dataset from DB)
     const allItems: MediaItem[] = [...formattedImages, ...formattedVideos].sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
-    // Apply pagination to combined results
-    const skip = (currentPage - 1) * currentPageSize;
+    // Apply pagination to combined results (now operating on limited dataset)
     const paginatedItems = allItems.slice(skip, skip + currentPageSize);
 
     // Separate paginated items back into images and videos for backwards compatibility

@@ -1,3 +1,4 @@
+import React, { memo, useCallback } from "react";
 import { Link } from "@remix-run/react";
 import { Shuffle } from "lucide-react";
 import { ImageDetail } from "~/server/getImage";
@@ -42,17 +43,37 @@ export interface ImageCardProps {
   onClickRedirectTo?: string;
 }
 
-export const ImageCard = ({
+export const ImageCard = memo(function ImageCard({
   imageData,
   onClickRedirectTo = "",
-}: ImageCardProps) => {
+}: ImageCardProps) {
   const redirectTo = onClickRedirectTo || `/explore/${imageData!.id}`;
   const { preloadImage } = useImagePreload();
 
   // Preload full image on hover for faster modal loading
-  const handleMouseEnter = () => {
+  const handleMouseEnter = useCallback(() => {
     preloadImage(imageData?.url);
-  };
+  }, [preloadImage, imageData?.url]);
+
+  // Memoize error handler
+  const handleError = useCallback(
+    (e: React.SyntheticEvent<HTMLImageElement>) => {
+      // Fallback chain: thumbnail -> original -> placeholder
+      const target = e.currentTarget;
+      if (
+        imageData?.url &&
+        target.src !== imageData.url &&
+        target.src !== fallbackImageSource
+      ) {
+        // First fallback: try original image if thumbnail fails
+        target.src = imageData.url;
+      } else if (target.src !== fallbackImageSource) {
+        // Final fallback: use placeholder if original also fails
+        target.src = fallbackImageSource;
+      }
+    },
+    [imageData?.url]
+  );
 
   return (
     <div
@@ -71,17 +92,7 @@ export const ImageCard = ({
           containerClassName="absolute inset-0 w-full h-full"
           className="inset-0 object-cover cursor-pointer absolute w-full h-full"
           rootMargin="300px"
-          onError={(e) => {
-            // Fallback chain: thumbnail -> original -> placeholder
-            const target = e.currentTarget;
-            if (imageData?.url && target.src !== imageData.url && target.src !== fallbackImageSource) {
-              // First fallback: try original image if thumbnail fails
-              target.src = imageData.url;
-            } else if (target.src !== fallbackImageSource) {
-              // Final fallback: use placeholder if original also fails
-              target.src = fallbackImageSource;
-            }
-          }}
+          onError={handleError}
         />
       </Link>
       {/* Remix indicator badge */}
@@ -92,4 +103,4 @@ export const ImageCard = ({
       )}
     </div>
   );
-};
+});

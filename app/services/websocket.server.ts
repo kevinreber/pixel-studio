@@ -20,7 +20,11 @@ export class ProcessingWebSocketServer {
   private clients: Map<string, Set<WebSocket>> = new Map();
   private isRunning: boolean = false;
   private statusPollingInterval: NodeJS.Timeout | null = null;
-  private redirectsSent: Set<string> = new Set(); // Track which requests have been sent redirects
+  private redirectsCleanupInterval: NodeJS.Timeout | null = null;
+  // Track which requests have been sent redirects with timestamp for cleanup
+  private redirectsSent: Map<string, number> = new Map();
+  // How long to keep redirect records before cleanup (5 minutes)
+  private static readonly REDIRECT_CLEANUP_AGE_MS = 5 * 60 * 1000;
 
   constructor(port: number = WS_PORT) {
     // Create HTTP server for WebSocket upgrade and health check
@@ -73,6 +77,9 @@ export class ProcessingWebSocketServer {
       this.startStatusPolling();
       console.log("📡 Started status polling for processing updates");
 
+      // Start periodic cleanup of old redirect records to prevent memory leaks
+      this.startRedirectsCleanup();
+
       // Handle WebSocket connections
       this.wss.on("connection", (ws, request) => {
         this.handleConnection(ws, request);
@@ -116,6 +123,12 @@ export class ProcessingWebSocketServer {
       if (this.statusPollingInterval) {
         clearInterval(this.statusPollingInterval);
         this.statusPollingInterval = null;
+      }
+
+      // Stop redirects cleanup
+      if (this.redirectsCleanupInterval) {
+        clearInterval(this.redirectsCleanupInterval);
+        this.redirectsCleanupInterval = null;
       }
 
       // Close WebSocket server
@@ -222,6 +235,28 @@ export class ProcessingWebSocketServer {
         }
       }
     }, 2000); // Poll every 2 seconds
+  }
+
+  /**
+   * Start periodic cleanup of old redirect records to prevent memory leaks
+   */
+  private startRedirectsCleanup(): void {
+    // Cleanup every 2 minutes
+    this.redirectsCleanupInterval = setInterval(() => {
+      const now = Date.now();
+      let cleanedCount = 0;
+
+      for (const [requestId, timestamp] of this.redirectsSent.entries()) {
+        if (now - timestamp > ProcessingWebSocketServer.REDIRECT_CLEANUP_AGE_MS) {
+          this.redirectsSent.delete(requestId);
+          cleanedCount++;
+        }
+      }
+
+      if (cleanedCount > 0) {
+        console.log(`🧹 Cleaned up ${cleanedCount} old redirect records`);
+      }
+    }, 2 * 60 * 1000); // Every 2 minutes
   }
 
   private async cleanupRequest(requestId: string): Promise<void> {
@@ -430,8 +465,8 @@ export class ProcessingWebSocketServer {
         `📤 Sending one-time redirect for completed request: ${requestId}`
       );
 
-      // Mark this request as having received a redirect
-      this.redirectsSent.add(requestId);
+      // Mark this request as having received a redirect with timestamp
+      this.redirectsSent.set(requestId, Date.now());
 
       setTimeout(() => {
         clientSet.forEach((ws) => {

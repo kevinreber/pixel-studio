@@ -1,7 +1,33 @@
 import { useCallback, useRef } from "react";
 
-// Cache to track which images have been preloaded
-const preloadedImages = new Set<string>();
+// Maximum number of preloaded images to keep in cache to prevent memory leaks
+const MAX_PRELOADED_IMAGES = 200;
+
+// Cache to track which images have been preloaded (uses Map for LRU ordering)
+const preloadedImagesMap = new Map<string, number>();
+
+// Helper to maintain cache size limit
+const addToCache = (src: string) => {
+  // If at capacity, remove oldest entries (first items in Map)
+  if (preloadedImagesMap.size >= MAX_PRELOADED_IMAGES) {
+    const keysToRemove = Array.from(preloadedImagesMap.keys()).slice(
+      0,
+      Math.floor(MAX_PRELOADED_IMAGES / 4)
+    );
+    keysToRemove.forEach((key) => preloadedImagesMap.delete(key));
+  }
+  preloadedImagesMap.set(src, Date.now());
+};
+
+const isPreloadedInCache = (src: string): boolean => {
+  return preloadedImagesMap.has(src);
+};
+
+// For backwards compatibility with legacy code
+const preloadedImages = {
+  has: (src: string) => isPreloadedInCache(src),
+  add: (src: string) => addToCache(src),
+};
 
 /**
  * Hook for preloading images on hover/focus.
@@ -58,7 +84,7 @@ export const useImagePreload = () => {
     preloadImage,
     preloadImages,
     getPreloadHandlers,
-    isPreloaded: (src: string) => preloadedImages.has(src),
+    isPreloaded: (src: string) => isPreloadedInCache(src),
   };
 };
 
@@ -67,14 +93,14 @@ export const useImagePreload = () => {
  */
 export const preloadImage = (src: string): Promise<void> => {
   return new Promise((resolve, reject) => {
-    if (preloadedImages.has(src)) {
+    if (isPreloadedInCache(src)) {
       resolve();
       return;
     }
 
     const img = new Image();
     img.onload = () => {
-      preloadedImages.add(src);
+      addToCache(src);
       resolve();
     };
     img.onerror = reject;

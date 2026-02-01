@@ -218,24 +218,43 @@ export class ProcessingStatusService {
 
   /**
    * Get all active processing requests (for monitoring)
+   * Uses SCAN instead of KEYS to avoid blocking Redis with O(N) operations
    */
   async getActiveProcessingRequests(): Promise<ProcessingStatusData[]> {
     try {
-      // Note: Using keys pattern matching with Upstash Redis
-      const keys = (await safeRedisOperation(() =>
-        redis.keys(`${PROCESSING_KEY_PREFIX}*`)
-      )) as string[];
+      // Use SCAN for non-blocking iteration instead of KEYS
+      const allKeys: string[] = [];
+      let cursor = "0";
+      const scanPattern = `${PROCESSING_KEY_PREFIX}*`;
+      const scanCount = 100; // Process 100 keys per iteration
+      let isFirstIteration = true;
 
-      if (!keys || keys.length === 0) {
+      do {
+        const result = await safeRedisOperation(() =>
+          redis.scan(isFirstIteration ? 0 : cursor, {
+            match: scanPattern,
+            count: scanCount,
+          })
+        );
+        isFirstIteration = false;
+
+        // Upstash Redis returns [string, string[]] where cursor is a string
+        cursor = result[0];
+        const keys = result[1];
+        if (keys && keys.length > 0) {
+          allKeys.push(...keys);
+        }
+        // Continue until cursor is "0"
+      } while (cursor !== "0");
+
+      if (allKeys.length === 0) {
         return [];
       }
 
       // Get all values for these keys
-      const values = (await safeRedisOperation(() => redis.mget(...keys))) as (
-        | string
-        | object
-        | null
-      )[];
+      const values = (await safeRedisOperation(() =>
+        redis.mget(...allKeys)
+      )) as (string | object | null)[];
       return values
         .filter((value): value is string | object => value !== null)
         .map((value) => {

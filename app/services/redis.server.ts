@@ -18,6 +18,8 @@ const createMockRedis = () => ({
   del: async () => 1,
   ping: async () => "PONG",
   keys: async () => [],
+  scan: async () => ["0", []] as [string, string[]],
+  mget: async () => [],
 });
 
 // Use mock Redis in test environments or when credentials are missing (dev mode)
