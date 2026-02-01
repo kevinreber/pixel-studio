@@ -1,3 +1,4 @@
+// Note: Desktop ScrollArea uses fixed height (h-[calc(100vh-10rem)]) for proper scroll/click behavior
 import React from "react";
 import {
   Form,
