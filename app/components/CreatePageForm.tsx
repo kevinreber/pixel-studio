@@ -1381,7 +1381,7 @@ const CreatePageForm = () => {
           </Card>
         </Form>
       </div>
-      <div className="flex-1 pl-4 pr-4 flex flex-col min-h-0 max-h-[calc(100vh-8rem)]">
+      <div className="flex-1 pl-4 pr-4">
         {/* Tab Navigation */}
         <div className="flex gap-2 mb-4 flex-shrink-0">
           <Button
@@ -1414,7 +1414,7 @@ const CreatePageForm = () => {
         </div>
 
         {selectedSection === "model" && (
-          <ScrollArea className="flex-1 min-h-0">
+          <ScrollArea className="h-[calc(100vh-10rem)]">
             {/* Comparison mode hint */}
             {comparisonMode && (
               <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg text-purple-200 text-sm">
@@ -1486,7 +1486,7 @@ const CreatePageForm = () => {
           </ScrollArea>
         )}
         {selectedSection === "style" && (
-          <ScrollArea className="flex-1 min-h-0">
+          <ScrollArea className="h-[calc(100vh-10rem)]">
             {!selectedModel?.supportsStyles && (
               <div className="mb-4 p-3 bg-amber-900/30 border border-amber-700/50 rounded-lg text-amber-200 text-sm">
                 Style presets only work with Stable Diffusion models. Select a
