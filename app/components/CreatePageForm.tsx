@@ -16,7 +16,6 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogOverlay,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ChevronDown, Check, Loader2, Sparkles, Coins, Settings2, Star, GitCompare } from "lucide-react";
@@ -782,8 +781,10 @@ const CreatePageForm = () => {
 
       {/* Model Selection Dialog - Mobile */}
       <Dialog open={modelDialogOpen} onOpenChange={setModelDialogOpen}>
-        <DialogOverlay className="fixed inset-0 bg-black/80 backdrop-blur-sm" />
-        <DialogContent className="fixed inset-x-4 top-[5%] bottom-[5%] translate-x-0 translate-y-0 left-0 right-0 mx-auto max-w-lg bg-zinc-900 rounded-2xl border border-zinc-800 flex flex-col">
+        <DialogContent
+          className="fixed inset-x-4 top-[5%] bottom-[5%] translate-x-0 translate-y-0 left-0 right-0 mx-auto max-w-lg bg-zinc-900 rounded-2xl border border-zinc-800 flex flex-col"
+          overlayClassName="backdrop-blur-sm"
+        >
           <DialogHeader className="px-4 py-3 border-b border-zinc-800">
             <DialogTitle className="text-lg font-semibold">
               {comparisonMode ? `Select Models (${selectedModels.length}/${MAX_COMPARISON_MODELS})` : "Choose a Model"}
@@ -876,8 +877,10 @@ const CreatePageForm = () => {
 
       {/* Style Selection Dialog - Mobile */}
       <Dialog open={styleDialogOpen} onOpenChange={setStyleDialogOpen}>
-        <DialogOverlay className="fixed inset-0 bg-black/80 backdrop-blur-sm" />
-        <DialogContent className="fixed inset-x-4 top-[10%] bottom-[10%] translate-x-0 translate-y-0 left-0 right-0 mx-auto max-w-lg bg-zinc-900 rounded-2xl border border-zinc-800 flex flex-col">
+        <DialogContent
+          className="fixed inset-x-4 top-[10%] bottom-[10%] translate-x-0 translate-y-0 left-0 right-0 mx-auto max-w-lg bg-zinc-900 rounded-2xl border border-zinc-800 flex flex-col"
+          overlayClassName="backdrop-blur-sm"
+        >
           <DialogHeader className="px-4 py-3 border-b border-zinc-800">
             <DialogTitle className="text-lg font-semibold">Choose a Style</DialogTitle>
           </DialogHeader>
@@ -1378,9 +1381,9 @@ const CreatePageForm = () => {
           </Card>
         </Form>
       </div>
-      <div className="flex-1 pl-4 pr-4">
+      <div className="flex-1 pl-4 pr-4 flex flex-col min-h-0 max-h-[calc(100vh-8rem)]">
         {/* Tab Navigation */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-4 flex-shrink-0">
           <Button
             type="button"
             variant={selectedSection === "model" ? "secondary" : "ghost"}
@@ -1411,7 +1414,7 @@ const CreatePageForm = () => {
         </div>
 
         {selectedSection === "model" && (
-          <ScrollArea className="h-[calc(100vh-10rem)]">
+          <ScrollArea className="flex-1 min-h-0">
             {/* Comparison mode hint */}
             {comparisonMode && (
               <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg text-purple-200 text-sm">
@@ -1483,7 +1486,7 @@ const CreatePageForm = () => {
           </ScrollArea>
         )}
         {selectedSection === "style" && (
-          <ScrollArea className="h-[calc(100vh-10rem)]">
+          <ScrollArea className="flex-1 min-h-0">
             {!selectedModel?.supportsStyles && (
               <div className="mb-4 p-3 bg-amber-900/30 border border-amber-700/50 rounded-lg text-amber-200 text-sm">
                 Style presets only work with Stable Diffusion models. Select a
