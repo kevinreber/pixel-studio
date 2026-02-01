@@ -1,5 +1,5 @@
 import { type LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { useNavigate } from "@remix-run/react";
+import { useNavigate, useLoaderData } from "@remix-run/react";
 import { getImage } from "~/server";
 import { invariantResponse } from "~/utils";
 import ExploreImageDetailsPage from "~/pages/ExploreImageDetailsPage";
@@ -7,9 +7,28 @@ import { GeneralErrorBoundary, PageContainer } from "~/components";
 import { requireUserLogin } from "~/services";
 import { getImageCollection } from "~/server/getImageCollection";
 import { getCachedDataWithRevalidate } from "~/utils/cache.server";
+import {
+  generateImageMetaTags,
+  generateImageSchema,
+  generateBreadcrumbSchema,
+  serializeSchema,
+  SITE_CONFIG,
+} from "~/utils/seo";
 
-export const meta: MetaFunction = () => {
-  return [{ title: "Explore AI Generated Images" }];
+export const meta: MetaFunction<typeof loader> = ({ data }) => {
+  if (!data?.data) {
+    return [{ title: "Image Not Found | Pixel Studio AI" }];
+  }
+
+  const image = data.data;
+  return generateImageMetaTags({
+    id: image.id ?? "",
+    prompt: image.prompt ?? "",
+    title: image.title,
+    model: image.model,
+    user: image.user,
+    createdAt: image.createdAt ?? new Date().toISOString(),
+  });
 };
 
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
@@ -63,6 +82,7 @@ export type ExplorePageImageLoader = typeof loader;
 
 export default function Index() {
   const navigate = useNavigate();
+  const { data } = useLoaderData<typeof loader>();
 
   const handleCloseModal = () => {
     if (window.history.length > 2) {
@@ -72,7 +92,32 @@ export default function Index() {
     }
   };
 
-  return <ExploreImageDetailsPage onClose={handleCloseModal} />;
+  // Generate structured data for SEO
+  const imageSchema = generateImageSchema({
+    id: data.id ?? "",
+    prompt: data.prompt ?? "",
+    title: data.title,
+    createdAt: data.createdAt ?? new Date().toISOString(),
+    user: data.user,
+  });
+
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: "Home", url: SITE_CONFIG.url },
+    { name: "Explore", url: `${SITE_CONFIG.url}/explore` },
+    { name: data.title || "Image", url: `${SITE_CONFIG.url}/explore/${data.id ?? ""}` },
+  ]);
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: serializeSchema([imageSchema, breadcrumbSchema]),
+        }}
+      />
+      <ExploreImageDetailsPage onClose={handleCloseModal} />
+    </>
+  );
 }
 
 export const ErrorBoundary = () => {

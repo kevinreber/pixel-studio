@@ -1,5 +1,5 @@
 import { type LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
-import { ShouldRevalidateFunctionArgs } from "@remix-run/react";
+import { ShouldRevalidateFunctionArgs, useLoaderData } from "@remix-run/react";
 import UserProfilePage from "~/pages/UserProfilePage";
 import { getUserDataByUserId, getUserFollowStats, isFollowing } from "~/server";
 import { loader as UserLoaderData } from "../root";
@@ -7,6 +7,12 @@ import { invariantResponse } from "~/utils/invariantResponse";
 import { PageContainer, GeneralErrorBoundary } from "~/components";
 import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 import { getGoogleSessionAuth } from "~/services";
+import {
+  generateProfileMetaTags,
+  generateBreadcrumbSchema,
+  serializeSchema,
+  SITE_CONFIG,
+} from "~/utils/seo";
 
 // Prevent revalidation after fetcher actions (like follow/unfollow)
 // The UI handles optimistic updates, so we don't need to refetch all data
@@ -25,23 +31,21 @@ export const meta: MetaFunction<
   typeof loader,
   { root: typeof UserLoaderData }
 > = ({ params, matches }) => {
-  // TODO: Use user's username instead of userId so we can dynamically store it in our meta tag
-  const userId = params.userId;
+  const userId = params.userId || "";
 
-  // Incase our Profile loader ever fails, we can get logged in user data from root
+  // Try to get user data from loader first, then fall back to root
   const userMatch = matches.find((match) => match.id === "root");
-  // Root loader returns { userData, ENV, csrfToken, honeyProps }
-  const rootData = userMatch?.data as { userData?: { username?: string; name?: string | null } } | undefined;
-  const username =
-    rootData?.userData?.username || rootData?.userData?.name || userId;
+  const rootData = userMatch?.data as { userData?: { username?: string; name?: string | null; image?: string | null } } | undefined;
 
-  return [
-    { title: `${username} | Profile` },
-    {
-      name: "description",
-      content: `Checkout ${username}'s AI generated images`,
-    },
-  ];
+  // Build a user object for the SEO helper
+  const username = rootData?.userData?.username || rootData?.userData?.name || userId;
+
+  return generateProfileMetaTags({
+    id: userId,
+    username: username,
+    name: rootData?.userData?.name,
+    image: rootData?.userData?.image,
+  });
 };
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -84,7 +88,25 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 export type UserProfilePageLoader = typeof loader;
 
 export default function Index() {
-  return <UserProfilePage />;
+  const { profileUserId } = useLoaderData<typeof loader>();
+
+  // Generate breadcrumb structured data
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: "Home", url: SITE_CONFIG.url },
+    { name: "Profile", url: `${SITE_CONFIG.url}/profile/${profileUserId}` },
+  ]);
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: serializeSchema(breadcrumbSchema),
+        }}
+      />
+      <UserProfilePage />
+    </>
+  );
 }
 
 export const ErrorBoundary = () => {
