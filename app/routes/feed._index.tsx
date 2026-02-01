@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo, useCallback, useMemo } from "react";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import {
   Await,
@@ -60,19 +60,30 @@ const LoadingSkeleton = () => {
   );
 };
 
-const FeedImageCard = ({
+const FeedImageCard = memo(function FeedImageCard({
   imageData,
   onImageClick,
 }: {
   imageData: FeedImage;
   onImageClick: () => void;
-}) => {
+}) {
   const { preloadImage } = useImagePreload();
 
   // Preload full image on hover for faster modal loading
-  const handleMouseEnter = () => {
+  const handleMouseEnter = useCallback(() => {
     preloadImage(imageData?.url);
-  };
+  }, [preloadImage, imageData?.url]);
+
+  // Memoize keyboard handler
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        onImageClick();
+      }
+    },
+    [onImageClick]
+  );
 
   return (
     <div
@@ -97,12 +108,7 @@ const FeedImageCard = ({
         className="relative w-full pt-[100%] cursor-pointer"
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onImageClick();
-          }
-        }}
+        onKeyDown={handleKeyDown}
         onClick={onImageClick}
       >
         <OptimizedImage
@@ -125,24 +131,38 @@ const FeedImageCard = ({
       </div>
     </div>
   );
+});
+
+// Format duration as MM:SS - defined outside component to prevent recreation
+const formatDuration = (seconds: number | null | undefined) => {
+  if (!seconds) return null;
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 };
 
-const FeedVideoCard = ({
+const FeedVideoCard = memo(function FeedVideoCard({
   videoData,
   onVideoClick,
 }: {
   videoData: FeedVideo;
   onVideoClick: () => void;
-}) => {
-  // Format duration as MM:SS
-  const formatDuration = (seconds: number | null | undefined) => {
-    if (!seconds) return null;
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
+}) {
+  const formattedDuration = useMemo(
+    () => formatDuration(videoData.duration),
+    [videoData.duration]
+  );
 
-  const formattedDuration = formatDuration(videoData.duration);
+  // Memoize keyboard handler
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        onVideoClick();
+      }
+    },
+    [onVideoClick]
+  );
 
   return (
     <div className="bg-zinc-900 rounded-lg overflow-hidden">
@@ -164,12 +184,7 @@ const FeedVideoCard = ({
         className="relative w-full pt-[100%] cursor-pointer group"
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onVideoClick();
-          }
-        }}
+        onKeyDown={handleKeyDown}
         onClick={onVideoClick}
       >
         <div className="absolute inset-0 block">
@@ -205,7 +220,7 @@ const FeedVideoCard = ({
       </div>
     </div>
   );
-};
+});
 
 const EmptyFeed = () => {
   return (
