@@ -62,6 +62,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
   }
 
+  // Cache key includes all filter params to ensure proper cache invalidation
   const cacheKey = `explore-images?q=${searchTerm}&page=${currentPage}&pageSize=${pageSize}&type=${mediaType}&model=${model}`;
 
   const imagesData = await getCachedDataWithRevalidate(
