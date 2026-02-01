@@ -21,7 +21,7 @@ import { Grid, User, Loader2, Image, Film, Layers } from "lucide-react";
 import React from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import type { ProfileMediaItem, ProfileVideo } from "~/server/getUserDataByUserId";
+import type { ProfileMediaItem, ProfileVideo, UserProfileData } from "~/server/getUserDataByUserId";
 
 interface FollowStats {
   followersCount: number;
@@ -30,7 +30,7 @@ interface FollowStats {
 
 // Type for the resolved combined promise data
 interface ResolvedProfileData {
-  userData: Awaited<Awaited<ReturnType<UserProfilePageLoader>>["userData"]>;
+  userData: UserProfileData;
   followStats: FollowStats;
   isFollowing: boolean;
 }
@@ -107,7 +107,7 @@ const UserDoesNotExist = () => {
 };
 
 interface UserProfileAccessorProps {
-  userData: Awaited<Awaited<ReturnType<UserProfilePageLoader>>["userData"]>;
+  userData: UserProfileData;
   followStats: FollowStats;
   isFollowing: boolean;
   profileUserId: string;
@@ -410,7 +410,7 @@ const UserProfileWrapper = ({
   profileUserId,
   isNavigating,
 }: {
-  userData: Awaited<Awaited<ReturnType<UserProfilePageLoader>>["userData"]>;
+  userData: UserProfileData;
   followStats: FollowStats;
   isFollowing: boolean;
   profileUserId: string;

@@ -66,6 +66,8 @@ export type ProfileVideo = {
 
 export type ProfileMediaItem = ProfileImage | ProfileVideo;
 
+export type UserProfileData = Awaited<ReturnType<typeof getUserDataByUserId>>;
+
 export const getUserDataByUserId = async (
   userId: string,
   page = DEFAULT_CURRENT_PAGE,
