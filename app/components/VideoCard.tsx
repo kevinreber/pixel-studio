@@ -1,4 +1,3 @@
-import React, { memo, useCallback, useMemo } from "react";
 import { Link } from "@remix-run/react";
 import { Play } from "lucide-react";
 import { fallbackImageSource } from "~/client";
@@ -30,35 +29,21 @@ export interface VideoCardProps {
   onClickRedirectTo?: string;
 }
 
-// Format duration as MM:SS
-const formatDuration = (seconds: number | null | undefined) => {
-  if (!seconds) return null;
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
-};
-
-export const VideoCard = memo(function VideoCard({
+export const VideoCard = ({
   videoData,
   onClickRedirectTo = "",
-}: VideoCardProps) {
+}: VideoCardProps) => {
   const redirectTo = onClickRedirectTo || `/explore/video/${videoData.id}`;
 
-  const formattedDuration = useMemo(
-    () => formatDuration(videoData.duration),
-    [videoData.duration]
-  );
+  // Format duration as MM:SS
+  const formatDuration = (seconds: number | null | undefined) => {
+    if (!seconds) return null;
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
-  // Memoize error handler
-  const handleError = useCallback(
-    (e: React.SyntheticEvent<HTMLImageElement>) => {
-      const target = e.currentTarget;
-      if (target.src !== fallbackImageSource) {
-        target.src = fallbackImageSource;
-      }
-    },
-    []
-  );
+  const formattedDuration = formatDuration(videoData.duration);
 
   return (
     <div className="relative w-full h-full pt-[100%]">
@@ -74,7 +59,12 @@ export const VideoCard = memo(function VideoCard({
           alt={videoData.prompt}
           className="inset-0 object-cover cursor-pointer absolute w-full h-full"
           decoding="async"
-          onError={handleError}
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (target.src !== fallbackImageSource) {
+              target.src = fallbackImageSource;
+            }
+          }}
         />
 
         {/* Video indicator overlay */}
@@ -93,6 +83,6 @@ export const VideoCard = memo(function VideoCard({
       </Link>
     </div>
   );
-});
+};
 
 export default VideoCard;

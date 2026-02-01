@@ -24,35 +24,10 @@ const NavButton = ({
     {...props}
   >
     {icon}
+    {/* </span> */}
     <span className="ml-2">{title}</span>
   </Link>
 );
-
-const MobileNavLink = ({
-  href,
-  icon,
-  title,
-}: {
-  href: string;
-  icon: React.ReactElement;
-  title: string;
-}) => {
-  // Clone the icon with consistent sizing
-  const styledIcon = React.cloneElement(icon, {
-    className: "w-5 h-5",
-  });
-
-  return (
-    <Link
-      to={href}
-      prefetch="intent"
-      className="flex flex-col items-center justify-center min-w-[56px] py-1.5 px-2 rounded-xl text-gray-400 hover:text-white hover:bg-zinc-800/50 active:bg-zinc-700/50 transition-all"
-    >
-      <span className="mb-0.5">{styledIcon}</span>
-      <span className="text-[10px] font-medium truncate max-w-[56px]">{title}</span>
-    </Link>
-  );
-};
 
 const NavigationSidebar = () => {
   // const userData = React.useContext(UserContext);
@@ -161,15 +136,22 @@ const NavigationSidebar = () => {
       {/* Mobile View **********************/}
       {/* Mobile Top Navigation */}
       <div className="md:hidden">
-        <div className="fixed top-0 left-0 right-0 z-10 flex items-center justify-between bg-black/95 backdrop-blur-md py-3 px-4 border-b border-zinc-800/80">
-          <Link to="/" prefetch="intent" className="flex items-center gap-2">
-            <div className="w-7">
-              <PixelStudioIcon />
-            </div>
-            <h2 className="text-xl font-semibold m-0">Pixel Studio</h2>
-          </Link>
+        <div
+          className="fixed top-0 left-0 right-0 z-10 flex items-center justify-between bg-black py-4 px-5"
+          style={{
+            borderBottom: "rgb(38, 38, 38) 1px solid",
+          }}
+        >
+          <div>
+            <Link to="/" prefetch="intent" className="flex align-baseline">
+              <div className="w-8 mr-3">
+                <PixelStudioIcon />
+              </div>
+              <h2 className="text-2xl m-0">Pixel Studio</h2>
+            </Link>
+          </div>
           {isLoggedIn && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <NotificationDropdown />
               <UserAvatarButton />
             </div>
@@ -177,15 +159,23 @@ const NavigationSidebar = () => {
         </div>
 
         {/* Mobile Bottom Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 z-10 bg-black/95 backdrop-blur-md border-t border-zinc-800/80 pb-safe">
-          <nav className="flex items-center justify-around px-2 py-2">
-            {navLinksToRender.slice(0, 5).map((link) => (
-              <MobileNavLink key={link.href} href={link.href} icon={link.icon} title={link.title} />
-            ))}
-            {navLinksToRender.length > 5 && (
-              <MobileNavLink href="/profile" icon={<User className="w-5 h-5" />} title="Profile" />
-            )}
-          </nav>
+        <div
+          className="fixed bottom-0 left-0 right-0 z-10 flex items-center justify-around bg-black py-4"
+          style={{
+            borderTop: "rgb(38, 38, 38) 1px solid",
+          }}
+        >
+          {navLinksToRender.map((link) => (
+            <Link
+              key={link.href}
+              to={link.href}
+              prefetch="intent"
+              className="text-white group flex items-center px-2 py-2 text-medium font-medium rounded-md"
+              // className="bg-gray-900 text-white group flex items-center px-2 py-2 text-sm font-medium rounded-md"
+            >
+              <span>{link.icon}</span>
+            </Link>
+          ))}
         </div>
       </div>
     </>

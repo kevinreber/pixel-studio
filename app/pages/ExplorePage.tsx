@@ -3,7 +3,9 @@ import {
   Form,
   useLoaderData,
   useSearchParams,
+  Await,
   useNavigation,
+  useAsyncValue,
   useNavigate,
 } from "@remix-run/react";
 import {
@@ -16,6 +18,7 @@ import {
   PageContainer,
   ImageCard,
   VideoCard,
+  ErrorList,
   ImageGridSkeleton,
   PaginationControls,
 } from "~/components";
@@ -70,6 +73,25 @@ const ActiveFilterBadge = ({
     </button>
   </span>
 );
+
+const LoadingSkeleton = () => {
+  return (
+    <div className="flex flex-col h-full space-y-6 animate-pulse">
+      {/* Search bar skeleton */}
+      <div className="flex-shrink-0">
+        <div className="flex rounded-md shadow-sm">
+          <div className="w-full h-10 bg-gray-700/50 rounded-l-md" />
+          <div className="w-12 h-10 bg-gray-700/50 rounded-r-md" />
+        </div>
+      </div>
+
+      {/* Scrollable content skeleton */}
+      <div className="flex-1 overflow-hidden">
+        <ImageGridSkeleton />
+      </div>
+    </div>
+  );
+};
 
 const MediaGrid = ({
   imagesData,
@@ -129,10 +151,8 @@ const MediaGrid = ({
   );
 };
 
-const ExplorePageContent = () => {
-  const loaderData = useLoaderData<ExplorePageLoader>();
-  // Cast needed because Remix serializes dates to strings, but runtime values work correctly
-  const imagesData = loaderData.imagesData as unknown as GetImagesResponse;
+const ExplorePageAccessor = () => {
+  const imagesData = useAsyncValue() as GetImagesResponse | undefined;
   const navigation = useNavigation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -332,6 +352,7 @@ const ExplorePageContent = () => {
 };
 
 const ExplorePage = () => {
+  const loaderData = useLoaderData<ExplorePageLoader>();
   const navigation = useNavigation();
   const isNavigating = navigation.state !== "idle";
 
@@ -343,16 +364,25 @@ const ExplorePage = () => {
           <h1 className="text-2xl font-semibold mb-2">Explore</h1>
         </div>
 
-        <div className="relative flex flex-col flex-1 min-h-0">
-          {isNavigating && (
-            <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-8 w-8 animate-spin" />
-              </div>
+        <React.Suspense fallback={<LoadingSkeleton />}>
+          <Await
+            resolve={loaderData.imagesData}
+            errorElement={
+              <ErrorList errors={["There was an error loading images"]} />
+            }
+          >
+            <div className="relative flex flex-col flex-1 min-h-0">
+              {isNavigating && (
+                <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                </div>
+              )}
+              <ExplorePageAccessor />
             </div>
-          )}
-          <ExplorePageContent />
-        </div>
+          </Await>
+        </React.Suspense>
       </div>
     </PageContainer>
   );
