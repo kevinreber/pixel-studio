@@ -1,4 +1,3 @@
-// Note: Desktop ScrollArea uses fixed height (h-[calc(100vh-10rem)]) for proper scroll/click behavior
 import React from "react";
 import {
   Form,
@@ -17,6 +16,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogOverlay,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ChevronDown, Check, Loader2, Sparkles, Coins, Settings2, Star, GitCompare } from "lucide-react";
@@ -356,163 +356,59 @@ const CreatePageForm = () => {
   };
 
   const renderMobileLayout = () => (
-    <div className="mb-8 px-4">
+    <div className="mb-8">
       <main className="flex-1 overflow-auto">
         <Form method="POST">
-          <Card className="max-w-md mx-auto border-0 bg-zinc-900/50 backdrop-blur">
-            <CardContent className="space-y-5 p-4">
-              {/* Comparison Mode Toggle - Mobile */}
-              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl border border-purple-500/20">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
-                    <GitCompare className="w-4 h-4 text-purple-400" />
-                  </div>
-                  <div>
-                    <Label htmlFor="comparisonModeMobile" className="text-sm font-medium cursor-pointer">
-                      Compare Models
-                    </Label>
-                    <p className="text-xs text-gray-400">Test multiple models at once</p>
-                  </div>
-                </div>
-                <Switch
-                  id="comparisonModeMobile"
-                  checked={comparisonMode}
-                  onCheckedChange={(checked) => {
-                    setComparisonMode(checked);
-                    if (checked) {
-                      setSelectedModels([selectedModel]);
-                    } else {
-                      if (selectedModels.length > 0) {
-                        setSelectedModel(selectedModels[0]);
-                      }
-                      setSelectedModels([]);
-                    }
-                  }}
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              {/* Hidden inputs for form submission */}
-              <input type="hidden" name="comparisonMode" value={comparisonMode.toString()} />
-              {comparisonMode ? (
-                <input
-                  type="hidden"
-                  name="models"
-                  value={JSON.stringify(selectedModels.map((m) => m.value))}
-                />
-              ) : (
-                <input type="hidden" name="model" value={selectedModel.value} />
-              )}
-
-              {/* Model Selector */}
+          <Card className="max-w-md mx-auto border p-4">
+            <CardContent className="space-y-4 mb-4">
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label className="text-sm font-medium text-gray-300">
-                    {comparisonMode ? `Models (${selectedModels.length}/${MAX_COMPARISON_MODELS})` : "Model"}
-                  </Label>
-                  {comparisonMode && selectedModels.length > 0 && (
-                    <span className="text-xs text-purple-400 flex items-center gap-1">
-                      <Coins className="w-3 h-3" />
-                      {totalCredits} credits
-                    </span>
-                  )}
-                </div>
+                <Label htmlFor="model">MODEL</Label>
+                <input type="hidden" name="model" value={selectedModel.value} />
                 <Button
                   variant="outline"
                   type="button"
-                  className="w-full justify-between border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800 rounded-xl h-auto py-3"
+                  className="w-full justify-between mt-1 border min-h-[80px]"
                   onClick={handleModelClick}
                   disabled={isSubmitting}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-zinc-700 flex-shrink-0">
-                      <Image src={selectedModel.image} alt={selectedModel.name} size={48} />
+                  <div className="flex justify-between pl-2 pr-2 w-full items-center ">
+                    <div className="flex items-center">
+                      <Image
+                        src={selectedModel.image}
+                        alt={selectedModel.name}
+                        size={60}
+                      />
+                      <span className="ml-2">{selectedModel.name}</span>
                     </div>
-                    <div className="text-left">
-                      <span className="block font-medium">{selectedModel.name}</span>
-                      <span className="text-xs text-amber-400 flex items-center gap-1">
-                        <Coins className="w-3 h-3" />
-                        {selectedModel.creditCost} credit{selectedModel.creditCost !== 1 ? "s" : ""}
-                      </span>
-                    </div>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
                   </div>
-                  <ChevronDown className="h-5 w-5 text-gray-400" />
                 </Button>
               </div>
-
-              {/* Style Selector */}
               <div>
-                <Label className="text-sm font-medium text-gray-300 mb-2 block">Style</Label>
+                <Label htmlFor="style">STYLE</Label>
                 <input type="hidden" name="style" value={selectedStyle.value} />
                 <Button
                   variant="outline"
                   type="button"
-                  className="w-full justify-between border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800 rounded-xl h-auto py-3"
+                  className="w-full justify-between mt-1 border min-h-[80px]"
                   onClick={handleStyleClick}
                   disabled={isSubmitting}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-zinc-700 flex-shrink-0">
-                      {selectedStyle.image ? (
-                        <Image src={selectedStyle.image} alt={selectedStyle.name} size={48} />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">
-                          None
-                        </div>
-                      )}
+                  <div className="flex justify-between pl-2 pr-2 w-full items-center ">
+                    <div className="flex items-center">
+                      <Image
+                        src={selectedStyle.image}
+                        alt={selectedStyle.name}
+                        size={60}
+                      />
+                      <span className="ml-2">{selectedStyle.name}</span>
                     </div>
-                    <span className="font-medium">{selectedStyle.name}</span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
                   </div>
-                  <ChevronDown className="h-5 w-5 text-gray-400" />
                 </Button>
               </div>
-
-              {/* Aspect Ratio Selector - Mobile */}
               <div>
-                <Label className="text-sm font-medium text-gray-300 mb-2 block">Aspect Ratio</Label>
-                <input type="hidden" name="width" value={selectedSize.width} />
-                <input type="hidden" name="height" value={selectedSize.height} />
-                <div className="grid grid-cols-3 gap-2">
-                  {getSizeOptionsForModel(selectedModel.value).map((size) => {
-                    const isSelected = selectedSize.width === size.width && selectedSize.height === size.height;
-                    const aspectW = size.width > size.height ? 1 : size.width / size.height;
-                    const aspectH = size.height > size.width ? 1 : size.height / size.width;
-                    const isSquare = size.width === size.height;
-
-                    return (
-                      <Button
-                        key={`${size.width}x${size.height}`}
-                        type="button"
-                        variant={isSelected ? "secondary" : "outline"}
-                        onClick={() => setSelectedSize({ width: size.width, height: size.height })}
-                        disabled={isSubmitting}
-                        className={cn(
-                          "flex flex-col items-center gap-1 py-3 h-auto rounded-xl",
-                          isSelected
-                            ? "bg-pink-600/20 border-pink-500 text-white"
-                            : "bg-zinc-800/50 border-zinc-700 hover:bg-zinc-700/50"
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "border-2 rounded-sm",
-                            isSelected ? "border-pink-400" : "border-zinc-500"
-                          )}
-                          style={{
-                            width: isSquare ? 18 : (aspectW * 22),
-                            height: isSquare ? 18 : (aspectH * 22),
-                          }}
-                        />
-                        <span className="text-xs font-medium">{size.ratio}</span>
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Prompt Input */}
-              <div>
-                <Label className="text-sm font-medium text-gray-300 mb-2 block">Prompt</Label>
+                <Label htmlFor="prompt">TEXT PROMPT</Label>
                 <Textarea
                   maxLength={MAX_TEXT_AREA_CHAR_COUNT}
                   id="prompt"
@@ -520,9 +416,9 @@ const CreatePageForm = () => {
                   placeholder="Describe what you want the AI to create..."
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  className="border-zinc-700 bg-zinc-800/50 placeholder-gray-500 min-h-[120px] rounded-xl resize-none focus:border-pink-500 focus:ring-pink-500/20"
+                  className="mt-1 border placeholder-gray-400 min-h-[150px] bg-inherit"
                 />
-                <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center justify-between mt-1">
                   <button
                     type="button"
                     onClick={() => {
@@ -533,400 +429,130 @@ const CreatePageForm = () => {
                       setPrompt(randomExample);
                     }}
                     disabled={isSubmitting}
-                    className="flex items-center gap-1.5 text-xs text-pink-400 hover:text-pink-300 transition-colors disabled:opacity-50 py-1"
+                    className="flex items-center gap-1 text-xs text-pink-400 hover:text-pink-300 transition-colors disabled:opacity-50"
                     aria-label="Fill prompt with a random example"
                   >
-                    <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
+                    <Sparkles className="w-3 h-3" aria-hidden="true" />
                     Try an example
                   </button>
-                  <span className="text-xs text-gray-500" aria-live="polite">
+                  <span className="text-xs text-gray-400" aria-live="polite">
                     {prompt.length}/{MAX_TEXT_AREA_CHAR_COUNT}
                   </span>
                 </div>
               </div>
-
-              {/* Number of Images */}
               <div>
                 <input type="hidden" name="numberOfImages" value={numImages} />
                 <NumberSelector
                   value={numImages}
                   onChange={setNumImages}
                   disabled={isSubmitting}
-                  creditCostPerImage={creditCostPerImage}
+                  creditCostPerImage={selectedModel.creditCost}
                 />
-                {comparisonMode && selectedModels.length > 1 && (
-                  <p className="text-xs text-gray-400 mt-2 text-center">
-                    {numImages} image{numImages !== 1 ? "s" : ""} × {selectedModels.length} models = {numImages * selectedModels.length} total
-                  </p>
-                )}
-              </div>
-
-              {/* Advanced Options - Mobile */}
-              <div className="border-t border-zinc-700 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-white transition-colors w-full"
-                  aria-expanded={showAdvanced}
-                  aria-controls="advanced-options-mobile"
-                >
-                  <Settings2 className="w-4 h-4" aria-hidden="true" />
-                  Advanced Options
-                  <ChevronDown
-                    className={cn(
-                      "w-4 h-4 ml-auto transition-transform",
-                      showAdvanced && "rotate-180"
-                    )}
-                    aria-hidden="true"
-                  />
-                </button>
-
-                {showAdvanced && (
-                  <div id="advanced-options-mobile" className="mt-4 space-y-4">
-                    <input type="hidden" name="negativePrompt" value={negativePrompt} />
-                    <input type="hidden" name="seed" value={seed ?? ""} />
-                    <input type="hidden" name="cfgScale" value={cfgScale} />
-                    <input type="hidden" name="steps" value={steps} />
-                    <input type="hidden" name="promptUpsampling" value={promptUpsampling.toString()} />
-
-                    {/* DALL-E 3 Quality */}
-                    {isDallE3Model(selectedModel.value) && (
-                      <div>
-                        <Label className="text-sm text-gray-300 mb-2 block">Quality</Label>
-                        <input type="hidden" name="quality" value={quality} />
-                        <div className="grid grid-cols-2 gap-2">
-                          {(["standard", "hd"] as const).map((q) => (
-                            <Button
-                              key={q}
-                              type="button"
-                              variant={quality === q ? "secondary" : "outline"}
-                              onClick={() => setQuality(q)}
-                              disabled={isSubmitting}
-                              className={cn(
-                                "rounded-xl",
-                                quality === q
-                                  ? "bg-pink-600/20 border-pink-500"
-                                  : "bg-zinc-800/50 border-zinc-700"
-                              )}
-                            >
-                              {q === "hd" ? "HD" : "Standard"}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* DALL-E 3 Style */}
-                    {isDallE3Model(selectedModel.value) && (
-                      <div>
-                        <Label className="text-sm text-gray-300 mb-2 block">Generation Style</Label>
-                        <input type="hidden" name="generationStyle" value={generationStyle} />
-                        <div className="grid grid-cols-2 gap-2">
-                          {(["vivid", "natural"] as const).map((s) => (
-                            <Button
-                              key={s}
-                              type="button"
-                              variant={generationStyle === s ? "secondary" : "outline"}
-                              onClick={() => setGenerationStyle(s)}
-                              disabled={isSubmitting}
-                              className={cn(
-                                "rounded-xl",
-                                generationStyle === s
-                                  ? "bg-pink-600/20 border-pink-500"
-                                  : "bg-zinc-800/50 border-zinc-700"
-                              )}
-                            >
-                              {s.charAt(0).toUpperCase() + s.slice(1)}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Negative Prompt */}
-                    {isStabilityAIModel(selectedModel.value) && (
-                      <div>
-                        <Label className="text-sm text-gray-300 mb-2 block">Negative Prompt</Label>
-                        <Textarea
-                          placeholder="What to avoid..."
-                          value={negativePrompt}
-                          onChange={(e) => setNegativePrompt(e.target.value)}
-                          disabled={isSubmitting}
-                          className="min-h-[80px] bg-zinc-800/50 border-zinc-700 rounded-xl"
-                          maxLength={1000}
-                        />
-                      </div>
-                    )}
-
-                    {/* Seed */}
-                    <div>
-                      <Label className="text-sm text-gray-300 mb-2 block">Seed</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          type="number"
-                          placeholder="Random"
-                          value={seed ?? ""}
-                          onChange={(e) =>
-                            setSeed(e.target.value ? parseInt(e.target.value) : undefined)
-                          }
-                          disabled={isSubmitting}
-                          className="flex-1 bg-zinc-800/50 border-zinc-700 rounded-xl"
-                          min={0}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setSeed(undefined)}
-                          disabled={isSubmitting}
-                          className="bg-zinc-800/50 border-zinc-700 rounded-xl"
-                        >
-                          Random
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* CFG Scale */}
-                    {isStabilityAIModel(selectedModel.value) && (
-                      <div>
-                        <div className="flex justify-between items-center mb-3">
-                          <Label className="text-sm text-gray-300">CFG Scale</Label>
-                          <span className="text-sm font-medium text-pink-400">{cfgScale}</span>
-                        </div>
-                        <Slider
-                          value={[cfgScale]}
-                          onValueChange={(value) => setCfgScale(value[0])}
-                          min={1}
-                          max={20}
-                          step={1}
-                          disabled={isSubmitting}
-                          className="w-full"
-                        />
-                      </div>
-                    )}
-
-                    {/* Steps */}
-                    {isStabilityAIModel(selectedModel.value) && (
-                      <div>
-                        <div className="flex justify-between items-center mb-3">
-                          <Label className="text-sm text-gray-300">Steps</Label>
-                          <span className="text-sm font-medium text-pink-400">{steps}</span>
-                        </div>
-                        <Slider
-                          value={[steps]}
-                          onValueChange={(value) => setSteps(value[0])}
-                          min={10}
-                          max={50}
-                          step={5}
-                          disabled={isSubmitting}
-                          className="w-full"
-                        />
-                      </div>
-                    )}
-
-                    {/* Prompt Upsampling - Flux */}
-                    {isFluxModel(selectedModel.value) && (
-                      <div className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl">
-                        <input
-                          type="checkbox"
-                          id="promptUpsamplingMobile"
-                          checked={promptUpsampling}
-                          onChange={(e) => setPromptUpsampling(e.target.checked)}
-                          disabled={isSubmitting}
-                          className="w-5 h-5 rounded border-zinc-600 bg-zinc-800/50"
-                        />
-                        <Label htmlFor="promptUpsamplingMobile" className="cursor-pointer">
-                          <span className="block text-sm">Prompt Upsampling</span>
-                          <span className="text-xs text-gray-500">Enhance prompt for better results</span>
-                        </Label>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             </CardContent>
-
-            <CardFooter className="px-4 pb-4 pt-0 flex flex-col gap-2">
-              {comparisonMode && selectedModels.length < 2 && (
-                <p className="text-xs text-amber-400 text-center">
-                  Select at least 2 models to compare
-                </p>
-              )}
+            <CardFooter>
               <Button
                 type="submit"
-                className={cn(
-                  "w-full text-white font-semibold py-6 rounded-xl text-base",
-                  comparisonMode
-                    ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                    : "bg-pink-600 hover:bg-pink-700"
-                )}
-                disabled={isSubmitting || (comparisonMode && selectedModels.length < 2)}
+                className="w-full bg-pink-600 hover:bg-pink-700 text-white"
+                disabled={isSubmitting}
               >
-                {isSubmitting ? (
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                ) : comparisonMode ? (
-                  <>
-                    <GitCompare className="mr-2 h-5 w-5" />
-                    Compare {selectedModels.length} Model{selectedModels.length !== 1 ? "s" : ""}
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="mr-2 h-5 w-5" />
-                    Generate
-                  </>
+                {isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
+                CREATE
               </Button>
             </CardFooter>
           </Card>
         </Form>
       </main>
 
-      {/* Model Selection Dialog - Mobile */}
       <Dialog open={modelDialogOpen} onOpenChange={setModelDialogOpen}>
-        <DialogContent
-          className="fixed inset-x-4 top-[5%] bottom-[5%] translate-x-0 translate-y-0 left-0 right-0 mx-auto max-w-lg bg-zinc-900 rounded-2xl border border-zinc-800 flex flex-col"
-          overlayClassName="backdrop-blur-sm"
-        >
-          <DialogHeader className="px-4 py-3 border-b border-zinc-800">
-            <DialogTitle className="text-lg font-semibold">
-              {comparisonMode ? `Select Models (${selectedModels.length}/${MAX_COMPARISON_MODELS})` : "Choose a Model"}
-            </DialogTitle>
+        <DialogOverlay className="fixed inset-0 bg-black bg-opacity-50" />
+        <DialogContent className="fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-[90vw] max-w-[425px] bg-zinc-900">
+          <DialogHeader className="relative flex items-center justify-center">
+            <DialogTitle>Choose a model</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="flex-1 px-4 py-3">
-            <div className="space-y-2">
-              {modelOptions.map((model) => {
-                const isSelected = comparisonMode
-                  ? selectedModels.some((m) => m.value === model.value)
-                  : selectedModel.name === model.name;
-                const selectionIndex = comparisonMode
-                  ? selectedModels.findIndex((m) => m.value === model.value) + 1
-                  : 0;
-
-                return (
-                  <button
-                    key={model.name}
-                    type="button"
-                    className={cn(
-                      "flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all active:scale-[0.98] w-full text-left",
-                      isSelected
-                        ? comparisonMode
-                          ? "bg-purple-600/30 border border-purple-500"
-                          : "bg-pink-600/30 border border-pink-500"
-                        : "bg-zinc-800/50 border border-transparent hover:bg-zinc-800"
-                    )}
-                    onClick={() => {
-                      if (comparisonMode) {
-                        toggleModelSelection(model);
-                      } else {
-                        setSelectedModel(model);
-                        setModelDialogOpen(false);
-                      }
-                    }}
-                  >
-                    {/* Model Image */}
-                    <div className="relative flex-shrink-0">
-                      <div className="w-14 h-14 rounded-lg overflow-hidden bg-zinc-700">
-                        <Image src={model.image} alt={model.name} size={56} />
-                      </div>
-                      {comparisonMode && isSelected && (
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-bold text-white">{selectionIndex}</span>
-                        </div>
+          <ScrollArea className="mt-2 max-h-[60vh]">
+            {modelOptions.map((model) => (
+              <Card
+                key={model.name}
+                className={`cursor-pointer hover:bg-zinc-800 ${
+                  selectedModel.name === model.name
+                    ? "bg-blue-600 hover:bg-blue-600"
+                    : ""
+                }`}
+                onClick={() => {
+                  setSelectedModel(model);
+                  setModelDialogOpen(false);
+                }}
+              >
+                <CardContent className="p-4 flex items-start space-x-4 flex-col">
+                  <Image src={model.image} alt={model.name} size={80} />
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start mb-1">
+                      <h3 className="font-semibold">{model.name}</h3>
+                      {selectedModel.name === model.name && (
+                        <Check className="w-5 h-5" />
                       )}
                     </div>
-
-                    {/* Model Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm truncate">{model.name}</span>
-                        {model.recommended && (
-                          <Star className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400 flex-shrink-0" />
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs text-gray-400">{model.company}</span>
-                        <span className="text-xs text-amber-400 flex items-center gap-0.5">
-                          <Coins className="w-3 h-3" />
-                          {model.creditCost}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <ProviderBadge company={model.company} />
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-600/20 text-amber-400 border border-amber-600/30">
+                        <Coins className="w-3 h-3" />
+                        {model.creditCost} credit{model.creditCost !== 1 ? "s" : ""}
+                      </span>
+                      {model.recommended && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-emerald-600/20 text-emerald-400 border border-emerald-600/30">
+                          <Star className="w-3 h-3 fill-current" />
+                          Recommended
                         </span>
-                      </div>
+                      )}
                     </div>
-
-                    {/* Selection Indicator */}
-                    {isSelected && !comparisonMode && (
-                      <Check className="w-5 h-5 text-pink-400 flex-shrink-0" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+                    <p className="mt-2 text-sm text-gray-300">
+                      {model.description}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </ScrollArea>
-          {comparisonMode && (
-            <div className="px-4 py-3 border-t border-zinc-800">
-              <Button
-                onClick={() => setModelDialogOpen(false)}
-                className="w-full bg-purple-600 hover:bg-purple-700 rounded-xl py-5"
-                disabled={selectedModels.length < 2}
-              >
-                {selectedModels.length < 2
-                  ? `Select at least ${2 - selectedModels.length} more`
-                  : `Done (${selectedModels.length} models)`}
-              </Button>
-            </div>
-          )}
         </DialogContent>
       </Dialog>
 
-      {/* Style Selection Dialog - Mobile */}
       <Dialog open={styleDialogOpen} onOpenChange={setStyleDialogOpen}>
-        <DialogContent
-          className="fixed inset-x-4 top-[10%] bottom-[10%] translate-x-0 translate-y-0 left-0 right-0 mx-auto max-w-lg bg-zinc-900 rounded-2xl border border-zinc-800 flex flex-col"
-          overlayClassName="backdrop-blur-sm"
-        >
-          <DialogHeader className="px-4 py-3 border-b border-zinc-800">
-            <DialogTitle className="text-lg font-semibold">Choose a Style</DialogTitle>
+        <DialogOverlay className="fixed inset-0 bg-black bg-opacity-50" />
+        <DialogContent className="fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-[90vw] max-w-[425px] bg-zinc-900 ">
+          <DialogHeader className="flex items-center justify-center">
+            <DialogTitle>Choose a preset style</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="flex-1 px-4 py-3">
-            <div className="grid grid-cols-3 gap-2">
-              {styleOptions.map((style) => {
-                const isSelected = selectedStyle.name === style.name;
-                return (
-                  <button
-                    key={style.name}
-                    type="button"
-                    className={cn(
-                      "flex flex-col items-center p-2 rounded-xl cursor-pointer transition-all active:scale-[0.98]",
-                      isSelected
-                        ? "bg-pink-600/30 border border-pink-500"
-                        : "bg-zinc-800/50 border border-transparent hover:bg-zinc-800"
-                    )}
-                    onClick={() => {
-                      setSelectedStyle(style);
-                      setStyleDialogOpen(false);
-                    }}
-                  >
-                    <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-zinc-700 mb-2">
-                      {style.image ? (
-                        <img
-                          src={style.image}
-                          alt={style.name}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">
-                          None
-                        </div>
-                      )}
-                      {isSelected && (
-                        <div className="absolute top-1 right-1 w-5 h-5 bg-pink-500 rounded-full flex items-center justify-center">
-                          <Check className="w-3 h-3 text-white" />
+          <ScrollArea className="mt-2 max-h-[60vh]">
+            <div className="grid grid-cols-2">
+              {styleOptions.map((style) => (
+                <Card
+                  key={style.name}
+                  className={`cursor-pointer hover:bg-zinc-800 ${
+                    selectedStyle.name === style.name
+                      ? "bg-blue-600 hover:bg-blue-600"
+                      : ""
+                  }`}
+                  onClick={() => {
+                    setSelectedStyle(style);
+                    setStyleDialogOpen(false);
+                  }}
+                >
+                  <CardContent className="p-4">
+                    <div className="relative">
+                      <Image src={style.image} alt={style.name} size={100} />
+                      {selectedStyle.name === style.name && (
+                        <div className="absolute top-2 right-2">
+                          <Check className="w-5 h-5" />
                         </div>
                       )}
                     </div>
-                    <span className="text-xs font-medium text-center truncate w-full">{style.name}</span>
-                  </button>
-                );
-              })}
+                    <p className="mt-2 text-center text-sm">{style.name}</p>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </ScrollArea>
         </DialogContent>
@@ -1384,7 +1010,7 @@ const CreatePageForm = () => {
       </div>
       <div className="flex-1 pl-4 pr-4">
         {/* Tab Navigation */}
-        <div className="flex gap-2 mb-4 flex-shrink-0">
+        <div className="flex gap-2 mb-4">
           <Button
             type="button"
             variant={selectedSection === "model" ? "secondary" : "ghost"}

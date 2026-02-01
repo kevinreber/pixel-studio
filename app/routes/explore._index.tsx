@@ -5,22 +5,9 @@ import { PageContainer, GeneralErrorBoundary } from "~/components";
 import { requireUserLogin } from "~/services";
 import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 import { trackSearch } from "~/services/analytics.server";
-import { generateMetaTags, SITE_CONFIG } from "~/utils/seo";
 
 export const meta: MetaFunction = () => {
-  return generateMetaTags({
-    title: "Explore AI Generated Images & Videos",
-    description:
-      "Discover amazing AI-generated artwork created by our community. Browse images and videos created with DALL-E, Stable Diffusion, Flux, Runway, and more.",
-    url: `${SITE_CONFIG.url}/explore`,
-    keywords: [
-      "AI art gallery",
-      "AI generated images",
-      "AI artwork",
-      "generative art",
-      "AI community",
-    ],
-  });
+  return [{ title: "Explore AI Generated Images & Videos" }];
 };
 
 const CACHE_TTL_5_MINUTES = 300;
@@ -62,10 +49,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
   }
 
-  // Cache key includes all filter params to ensure proper cache invalidation
   const cacheKey = `explore-images?q=${searchTerm}&page=${currentPage}&pageSize=${pageSize}&type=${mediaType}&model=${model}`;
-
-  const imagesData = await getCachedDataWithRevalidate(
+  const imagesData = getCachedDataWithRevalidate(
     cacheKey,
     () =>
       getImages({
