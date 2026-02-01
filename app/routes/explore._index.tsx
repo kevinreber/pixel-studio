@@ -1,4 +1,4 @@
-import { type LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
+import { defer, type LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import ExplorePage from "pages/ExplorePage";
 import { getImages, type MediaTypeFilter } from "server/getImages";
 import { PageContainer, GeneralErrorBoundary } from "~/components";
@@ -64,7 +64,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const cacheKey = `explore-images?q=${searchTerm}&page=${currentPage}&pageSize=${pageSize}&type=${mediaType}&model=${model}`;
 
-  const imagesData = await getCachedDataWithRevalidate(
+  // Use defer() to stream data for faster initial page load
+  const imagesDataPromise = getCachedDataWithRevalidate(
     cacheKey,
     () =>
       getImages({
@@ -77,14 +78,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     CACHE_TTL_5_MINUTES
   );
 
-  return {
-    imagesData,
+  return defer({
+    imagesData: imagesDataPromise,
     searchTerm,
     currentPage,
     pageSize,
     mediaType,
     model,
-  };
+  });
 };
 
 export type ExplorePageLoader = typeof loader;
