@@ -43,6 +43,14 @@ export async function loader() {
     take: 2000,
   });
 
+  // Fetch published blog posts
+  const blogPosts = await prisma.blogPost.findMany({
+    where: { status: "published" },
+    select: { slug: true, updatedAt: true, publishedAt: true },
+    orderBy: { publishedAt: "desc" },
+    take: 500,
+  });
+
   // Static pages with their priorities
   const staticPages = [
     { url: "/", priority: "1.0", changefreq: "daily" },
@@ -51,6 +59,7 @@ export async function loader() {
     { url: "/create-video", priority: "0.8", changefreq: "weekly" },
     { url: "/marketplace", priority: "0.8", changefreq: "daily" },
     { url: "/trending", priority: "0.8", changefreq: "hourly" },
+    { url: "/blog", priority: "0.8", changefreq: "daily" },
   ];
 
   // Build the sitemap XML
@@ -107,6 +116,17 @@ export async function loader() {
     <lastmod>${prompt.updatedAt.toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
+  </url>`
+    )
+    .join("")}
+  ${blogPosts
+    .map(
+      (post) => `
+  <url>
+    <loc>${baseUrl}/blog/${post.slug}</loc>
+    <lastmod>${post.updatedAt.toISOString()}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>`
     )
     .join("")}

@@ -26,8 +26,8 @@ export interface SeoConfig {
   noIndex?: boolean;
   keywords?: string[];
   author?: string;
-  publishedTime?: string;
-  modifiedTime?: string;
+  publishedTime?: string | Date;
+  modifiedTime?: string | Date;
 }
 
 /**
@@ -71,6 +71,8 @@ export function generateMetaTags(config: SeoConfig): Array<
     noIndex = false,
     keywords = [],
     author,
+    publishedTime,
+    modifiedTime,
   } = config;
 
   const fullTitle = getPageTitle(title);
@@ -118,6 +120,24 @@ export function generateMetaTags(config: SeoConfig): Array<
   if (author) {
     tags.push({ name: "author", content: author });
     tags.push({ property: "article:author", content: author });
+  }
+
+  // Article-specific meta tags
+  if (type === "article") {
+    if (publishedTime) {
+      const publishedDate =
+        publishedTime instanceof Date
+          ? publishedTime.toISOString()
+          : publishedTime;
+      tags.push({ property: "article:published_time", content: publishedDate });
+    }
+    if (modifiedTime) {
+      const modifiedDate =
+        modifiedTime instanceof Date
+          ? modifiedTime.toISOString()
+          : modifiedTime;
+      tags.push({ property: "article:modified_time", content: modifiedDate });
+    }
   }
 
   return tags;
@@ -422,11 +442,15 @@ export function generateBreadcrumbSchema(
   };
 }
 
+// Generic JSON-LD schema type for extensibility
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type JsonLdSchema = Record<string, any>;
+
 /**
  * Serialize JSON-LD schema for use in a script tag
  */
 export function serializeSchema(
-  schema: OrganizationSchema | WebSiteSchema | ImageObjectSchema | VideoObjectSchema | BreadcrumbSchema | Array<OrganizationSchema | WebSiteSchema | ImageObjectSchema | VideoObjectSchema | BreadcrumbSchema>
+  schema: JsonLdSchema | JsonLdSchema[]
 ): string {
   return JSON.stringify(schema);
 }

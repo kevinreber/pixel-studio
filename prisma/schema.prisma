@@ -111,6 +111,9 @@ model User {
 
   // Multi-model comparison requests
   comparisonRequests ComparisonRequest[]
+
+  // Blog posts authored
+  blogPosts          BlogPost[]
 }
 
 model Password {
@@ -980,6 +983,47 @@ model Payout {
 
   @@index([userId, status])
   @@index([status])
+}
+
+// ============================================
+// BLOG / TUTORIALS
+// ============================================
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique  // URL-friendly slug: "how-to-create-ai-art"
+  title       String
+  excerpt     String?  @db.Text  // Short description for listings/SEO
+  content     String   @db.Text  // Markdown content
+  coverImage  String?  // Cover image URL
+
+  // Author info
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Categorization
+  category    String   @default("tutorial")  // "tutorial", "guide", "news", "tips"
+  tags        String[] // Searchable tags
+
+  // SEO
+  metaTitle       String?  // Custom meta title (falls back to title)
+  metaDescription String?  // Custom meta description (falls back to excerpt)
+
+  // Status
+  status      String   @default("draft")  // "draft", "published", "archived"
+  publishedAt DateTime?
+
+  // Engagement
+  viewCount   Int      @default(0)
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug])
+  @@index([status, publishedAt])
+  @@index([category])
+  @@index([authorId])
 }
 
 // ============================================
