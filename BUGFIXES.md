@@ -532,3 +532,65 @@ This section documents the failed fix attempts to help understand the issue evol
 2. **Check for circular imports when adding re-exports**: The `MODEL_OPTIONS` re-export in `create.tsx` seemed harmless but caused issues
 3. **Test on production builds**: The circular import issue only manifested in production builds where variable names are minified
 4. **Browser API compatibility**: Always check for API availability during SSR
+
+---
+
+### [FIXED] Image/Video Detail Pages - Blank Page
+
+**Issue ID**: `CIRCULAR-IMPORT-002`
+**Date Fixed**: February 2, 2026
+**Version**: v2.1.x
+**Severity**: Critical 🔴
+**Impact**: Image detail pages (`/explore/{imageId}`) and video detail pages showed completely blank content
+
+#### Problem Description
+
+When clicking on an image or video to view its details, the page would load but show no content - completely blank with just the sidebar visible.
+
+#### Root Cause Analysis
+
+Same pattern as CIRCULAR-IMPORT-001 - circular imports caused by importing Loader types as values instead of types:
+
+1. **ExploreImageDetailsPage.tsx** imported `ExplorePageImageLoader` from route (as value)
+2. **ExploreVideoDetailsPage.tsx** imported `ExplorePageVideoLoader` from route (as value)
+3. **SetDetailsPage.tsx** imported `SetPageLoader` from route (as value)
+
+Each of these created circular dependencies:
+
+- Route imports Page component
+- Page component imports Loader type from Route
+- This causes initialization order issues in production builds
+
+#### Solution Implemented
+
+Changed all imports to use `import type` for TypeScript types:
+
+```typescript
+// Before:
+import { ExplorePageImageLoader } from "~/routes/explore.$imageId";
+import { ExplorePageVideoLoader } from "~/routes/explore.video.$videoId";
+import { SetPageLoader } from "~/routes/sets.$setId";
+
+// After:
+import type { ExplorePageImageLoader } from "~/routes/explore.$imageId";
+import type { ExplorePageVideoLoader } from "~/routes/explore.video.$videoId";
+import type { SetPageLoader } from "~/routes/sets.$setId";
+```
+
+#### Files Modified
+
+- `app/pages/ExploreImageDetailsPage.tsx` - Use import type
+- `app/pages/ExploreVideoDetailsPage.tsx` - Use import type
+- `app/pages/SetDetailsPage.tsx` - Use import type
+
+#### Prevention Pattern
+
+**Rule**: When importing types (like Loader types) from route files into page components, ALWAYS use `import type`:
+
+```typescript
+// ✅ CORRECT - type-only import, no runtime dependency
+import type { SomeRouteLoader } from "~/routes/some-route";
+
+// ❌ WRONG - value import, creates circular dependency
+import { SomeRouteLoader } from "~/routes/some-route";
+```

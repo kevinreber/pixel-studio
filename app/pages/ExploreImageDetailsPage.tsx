@@ -1,7 +1,7 @@
 import React from "react";
 import { useLoggedInUser } from "~/hooks";
 import { Await, Link, useAsyncValue, useLoaderData, useNavigate } from "@remix-run/react";
-import { ExplorePageImageLoader } from "~/routes/explore.$imageId";
+import type { ExplorePageImageLoader } from "~/routes/explore.$imageId";
 import { convertUtcDateToLocalDateString } from "~/client";
 import {
   Dialog,
