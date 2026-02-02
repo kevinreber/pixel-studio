@@ -1,4 +1,4 @@
-import { type LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
+import { type LoaderFunctionArgs, MetaFunction, defer } from "@remix-run/node";
 import ExplorePage from "pages/ExplorePage";
 import { getImages, type MediaTypeFilter } from "server/getImages";
 import { PageContainer, GeneralErrorBoundary } from "~/components";
@@ -63,14 +63,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     CACHE_TTL_5_MINUTES
   );
 
-  return {
+  return defer({
     imagesData,
     searchTerm,
     currentPage,
     pageSize,
     mediaType,
     model,
-  };
+  });
 };
 
 export type ExplorePageLoader = typeof loader;

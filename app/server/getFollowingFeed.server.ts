@@ -62,6 +62,8 @@ export interface FeedVideo {
 
 export type FeedItem = FeedImage | FeedVideo;
 
+export type FeedData = Awaited<ReturnType<typeof getFollowingFeed>>;
+
 /**
  * @description
  * Get images and videos from users that the current user follows (feed)

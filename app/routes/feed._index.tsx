@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useMemo } from "react";
-import type { LoaderFunctionArgs } from "@remix-run/node";
+import { defer, type LoaderFunctionArgs } from "@remix-run/node";
 import {
   Await,
   useAsyncValue,
@@ -20,11 +20,12 @@ import ImageModal from "~/components/ImageModal";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
-  getFollowingFeed,
   type FeedItem,
   type FeedImage,
   type FeedVideo,
+  type FeedData,
 } from "~/server/getFollowingFeed.server";
+import { getFollowingFeed } from "~/server/getFollowingFeed.server";
 import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -47,7 +48,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     FEED_CACHE_TTL
   );
 
-  return { feedData, currentPage };
+  return defer({ feedData, currentPage });
 }
 
 export type FeedLoaderData = typeof loader;
@@ -238,9 +239,7 @@ const EmptyFeed = () => {
 };
 
 const FeedAccessor = () => {
-  const asyncData = useAsyncValue() as Awaited<
-    Awaited<ReturnType<FeedLoaderData>>["feedData"]
-  >;
+  const asyncData = useAsyncValue() as FeedData;
   const items = asyncData.items;
 
   const [selectedItem, setSelectedItem] = React.useState<FeedItem | null>(null);

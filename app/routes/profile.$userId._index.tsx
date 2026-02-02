@@ -1,4 +1,4 @@
-import { type LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
+import { type LoaderFunctionArgs, MetaFunction, defer } from "@remix-run/node";
 import { ShouldRevalidateFunctionArgs, useLoaderData } from "@remix-run/react";
 import UserProfilePage from "~/pages/UserProfilePage";
 import { getUserDataByUserId, getUserFollowStats, isFollowing } from "~/server";
@@ -77,12 +77,12 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     ? isFollowing({ followerId: currentUserId, followingId: userId })
     : Promise.resolve(false);
 
-  return {
+  return defer({
     userData: userDataPromise,
     followStats: followStatsPromise,
     isFollowing: isFollowingPromise,
     profileUserId: userId,
-  };
+  });
 };
 
 export type UserProfilePageLoader = typeof loader;
