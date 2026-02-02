@@ -22,10 +22,9 @@ import {
 import { ChevronDown, Check, Loader2, Sparkles, Coins, Settings2, Star, GitCompare } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { CreatePageLoader } from "~/routes/create";
 import { MODEL_OPTIONS, STYLE_OPTIONS } from "~/config/models";
 import { toast } from "sonner";
-import type { ActionData } from "~/routes/create";
+import type { CreatePageLoader, ActionData } from "~/routes/create";
 import { ProviderBadge } from "./ModelBadge";
 import { useGenerationProgress } from "~/contexts/GenerationProgressContext";
 import { parseActionError } from "~/utils/errors";

@@ -10,7 +10,7 @@ import { getImageGenerationProducer } from "~/services/imageGenerationProducer.s
 import { z } from "zod";
 import { cacheDelete } from "~/utils/cache.server";
 import { getModelCreditCost } from "~/config/pricing";
-import { MODEL_OPTIONS } from "~/routes/create";
+import { MODEL_OPTIONS } from "~/config/models";
 
 const RemixFormSchema = z.object({
   model: z

@@ -15,6 +15,9 @@ interface OptimizedImageProps {
   onLoad?: () => void;
 }
 
+// Check if IntersectionObserver is supported (not available during SSR)
+const supportsIntersectionObserver = typeof window !== "undefined" && "IntersectionObserver" in window;
+
 /**
  * OptimizedImage - High-performance image component with smart lazy loading.
  *
@@ -24,6 +27,7 @@ interface OptimizedImageProps {
  * - Priority loading for above-the-fold images
  * - Smooth fade-in transitions
  * - Graceful error handling with fallback
+ * - SSR-safe: defaults to showing images when IntersectionObserver unavailable
  */
 export const OptimizedImage = ({
   src,
@@ -37,7 +41,10 @@ export const OptimizedImage = ({
   onError,
   onLoad,
 }: OptimizedImageProps) => {
-  const [isInView, setIsInView] = useState(priority);
+  // Default to showing images if:
+  // 1. priority is true
+  // 2. IntersectionObserver is not supported (SSR or old browser)
+  const [isInView, setIsInView] = useState(priority || !supportsIntersectionObserver);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [blurError, setBlurError] = useState(false);
@@ -45,10 +52,25 @@ export const OptimizedImage = ({
 
   // IntersectionObserver for smart lazy loading
   useEffect(() => {
-    if (priority || isInView) return;
+    // Skip if already in view, priority, or IntersectionObserver not supported
+    if (priority || isInView || !supportsIntersectionObserver) return;
 
     const element = containerRef.current;
     if (!element) return;
+
+    // Check if element is already visible (handles elements already in viewport on mount)
+    const rect = element.getBoundingClientRect();
+    const rootMarginPx = parseInt(rootMargin, 10) || 200;
+    const isVisible =
+      rect.top < window.innerHeight + rootMarginPx &&
+      rect.bottom > -rootMarginPx &&
+      rect.left < window.innerWidth + rootMarginPx &&
+      rect.right > -rootMarginPx;
+
+    if (isVisible) {
+      setIsInView(true);
+      return;
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {

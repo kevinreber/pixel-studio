@@ -19,7 +19,6 @@ After creating an image, users were redirected from `/create.tsx` → `/processi
 #### Root Cause Analysis
 
 1. **Competing Redirect Mechanisms**: Two separate systems were triggering redirects:
-
    - Client-side `useEffect` hook in `processing.$requestId.tsx`
    - Server-side WebSocket `redirect` message from `websocket.server.ts`
 
@@ -136,7 +135,7 @@ WebSocket parsing errors and aggressive error state setting causing unnecessary 
          "Failed to parse WebSocket message:",
          error,
          "Raw data:",
-         event.data
+         event.data,
        );
        // Don't set error state for parsing errors
      }
@@ -150,7 +149,7 @@ WebSocket parsing errors and aggressive error state setting causing unnecessary 
      // Only set error state if this is a persistent connection failure
      if (connectionStatus === "connected") {
        console.log(
-         "WebSocket error occurred but was previously connected, attempting to reconnect..."
+         "WebSocket error occurred but was previously connected, attempting to reconnect...",
        );
      } else {
        setConnectionStatus("error");
@@ -194,7 +193,7 @@ const handleWebSocketMessage = useCallback(
   (message: any) => {
     // ... message handling logic
   },
-  [navigate, requestId]
+  [navigate, requestId],
 );
 
 useEffect(() => {
@@ -343,3 +342,193 @@ Detailed explanation with code examples...
 - 🔴 **Critical**: Blocks core functionality, affects all users
 - 🟡 **Medium**: Affects some users or specific workflows
 - 🟢 **Low**: Minor issues, cosmetic, or edge cases
+
+---
+
+## 🐛 February 2026 Fixes
+
+### [FIXED] Create Pages - JavaScript Initialization Error
+
+**Issue ID**: `CIRCULAR-IMPORT-001`
+**Date Fixed**: February 2, 2026
+**Version**: v2.1.x
+**Severity**: Critical 🔴
+**Impact**: Create Images and Create Video pages completely unusable - users cannot select models, styles, or generate content
+
+#### Problem Description
+
+Users reported a JavaScript error "Cannot access 'C' before initialization" appearing in the browser console when visiting the Create Images (`/create`) or Create Video (`/create-video`) pages. This error prevented any interaction with the page - model selection, style selection, and form submission were all broken.
+
+#### Root Cause Analysis
+
+1. **Circular Import Dependency**: A circular import chain was created:
+   - `create.tsx` imports `CreatePage.tsx`
+   - `CreatePage.tsx` imports `CreatePageForm` from `~/components`
+   - `CreatePageForm.tsx` imports `CreatePageLoader` from `~/routes/create` (as a VALUE, not a TYPE)
+   - This creates: `create.tsx` → `CreatePage` → `CreatePageForm` → `create.tsx`
+
+2. **Import Statement Issue**: The import statement was:
+
+   ```typescript
+   import { CreatePageLoader } from "~/routes/create"; // VALUE import
+   ```
+
+   Instead of:
+
+   ```typescript
+   import type { CreatePageLoader } from "~/routes/create"; // TYPE-only import
+   ```
+
+3. **Minification Side Effect**: During production build, the circular dependency caused a variable (minified to 'C') to be accessed before its initialization completed.
+
+4. **Secondary Issues**: Similar problematic imports were found in:
+   - `RemixBadge.tsx` importing `MODEL_OPTIONS` from `~/routes/create`
+   - `api.images.$imageId.remix.ts` importing `MODEL_OPTIONS` from `~/routes/create`
+
+#### Solution Implemented
+
+1. **Fixed CreatePageForm.tsx** - Changed to type-only import:
+
+   ```typescript
+   // Before:
+   import { CreatePageLoader } from "~/routes/create";
+   import type { ActionData } from "~/routes/create";
+
+   // After:
+   import type { CreatePageLoader, ActionData } from "~/routes/create";
+   ```
+
+2. **Fixed RemixBadge.tsx** - Import from source module:
+
+   ```typescript
+   // Before:
+   import { MODEL_OPTIONS } from "~/routes/create";
+
+   // After:
+   import { MODEL_OPTIONS } from "~/config/models";
+   ```
+
+3. **Fixed api.images.$imageId.remix.ts** - Import from source module:
+
+   ```typescript
+   // Before:
+   import { MODEL_OPTIONS } from "~/routes/create";
+
+   // After:
+   import { MODEL_OPTIONS } from "~/config/models";
+   ```
+
+#### Files Modified
+
+- `app/components/CreatePageForm.tsx` - Changed to type-only import
+- `app/components/RemixBadge.tsx` - Import from source module
+- `app/routes/api.images.$imageId.remix.ts` - Import from source module
+
+#### Prevention Measures
+
+- Always use `import type` for TypeScript types/interfaces that don't need runtime values
+- Import values from their source module (`~/config/models`) rather than re-exports (`~/routes/create`)
+- Be cautious when creating re-exports in route files that are imported by components
+
+---
+
+### [FIXED] Explore Page - Images Not Loading
+
+**Issue ID**: `IMAGE-LOAD-001`
+**Date Fixed**: February 2, 2026
+**Version**: v2.1.x
+**Severity**: Critical 🔴
+**Impact**: All images on Explore, Feed, Trending pages showed alt text instead of actual images
+
+#### Problem Description
+
+Images on the Explore page (`/explore`) and other gallery pages displayed only their alt text (the prompt) instead of the actual generated images. The thumbnails appeared completely blank or showed the prompt text as a fallback.
+
+#### Root Cause Analysis
+
+1. **OptimizedImage IntersectionObserver Issue**: The `OptimizedImage` component used `IntersectionObserver` for lazy loading, but:
+   - During SSR, `IntersectionObserver` doesn't exist, causing `isInView` to remain `false`
+   - On client hydration, elements already in viewport weren't being detected
+   - The image `<img>` tag was only rendered when `isInView === true`
+
+2. **Previous "Fix" Created New Problems**: PR #133 attempted to fix this by replacing `OptimizedImage` with plain `<img>` tags, but this removed the progressive loading experience and didn't address the underlying issue.
+
+3. **Missing Visibility Check**: The IntersectionObserver wasn't checking if elements were already visible on mount.
+
+#### Solution Implemented
+
+1. **Enhanced OptimizedImage Component**:
+
+   ```typescript
+   // Check if IntersectionObserver is supported (not available during SSR)
+   const supportsIntersectionObserver = typeof window !== "undefined" && "IntersectionObserver" in window;
+
+   // Default to showing images if IntersectionObserver not supported
+   const [isInView, setIsInView] = useState(priority || !supportsIntersectionObserver);
+
+   // Check if element is already visible on mount
+   useEffect(() => {
+     if (priority || isInView || !supportsIntersectionObserver) return;
+
+     const element = containerRef.current;
+     if (!element) return;
+
+     // Check if already in viewport before setting up observer
+     const rect = element.getBoundingClientRect();
+     const isVisible = rect.top < window.innerHeight + rootMarginPx && ...;
+
+     if (isVisible) {
+       setIsInView(true);
+       return;
+     }
+
+     // Set up IntersectionObserver for elements not yet visible
+     // ...
+   }, [priority, isInView, rootMargin]);
+   ```
+
+2. **Restored OptimizedImage in ImageCard and VideoCard**:
+   - Replaced plain `<img>` tags back to `<OptimizedImage>`
+   - Maintains progressive loading with blur placeholders
+   - Proper error handling with fallback chain
+
+#### Files Modified
+
+- `app/components/OptimizedImage.tsx` - Added SSR support and immediate visibility check
+- `app/components/ImageCard.tsx` - Restored OptimizedImage usage
+- `app/components/VideoCard.tsx` - Added OptimizedImage usage
+
+#### Prevention Measures
+
+- Always test lazy-loading components with SSR
+- Check for browser API availability (`typeof window !== "undefined"`)
+- Handle elements that are already in viewport on initial mount
+- Use feature detection for IntersectionObserver
+
+---
+
+### [INVESTIGATION] Failed Fix Attempts Summary
+
+**Date Range**: February 1-2, 2026
+**PRs Reviewed**: #125 through #133
+
+This section documents the failed fix attempts to help understand the issue evolution:
+
+| PR # | Description                         | Why It Didn't Work                                                     |
+| ---- | ----------------------------------- | ---------------------------------------------------------------------- |
+| #125 | Performance improvements            | Introduced changes that triggered the issues                           |
+| #126 | Mobile UI/UX improvements           | Large CreatePageForm changes, possibly contributed to circular imports |
+| #127 | Fix missing images on Explore       | Partially addressed defer() usage but didn't fix OptimizedImage        |
+| #128 | Fix scroll/click issues             | Addressed symptoms but not root cause                                  |
+| #129 | Revert image rendering changes      | Incomplete revert, some issues remained                                |
+| #130 | Revert broken changes               | Focused on ScrollArea, didn't address circular imports                 |
+| #131 | Revert to last known working state  | Good intention but missed the circular import issue                    |
+| #132 | Restore defer() for streaming       | Addressed data loading but not image rendering                         |
+| #133 | Revert OptimizedImage to simple img | Workaround that removed progressive loading without fixing root cause  |
+
+#### Lessons Learned
+
+1. **Don't just revert - understand the root cause**: Multiple reverts were attempted without fully understanding why images weren't loading
+2. **Check for circular imports when adding re-exports**: The `MODEL_OPTIONS` re-export in `create.tsx` seemed harmless but caused issues
+3. **Test on production builds**: The circular import issue only manifested in production builds where variable names are minified
+4. **Browser API compatibility**: Always check for API availability during SSR

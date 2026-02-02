@@ -1,6 +1,7 @@
 import { Link } from "@remix-run/react";
 import { Shuffle } from "lucide-react";
 import { ImageDetail } from "~/server/getImage";
+import { OptimizedImage } from "./OptimizedImage";
 import { fallbackImageSource } from "~/client";
 
 /** Props for ImageGrid component */
@@ -53,12 +54,13 @@ export const ImageCard = ({
         prefetch="intent"
         to={redirectTo}
       >
-        <img
-          loading="lazy"
+        <OptimizedImage
           src={imageData!.thumbnailURL}
           alt={imageData!.prompt}
+          blurSrc={imageData?.blurURL}
+          containerClassName="absolute inset-0 w-full h-full"
           className="inset-0 object-cover cursor-pointer absolute w-full h-full"
-          decoding="async"
+          rootMargin="300px"
           onError={(e) => {
             // Fallback chain: thumbnail -> original -> placeholder
             const target = e.currentTarget;
