@@ -2,7 +2,6 @@ import React from "react";
 import { Link, useFetcher } from "@remix-run/react";
 import { cn } from "@/lib/utils";
 import { TrendingUp, Heart, MessageCircle, Loader2, ChevronRight, Flame } from "lucide-react";
-import { OptimizedImage } from "./OptimizedImage";
 import { fallbackImageSource } from "~/client";
 
 interface TrendingImage {
@@ -211,11 +210,12 @@ const TrendingImageCard = ({ image, rank }: TrendingImageCardProps) => {
       )}
 
       {/* Image */}
-      <OptimizedImage
+      <img
+        loading="lazy"
         src={image.thumbnailURL}
         alt={image.prompt}
-        blurSrc={image.blurURL}
         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+        decoding="async"
         onError={(e) => {
           const target = e.currentTarget;
           if (target.src !== fallbackImageSource) {

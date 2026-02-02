@@ -1,6 +1,6 @@
 import { useLoggedInUser } from "~/hooks";
 import { Link } from "@remix-run/react";
-import { convertUtcDateToLocalDateString } from "~/client";
+import { convertUtcDateToLocalDateString, fallbackImageSource } from "~/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MessageCircle, Info } from "lucide-react";
@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/hover-card";
 import { ImageUserData } from "~/pages/ExploreImageDetailsPage";
 import { ImageDetail } from "~/server/getImage";
-import { OptimizedImage } from "./OptimizedImage";
 
 const ImageModal = ({ imageData }: { imageData: ImageDetail }) => {
   const imageUserData = imageData!.user as ImageUserData;
@@ -53,13 +52,16 @@ const ImageModal = ({ imageData }: { imageData: ImageDetail }) => {
         {/* Image section - Mobile optimized, desktop unchanged */}
         <div className="md:flex-1 md:bg-black">
           <div className="md:h-full md:flex md:items-center md:justify-center">
-            <OptimizedImage
+            <img
               src={imageData.url}
               alt={imageData.prompt || "Generated Image"}
-              blurSrc={imageData.blurURL}
-              priority={true}
-              containerClassName="w-full h-auto md:max-h-[90vh] flex items-center justify-center"
               className="w-full h-auto object-contain md:max-h-[90vh]"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (target.src !== fallbackImageSource) {
+                  target.src = fallbackImageSource;
+                }
+              }}
             />
           </div>
         </div>

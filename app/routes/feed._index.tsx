@@ -12,8 +12,8 @@ import {
   GeneralErrorBoundary,
   ErrorList,
   ImageGridSkeleton,
-  OptimizedImage,
 } from "~/components";
+import { fallbackImageSource } from "~/client";
 import { requireUserLogin } from "~/services/auth.server";
 import { Loader2, UserPlus, Play } from "lucide-react";
 import ImageModal from "~/components/ImageModal";
@@ -29,7 +29,6 @@ import { getFollowingFeed } from "~/server/getFollowingFeed.server";
 import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useImagePreload } from "~/hooks";
 
 // 10 minutes TTL for fresher social content in feed
 const FEED_CACHE_TTL = 600;
@@ -68,13 +67,6 @@ const FeedImageCard = memo(function FeedImageCard({
   imageData: FeedImage;
   onImageClick: () => void;
 }) {
-  const { preloadImage } = useImagePreload();
-
-  // Preload full image on hover for faster modal loading
-  const handleMouseEnter = useCallback(() => {
-    preloadImage(imageData?.url);
-  }, [preloadImage, imageData?.url]);
-
   // Memoize keyboard handler
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -87,10 +79,7 @@ const FeedImageCard = memo(function FeedImageCard({
   );
 
   return (
-    <div
-      className="bg-zinc-900 rounded-lg overflow-hidden"
-      onMouseEnter={handleMouseEnter}
-    >
+    <div className="bg-zinc-900 rounded-lg overflow-hidden">
       {/* User info header */}
       <div className="flex items-center gap-3 p-3">
         <Link to={`/profile/${imageData.user.id}`} className="flex items-center gap-3 hover:opacity-80">
@@ -112,13 +101,20 @@ const FeedImageCard = memo(function FeedImageCard({
         onKeyDown={handleKeyDown}
         onClick={onImageClick}
       >
-        <OptimizedImage
+        <img
+          loading="lazy"
           src={imageData.thumbnailURL || `/images/${imageData.id}`}
           alt={imageData.prompt}
-          blurSrc={imageData.blurURL}
-          containerClassName="absolute inset-0 w-full h-full"
-          className="inset-0 object-cover absolute w-full h-full"
-          rootMargin="300px"
+          className="absolute inset-0 w-full h-full object-cover"
+          decoding="async"
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (imageData?.url && target.src !== imageData.url && target.src !== fallbackImageSource) {
+              target.src = imageData.url;
+            } else if (target.src !== fallbackImageSource) {
+              target.src = fallbackImageSource;
+            }
+          }}
         />
       </div>
 
