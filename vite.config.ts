@@ -24,33 +24,5 @@ export default defineConfig({
 
   build: {
     sourcemap: true,
-    rollupOptions: {
-      output: {
-        // Manual chunk splitting for better caching
-        manualChunks: (id) => {
-          // Separate vendor chunks for better caching
-          if (id.includes("node_modules")) {
-            // React core
-            if (id.includes("react") || id.includes("react-dom")) {
-              return "vendor-react";
-            }
-            // Radix UI components
-            if (id.includes("@radix-ui")) {
-              return "vendor-radix";
-            }
-            // Lucide icons
-            if (id.includes("lucide-react")) {
-              return "vendor-icons";
-            }
-            // Zod validation
-            if (id.includes("zod")) {
-              return "vendor-zod";
-            }
-            // Other vendor libraries
-            return "vendor";
-          }
-        },
-      },
-    },
   },
 });
