@@ -7,7 +7,7 @@ import {
   useNavigation,
 } from "@remix-run/react";
 import { PageContainer, ErrorList, ImageCard, ModelBadge } from "~/components";
-import { SetPageLoader } from "~/routes/sets.$setId";
+import type { SetPageLoader } from "~/routes/sets.$setId";
 import { Skeleton } from "@/components/ui/skeleton";
 import { convertUtcDateToLocalDateString } from "~/client";
 import {

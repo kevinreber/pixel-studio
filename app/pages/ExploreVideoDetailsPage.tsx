@@ -1,7 +1,7 @@
 import React from "react";
 import { useLoggedInUser } from "~/hooks";
 import { Link, useLoaderData } from "@remix-run/react";
-import { ExplorePageVideoLoader } from "~/routes/explore.video.$videoId";
+import type { ExplorePageVideoLoader } from "~/routes/explore.video.$videoId";
 import { convertUtcDateToLocalDateString } from "~/client";
 import {
   Dialog,

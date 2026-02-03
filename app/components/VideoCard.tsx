@@ -1,5 +1,6 @@
 import { Link } from "@remix-run/react";
 import { Play } from "lucide-react";
+import { OptimizedImage } from "./OptimizedImage";
 import { fallbackImageSource } from "~/client";
 
 export interface VideoCardData {
@@ -53,12 +54,12 @@ export const VideoCard = ({
         to={redirectTo}
       >
         {/* Thumbnail image */}
-        <img
-          loading="lazy"
+        <OptimizedImage
           src={videoData.thumbnailURL}
           alt={videoData.prompt}
+          containerClassName="absolute inset-0 w-full h-full"
           className="inset-0 object-cover cursor-pointer absolute w-full h-full"
-          decoding="async"
+          rootMargin="300px"
           onError={(e) => {
             const target = e.currentTarget;
             if (target.src !== fallbackImageSource) {

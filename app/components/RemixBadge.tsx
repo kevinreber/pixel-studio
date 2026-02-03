@@ -1,7 +1,7 @@
 import { Link } from "@remix-run/react";
 import { Shuffle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MODEL_OPTIONS } from "~/routes/create";
+import { MODEL_OPTIONS } from "~/config/models";
 import {
   Tooltip,
   TooltipContent,
