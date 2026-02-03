@@ -16,7 +16,6 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogOverlay,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ChevronDown, Check, Loader2, Sparkles, Coins, Settings2, Star, GitCompare } from "lucide-react";
@@ -466,8 +465,7 @@ const CreatePageForm = () => {
       </main>
 
       <Dialog open={modelDialogOpen} onOpenChange={setModelDialogOpen}>
-        <DialogOverlay className="fixed inset-0 bg-black bg-opacity-50" />
-        <DialogContent className="fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-[90vw] max-w-[425px] bg-zinc-900">
+        <DialogContent className="w-[90vw] max-w-[425px] bg-zinc-900">
           <DialogHeader className="relative flex items-center justify-center">
             <DialogTitle>Choose a model</DialogTitle>
           </DialogHeader>
@@ -519,8 +517,7 @@ const CreatePageForm = () => {
       </Dialog>
 
       <Dialog open={styleDialogOpen} onOpenChange={setStyleDialogOpen}>
-        <DialogOverlay className="fixed inset-0 bg-black bg-opacity-50" />
-        <DialogContent className="fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-[90vw] max-w-[425px] bg-zinc-900 ">
+        <DialogContent className="w-[90vw] max-w-[425px] bg-zinc-900">
           <DialogHeader className="flex items-center justify-center">
             <DialogTitle>Choose a preset style</DialogTitle>
           </DialogHeader>
