@@ -224,6 +224,7 @@ const CreatePageForm = () => {
   // Track which requestIds we've already added to prevent duplicates
   const processedRequestIdsRef = React.useRef<Set<string>>(new Set());
 
+  const [isMounted, setIsMounted] = React.useState(false);
   const [isMobile, setIsMobile] = React.useState(false);
   const [modelDialogOpen, setModelDialogOpen] = React.useState(false);
   const [styleDialogOpen, setStyleDialogOpen] = React.useState(false);
@@ -254,6 +255,8 @@ const CreatePageForm = () => {
   const [showAdvanced, setShowAdvanced] = React.useState(false);
 
   React.useEffect(() => {
+    // Prevent hydration mismatch - only check mobile on client
+    setIsMounted(true);
     const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     checkMobile();
     window.addEventListener("resize", checkMobile);
@@ -1156,6 +1159,11 @@ const CreatePageForm = () => {
       </div>
     </div>
   );
+
+  // Prevent hydration mismatch - always render desktop on server, then switch on client
+  if (!isMounted) {
+    return renderDesktopLayout();
+  }
 
   return isMobile ? renderMobileLayout() : renderDesktopLayout();
 };

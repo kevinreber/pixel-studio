@@ -145,12 +145,13 @@ function Document({
           src="https://www.googletagmanager.com/gtag/js?id=G-2TQ0PM7CJ4"
         ></script>
         <script
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            
+
             gtag('config', 'G-2TQ0PM7CJ4');
             `,
           }}
@@ -158,15 +159,14 @@ function Document({
       </head>
       <body suppressHydrationWarning>
         {children}
-        {env && (
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `window.ENV = ${JSON.stringify(env)}`,
-            }}
-          />
-        )}
-        <ScrollRestoration />
-        <Scripts />
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `window.ENV = ${JSON.stringify(env ?? {})}`,
+          }}
+        />
+        <ScrollRestoration suppressHydrationWarning />
+        <Scripts suppressHydrationWarning />
         <Analytics />
       </body>
     </html>
@@ -183,7 +183,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Document env={loaderData?.ENV}>
-        {!isHome && <NavigationSidebar />} {children}
+        {!isHome && <NavigationSidebar />}
+        {children}
       </Document>
     </>
   );

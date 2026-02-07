@@ -40,6 +40,7 @@ export function GenerationQueue({
   const [jobs, setJobs] = useState<QueueJob[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   // Fetch initial jobs
   const fetchJobs = useCallback(async () => {
@@ -61,6 +62,11 @@ export function GenerationQueue({
   // Track previous job statuses to detect completions
   const prevJobsRef = useRef<Map<string, string>>(new Map());
 
+  // Prevent hydration mismatch by only rendering on client
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Check for newly completed jobs and notify
   useEffect(() => {
     jobs.forEach((job) => {
@@ -74,19 +80,27 @@ export function GenerationQueue({
 
   // Initial fetch
   useEffect(() => {
-    fetchJobs();
-  }, [fetchJobs]);
+    if (isMounted) {
+      fetchJobs();
+    }
+  }, [fetchJobs, isMounted]);
 
   // Poll for updates (fallback if WebSocket not available)
   useEffect(() => {
+    if (!isMounted) return;
     const interval = setInterval(fetchJobs, 5000);
     return () => clearInterval(interval);
-  }, [fetchJobs]);
+  }, [fetchJobs, isMounted]);
 
   // Filter jobs based on showCompleted setting
   const displayedJobs = showCompleted
     ? jobs
     : jobs.filter((j) => j.status !== "complete" && j.status !== "failed");
+
+  // Don't render on server to prevent hydration mismatch
+  if (!isMounted) {
+    return null;
+  }
 
   // Don't show anything while loading or if there are no jobs
   if (isLoading || displayedJobs.length === 0) {
