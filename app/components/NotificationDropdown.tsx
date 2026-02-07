@@ -56,6 +56,7 @@ export const NotificationDropdown = ({
   >([]);
   const [unreadCount, setUnreadCount] = React.useState(0);
   const [hasLoadedOnce, setHasLoadedOnce] = React.useState(false);
+  const [isMounted, setIsMounted] = React.useState(false);
 
   const fetcherLoad = useFetcher<NotificationsResponse>();
   const fetcherCount = useFetcher<NotificationsResponse>();
@@ -63,8 +64,15 @@ export const NotificationDropdown = ({
   const fetcherMarkAllRead = useFetcher();
   const fetcherDelete = useFetcher();
 
+  // Prevent hydration mismatch by only rendering on client
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Fetch unread count on mount and periodically
   React.useEffect(() => {
+    if (!isMounted) return;
+
     fetcherCount.load("/api/notifications?countOnly=true");
 
     const interval = setInterval(() => {
@@ -73,7 +81,7 @@ export const NotificationDropdown = ({
 
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isMounted]);
 
   // Update unread count from count fetcher
   React.useEffect(() => {
@@ -190,7 +198,7 @@ export const NotificationDropdown = ({
         >
           <span className="relative">
             <Bell className={showLabel ? "md:h-4 md:w-4" : "h-5 w-5"} />
-            {unreadCount > 0 && (
+            {isMounted && unreadCount > 0 && (
               <span
                 className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center"
                 aria-label={`${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`}
