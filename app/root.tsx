@@ -166,8 +166,8 @@ function Document({
             __html: `window.ENV = ${JSON.stringify(env ?? {})}`,
           }}
         />
-        <ScrollRestoration suppressHydrationWarning />
-        <Scripts suppressHydrationWarning />
+        <ScrollRestoration />
+        <Scripts />
         <Analytics />
       </body>
     </html>
