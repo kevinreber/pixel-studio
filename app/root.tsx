@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   json,
   Links,
@@ -13,6 +13,7 @@ import {
 } from "@remix-run/react";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { Analytics } from "@vercel/analytics/react";
+import posthog from "posthog-js";
 // import { Toaster, toast as showToast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import NavigationSidebar from "components/NavigationSidebar";
@@ -165,8 +166,8 @@ function Document({
             __html: `window.ENV = ${JSON.stringify(env ?? {})}`,
           }}
         />
-        <ScrollRestoration suppressHydrationWarning />
-        <Scripts suppressHydrationWarning />
+        <ScrollRestoration />
+        <Scripts />
         <Analytics />
       </body>
     </html>
@@ -190,8 +191,50 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Identifies the current user in PostHog so client-side web events
+ * are associated with the user's identity (email, name, etc.)
+ * instead of showing as anonymous UUIDs.
+ */
+function usePostHogIdentify(userData: {
+  id: string;
+  email: string | null;
+  name: string | null;
+  username: string | null;
+  image: string | null;
+} | null) {
+  const previousUserId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (!userData?.id) {
+      // User logged out - reset was already handled by LogOutButton
+      previousUserId.current = null;
+      return;
+    }
+
+    // Skip if already identified this user
+    if (previousUserId.current === userData.id) return;
+    previousUserId.current = userData.id;
+
+    try {
+      posthog.identify(userData.id, {
+        email: userData.email,
+        name: userData.name,
+        username: userData.username,
+        avatar: userData.image,
+      });
+    } catch (error) {
+      console.error("[Analytics] Failed to identify user in PostHog:", error);
+    }
+  }, [userData]);
+}
+
 export default function App() {
   const loaderData = useLoaderData<typeof loader>();
+
+  usePostHogIdentify(loaderData.userData);
 
   return (
     <HoneypotProvider {...loaderData.honeyProps}>
