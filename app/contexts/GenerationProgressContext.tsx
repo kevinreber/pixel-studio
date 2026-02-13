@@ -125,6 +125,8 @@ export function GenerationProgressProvider({ children }: { children: React.React
     };
 
     // Create a persistent toast for this job
+    // unstyled: true prevents the shadcn Toaster's classNames from being applied
+    // to the toast wrapper, which conflicts with custom toast styling
     const toastId = toast.custom(
       (t) => (
         <GenerationProgressToast
@@ -141,6 +143,7 @@ export function GenerationProgressProvider({ children }: { children: React.React
       {
         duration: Infinity, // Don't auto-dismiss
         id: `generation-${job.requestId}`,
+        unstyled: true,
       }
     );
 
@@ -171,6 +174,7 @@ export function GenerationProgressProvider({ children }: { children: React.React
           {
             id: `generation-${job.requestId}`,
             duration: job.status === "complete" || job.status === "failed" ? 10000 : Infinity,
+            unstyled: true,
           }
         );
       }
