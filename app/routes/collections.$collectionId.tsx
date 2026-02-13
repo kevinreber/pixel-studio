@@ -7,7 +7,7 @@ import {
 import { invariantResponse } from "~/utils";
 import { prisma } from "~/services/prisma.server";
 import CollectionDetailsPage from "~/pages/CollectionDetailsPage";
-import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
+import { getS3BucketBlurURL, getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
 import { Link } from "@remix-run/react";
 
 export const meta: MetaFunction<typeof loader> = () => {
@@ -92,6 +92,7 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
           ...image.image,
           url: getS3BucketURL(image.image?.id || ""),
           thumbnailURL: getS3BucketThumbnailURL(image.image?.id || ""),
+          blurURL: getS3BucketBlurURL(image.image?.id || ""),
         })),
       };
     });
