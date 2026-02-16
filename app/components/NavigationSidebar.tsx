@@ -1,7 +1,7 @@
 import React from "react";
 import PixelStudioIcon from "components/PixelStudioIcon";
 import { Link } from "@remix-run/react";
-import { Search, PenTool, User, Users, Images, Heart, Video, Rss, Shield } from "lucide-react";
+import { Search, PenTool, User, Users, Images, Heart, Video, Rss, Shield, Newspaper } from "lucide-react";
 import { UserAvatarButton } from "./UserAvatarButton";
 import { useLoggedInUser } from "~/hooks";
 import { NotificationDropdown } from "./NotificationDropdown";
@@ -81,12 +81,11 @@ const NavigationSidebar = () => {
       icon: <User className="md:h-4 md:w-4" />,
       href: `/profile/${userData?.id || ""}`,
     },
-    // ! TODO: Hide for now, get barebones out first
-    // {
-    //   title: "Manage",
-    //   icon: <Settings className="md:h-4 md:w-4" />,
-    //   href: "/manage",
-    // },
+    {
+      title: "What's New",
+      icon: <Newspaper className="md:h-4 md:w-4" />,
+      href: "/whats-new",
+    },
   ];
 
   // Add admin link for admin users
