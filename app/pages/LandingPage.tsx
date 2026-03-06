@@ -148,36 +148,32 @@ const LandingPage = () => {
         </div>
 
         <div className="relative isolate overflow-hidden bg-zinc-950">
-          {/* Animated background grid */}
-          <svg
-            className="absolute inset-0 -z-10 h-full w-full stroke-white/10 [mask-image:radial-gradient(100%_100%_at_top_right,white,transparent)]"
+          {/* Animated scrolling background grid */}
+          <div
+            className="absolute inset-0 -z-10 overflow-hidden [mask-image:radial-gradient(100%_100%_at_top_right,white,transparent)]"
             aria-hidden="true"
           >
-            <defs>
-              <pattern
-                id="grid-pattern"
-                width={200}
-                height={200}
-                x="50%"
-                y={-1}
-                patternUnits="userSpaceOnUse"
-              >
-                <path d="M.5 200V.5H200" fill="none" />
-              </pattern>
-            </defs>
-            <svg x="50%" y={-1} className="overflow-visible fill-gray-800/20">
-              <path
-                d="M-200 0h201v201h-201Z M600 0h201v201h-201Z M-400 600h201v201h-201Z M200 800h201v201h-201Z"
-                strokeWidth={0}
-              />
-            </svg>
-            <rect
-              width="100%"
-              height="100%"
-              strokeWidth={0}
-              fill="url(#grid-pattern)"
+            <div
+              className="absolute -inset-[200px] animate-grid-scroll"
+              style={{
+                backgroundImage: `
+                  linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)
+                `,
+                backgroundSize: "200px 200px",
+              }}
             />
-          </svg>
+            {/* Highlighted grid cells */}
+            <div
+              className="absolute -inset-[200px] animate-grid-scroll"
+              style={{
+                backgroundImage: `
+                  radial-gradient(circle at 100px 100px, rgba(128,128,128,0.08) 0%, transparent 50%)
+                `,
+                backgroundSize: "400px 400px",
+              }}
+            />
+          </div>
 
           {/* Animated gradient blob */}
           <div

@@ -98,6 +98,10 @@ const config = {
           "85%": { opacity: "1", transform: "translateY(0)" },
           "100%": { opacity: "0", transform: "translateY(-10px)" },
         },
+        "grid-scroll": {
+          "0%": { transform: "translate(0, 0)" },
+          "100%": { transform: "translate(200px, 200px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -111,6 +115,7 @@ const config = {
         shimmer: "shimmer 2s linear infinite",
         "gradient-shift": "gradient-shift 8s ease infinite",
         "text-reveal": "text-reveal 3s ease-in-out infinite",
+        "grid-scroll": "grid-scroll 20s linear infinite",
       },
     },
   },
