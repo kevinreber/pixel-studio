@@ -395,18 +395,20 @@ function GalleryImage({
   floatClass: string;
 }) {
   return (
-    <div
-      className={`relative opacity-0 animate-fade-in-up ${floatClass}`}
-      style={{ animationDelay: delay }}
-    >
-      <img
-        src={src}
-        alt={alt}
-        className="aspect-[2/3] w-full rounded-xl bg-gray-900/5 object-cover shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-indigo-500/10"
-        decoding="async"
-        loading="lazy"
-      />
-      <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-gray-900/10 transition-all duration-500 hover:ring-indigo-500/20" />
+    <div className={floatClass}>
+      <div
+        className="relative opacity-0 animate-fade-in-up"
+        style={{ animationDelay: delay }}
+      >
+        <img
+          src={src}
+          alt={alt}
+          className="aspect-[2/3] w-full rounded-xl bg-gray-900/5 object-cover shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-indigo-500/10"
+          decoding="async"
+          loading="lazy"
+        />
+        <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-gray-900/10 transition-all duration-500 hover:ring-indigo-500/20" />
+      </div>
     </div>
   );
 }
