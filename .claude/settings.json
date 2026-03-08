@@ -52,6 +52,12 @@
         "hooks": [
           "echo '⚠️  REMINDER: Ensure npm run lint && npm run typecheck && npm run test:run && npm run build all pass before committing!'"
         ]
+      },
+      {
+        "matcher": "Bash(gh pr create*)",
+        "hooks": [
+          "bash scripts/check-changelog-updated.sh"
+        ]
       }
     ],
     "PostToolUse": [
