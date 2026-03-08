@@ -56,6 +56,7 @@
       {
         "matcher": "Bash(gh pr create*)",
         "hooks": [
+          "bash scripts/rebase-from-main.sh",
           "bash scripts/check-changelog-updated.sh"
         ]
       }
