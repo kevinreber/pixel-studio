@@ -15,7 +15,7 @@ This file provides context for Claude Code to work effectively with the Pixel St
 | Database    | PostgreSQL + Prisma ORM 5.19                                                               |
 | Auth        | Remix Auth + Google OAuth + Supabase (v2 auth migration in progress)                       |
 | State       | Zustand (client state) + React Context (generation progress)                               |
-| Queue       | Apache Kafka (KafkaJS) + Upstash QStash                                                    |
+| Queue       | Upstash QStash (primary) + Apache Kafka (available, on hold)                                |
 | Cache       | Upstash Redis                                                                              |
 | Storage     | AWS S3                                                                                     |
 | Real-time   | Native WebSocket                                                                           |
@@ -504,18 +504,27 @@ toast.error("Generation failed");
 
 ## Processing Modes
 
+### QStash Async Queue (Default / Production)
+
+- Set `QUEUE_BACKEND=qstash` (default)
+- Uses Upstash QStash for async image and video generation
+- Real-time progress tracking via processing page
+- Supports multi-model comparison with parent-child requests
+- Local dev mode simulates processing without external queue
+
+### Kafka Async Queue (Available, On Hold)
+
+- Set `QUEUE_BACKEND=kafka` and configure `KAFKA_BROKERS`, `KAFKA_USERNAME`, `KAFKA_PASSWORD`
+- Full Kafka infrastructure exists (`infrastructure/kafka/`, consumer scripts)
+- Currently disabled to save costs (~$220/mo for AWS MSK)
+- Can be activated when scale demands higher throughput
+- Requires running: `npm run kafka:consumer` and `npm run kafka:websocket`
+
 ### Synchronous (Legacy)
 
-- Set `ENABLE_KAFKA_IMAGE_GENERATION=false`
+- Set `ENABLE_KAFKA_IMAGE_GENERATION=false` and no QStash config
 - Direct API calls, user waits for completion
-- Simpler but slower UX
-
-### Asynchronous (Recommended)
-
-- Set `ENABLE_KAFKA_IMAGE_GENERATION=true`
-- Kafka queue + WebSocket updates
-- Better UX with real-time progress
-- Requires running: `npm run kafka:consumer` and `npm run kafka:websocket`
+- Only useful for debugging
 
 ## Vite Configuration
 
@@ -577,11 +586,17 @@ S3_BUCKET_NAME=
 STRIPE_SECRET_KEY=               # Stripe
 STRIPE_WEBHOOK_SECRET=
 
-# Queue (if async mode)
-KAFKA_BROKERS=
-KAFKA_USERNAME=
-KAFKA_PASSWORD=
-ENABLE_KAFKA_IMAGE_GENERATION=   # true/false
+# Queue (QStash - default async mode)
+QSTASH_TOKEN=                    # Upstash QStash token
+QSTASH_CURRENT_SIGNING_KEY=      # QStash signature verification
+QSTASH_NEXT_SIGNING_KEY=
+QUEUE_BACKEND=qstash             # "qstash" (default) or "kafka"
+
+# Queue (Kafka - optional, on hold)
+# KAFKA_BROKERS=
+# KAFKA_USERNAME=
+# KAFKA_PASSWORD=
+# ENABLE_KAFKA_IMAGE_GENERATION=   # true/false
 
 # Monitoring
 SENTRY_ORG=                      # Sentry
