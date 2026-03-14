@@ -6,9 +6,20 @@ import {
   trackCollection,
   AnalyticsEvents,
 } from "~/services/analytics.server";
+import {
+  checkRateLimit,
+  writeLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
+  const rl = await checkRateLimit(
+    writeLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
   const formData = await request.formData();
   const imageId = formData.get("imageId")?.toString();
   const collectionId = formData.get("collectionId")?.toString();

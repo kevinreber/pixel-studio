@@ -18,6 +18,12 @@ import {
 } from "~/services/imageTagging.server";
 import { prisma } from "~/services/prisma.server";
 import { z } from "zod";
+import {
+  checkRateLimit,
+  writeLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 
 const AddTagSchema = z.object({
   tag: z.string().min(1).max(50),
@@ -66,6 +72,11 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
 export async function action({ request, params }: ActionFunctionArgs) {
   const user = await requireUserLogin(request);
+  const rl = await checkRateLimit(
+    writeLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
   const imageId = params.imageId;
 
   if (!imageId) {

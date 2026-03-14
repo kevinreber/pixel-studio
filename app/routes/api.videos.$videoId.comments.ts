@@ -4,12 +4,23 @@ import { createVideoComment } from "~/server/createVideoComment";
 import { VideoCommentSchema, VideoCommentResponseSchema } from "~/schemas/videoComment";
 import { z } from "zod";
 import { invalidateCache } from "~/utils/cache.server";
+import {
+  checkRateLimit,
+  writeLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 
 export const action = async ({
   request,
   params,
 }: ActionFunctionArgs): Promise<Response> => {
   const user = await requireUserLogin(request);
+  const rl = await checkRateLimit(
+    writeLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
   const formData = Object.fromEntries(await request.formData());
   const videoId = params.videoId;
 

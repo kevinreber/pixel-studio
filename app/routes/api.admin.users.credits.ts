@@ -4,6 +4,12 @@ import { requireUserLogin } from "~/services";
 import { getUserWithRoles, isAdmin } from "~/server/isAdmin.server";
 import { prisma } from "~/services/prisma.server";
 import { logAdminCreditAdjustment } from "~/services/creditTransaction.server";
+import {
+  checkRateLimit,
+  adminLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 
 const AdjustCreditsSchema = z.object({
   userId: z.string().min(1, "User ID is required"),
@@ -22,6 +28,12 @@ const AdjustCreditsSchema = z.object({
  */
 export const action = async ({ request }: ActionFunctionArgs) => {
   const adminUser = await requireUserLogin(request);
+
+  const rl = await checkRateLimit(
+    adminLimiter,
+    getRateLimitIdentifier(request, adminUser.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
 
   // Check admin permissions
   const adminWithRoles = await getUserWithRoles(adminUser.id);

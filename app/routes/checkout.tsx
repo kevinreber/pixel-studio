@@ -11,6 +11,12 @@ import {
   trackPayment,
   AnalyticsEvents,
 } from "~/services/analytics.server";
+import {
+  checkRateLimit,
+  financialLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 
 export const meta: MetaFunction<
   typeof loader,
@@ -27,6 +33,12 @@ export const meta: MetaFunction<
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const user = await requireUserLogin(request);
+
+  const rl = await checkRateLimit(
+    financialLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
 
   Logger.info({
     message: "[checkout.tsx]: Starting checkout process",

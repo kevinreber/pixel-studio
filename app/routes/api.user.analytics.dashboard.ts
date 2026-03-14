@@ -7,9 +7,21 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { requireUserLogin } from "~/services/auth.server";
 import { getUserInsightsDashboard } from "~/services/analyticsInsights.server";
+import {
+  checkRateLimit,
+  readLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
+
+  const rl = await checkRateLimit(
+    readLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
 
   try {
     const dashboard = await getUserInsightsDashboard(user.id);

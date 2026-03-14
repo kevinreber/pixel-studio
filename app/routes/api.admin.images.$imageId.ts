@@ -4,6 +4,12 @@ import { Prisma } from "@prisma/client";
 import { requireUserLogin } from "~/services";
 import { canDeleteAnyImage, getUserWithRoles } from "~/server/isAdmin.server";
 import { deleteImageWithAudit } from "~/services/imageDeletionLog.server";
+import {
+  checkRateLimit,
+  adminLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 
 // CUID format validation regex
 const CUID_REGEX = /^c[^\s-]{24,}$/;
@@ -21,6 +27,13 @@ const DeleteImageSchema = z.object({
  */
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
+
+  const rl = await checkRateLimit(
+    adminLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
+
   const imageId = params.imageId;
 
   // Validate imageId exists and is valid CUID format

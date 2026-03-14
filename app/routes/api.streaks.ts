@@ -11,6 +11,12 @@ import {
   claimDailyBonus,
   getStreakStats,
 } from "~/services/loginStreak.server";
+import {
+  checkRateLimit,
+  readLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 import { checkAndUnlockAchievements } from "~/services/achievements.server";
 import { Logger } from "~/utils/logger.server";
 
@@ -19,6 +25,12 @@ import { Logger } from "~/utils/logger.server";
  */
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const user = await requireUserLogin(request);
+
+  const rl = await checkRateLimit(
+    readLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
 
   try {
     const stats = await getStreakStats(user.id);

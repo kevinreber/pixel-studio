@@ -11,6 +11,12 @@ import { z } from "zod";
 import { requireUserLogin } from "~/services";
 import { prisma } from "~/services/prisma.server";
 import {
+  checkRateLimit,
+  readLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
+import {
   getUserAchievements,
   getAchievementStats,
   checkAndUnlockAchievements,
@@ -59,6 +65,13 @@ async function isUserAdmin(userId: string): Promise<boolean> {
  */
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const user = await requireUserLogin(request);
+
+  const rl = await checkRateLimit(
+    readLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
+
   const url = new URL(request.url);
   const includeStats = url.searchParams.get("stats") === "true";
   const unnotifiedOnly = url.searchParams.get("unnotified") === "true";

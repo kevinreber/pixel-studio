@@ -7,9 +7,22 @@
 import { json, type ActionFunctionArgs } from "@remix-run/node";
 import { requireUserLogin } from "~/services/auth.server";
 import { purchasePrompt } from "~/services/marketplace.server";
+import {
+  checkRateLimit,
+  financialLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 
 export async function action({ request, params }: ActionFunctionArgs) {
   const user = await requireUserLogin(request);
+
+  const rl = await checkRateLimit(
+    financialLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
+
   const promptId = params.promptId;
 
   if (!promptId) {

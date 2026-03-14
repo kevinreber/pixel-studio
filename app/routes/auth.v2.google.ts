@@ -1,8 +1,19 @@
 import { json, redirect } from "@remix-run/node";
 import type { ActionFunctionArgs } from "@remix-run/node";
 import { getSupabaseWithHeaders } from "~/services/supabase.server";
+import {
+  checkRateLimit,
+  authLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 
 export async function action({ request }: ActionFunctionArgs) {
+  const rl = await checkRateLimit(
+    authLimiter,
+    getRateLimitIdentifier(request)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
   console.log("Signing in with Supabase with Google SSO");
 
   const { supabase, headers } = getSupabaseWithHeaders({

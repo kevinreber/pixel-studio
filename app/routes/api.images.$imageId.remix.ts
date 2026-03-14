@@ -11,6 +11,12 @@ import { z } from "zod";
 import { cacheDelete } from "~/utils/cache.server";
 import { getModelCreditCost } from "~/config/pricing";
 import { MODEL_OPTIONS } from "~/config/models";
+import {
+  checkRateLimit,
+  writeLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 
 const RemixFormSchema = z.object({
   model: z
@@ -24,6 +30,11 @@ const RemixFormSchema = z.object({
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
+  const rl = await checkRateLimit(
+    writeLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
   const { imageId } = params;
 
   if (!imageId) {

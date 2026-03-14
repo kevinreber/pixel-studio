@@ -6,12 +6,24 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { requireUserLogin } from "~/services";
 import { prisma } from "~/services/prisma.server";
+import {
+  checkRateLimit,
+  readLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
 
 const DEFAULT_PAGE_SIZE = 24;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const user = await requireUserLogin(request);
+
+  const rl = await checkRateLimit(
+    readLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
 
   const searchParams = new URL(request.url).searchParams;
   const page = Math.max(Number(searchParams.get("page") || 1), 1);

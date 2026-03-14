@@ -121,7 +121,7 @@ The following items from the original roadmap have been implemented and are in p
 #### 1.3 Security Gaps
 
 - [ ] Implement Content Security Policy (CSP) headers
-- [ ] Add rate limiting to API endpoints (especially image generation, auth, tipping)
+- [x] Add rate limiting to API endpoints (auth, generation, financial, write, read, admin tiers via @upstash/ratelimit)
 - [ ] Input sanitization middleware for user-generated content
 - [ ] Regular dependency audit schedule
 

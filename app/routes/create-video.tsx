@@ -28,6 +28,12 @@ import {
   trackVideoGenerationFailed,
   trackCreditsSpent,
 } from "~/services/analytics.server";
+import {
+  checkRateLimit,
+  generationLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Create AI Generated Videos" }];
@@ -89,6 +95,13 @@ export type CreateVideoFormData = {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
+
+  const rl = await checkRateLimit(
+    generationLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
+
   const formData = await request.formData();
 
   const prompt = formData.get("prompt") || "";
