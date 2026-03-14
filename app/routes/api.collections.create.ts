@@ -3,9 +3,20 @@ import { requireUserLogin } from "~/services";
 import { prisma } from "~/services/prisma.server";
 import { CollectionSchema } from "~/schemas/collection";
 import { cacheDelete } from "~/utils/cache.server";
+import {
+  checkRateLimit,
+  writeLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
+  const rl = await checkRateLimit(
+    writeLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
   const formData = await request.formData();
   const data = {
     title: formData.get("title"),

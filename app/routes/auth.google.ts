@@ -3,8 +3,19 @@ import { authenticator, USER_ID_KEY } from "~/services/auth.server";
 import { redirect, type ActionFunctionArgs } from "@remix-run/node";
 import { commitSession, getSessionCookie } from "~/services";
 import { UserGoogleData } from "~/types";
+import {
+  checkRateLimit,
+  authLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
+  const rl = await checkRateLimit(
+    authLimiter,
+    getRateLimitIdentifier(request)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
   // initiating authentication using Google Strategy
   // on success --> redirect to dashboard
   // on failure --> back to homepage/login

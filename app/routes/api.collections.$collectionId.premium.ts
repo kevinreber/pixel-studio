@@ -14,6 +14,12 @@ import {
   removeCollectionPremium,
 } from "~/services/premiumCollections.server";
 import { z } from "zod";
+import {
+  checkRateLimit,
+  financialLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 
 const MakePremiumSchema = z.object({
   price: z.coerce.number().min(1).max(500),
@@ -30,6 +36,13 @@ const UpdatePremiumSchema = z.object({
 
 export async function action({ request, params }: ActionFunctionArgs) {
   const user = await requireUserLogin(request);
+
+  const rl = await checkRateLimit(
+    financialLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
+
   const collectionId = params.collectionId;
 
   if (!collectionId) {

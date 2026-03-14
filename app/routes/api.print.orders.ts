@@ -13,6 +13,12 @@ import {
   calculateOrderPrice,
 } from "~/services/printOnDemand.server";
 import { z } from "zod";
+import {
+  checkRateLimit,
+  financialLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 
 const ShippingAddressSchema = z.object({
   name: z.string().min(1).max(100),
@@ -61,6 +67,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export async function action({ request }: ActionFunctionArgs) {
   const user = await requireUserLogin(request);
+
+  const rl = await checkRateLimit(
+    financialLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
 
   if (request.method !== "POST") {
     return json({ error: "Method not allowed" }, { status: 405 });

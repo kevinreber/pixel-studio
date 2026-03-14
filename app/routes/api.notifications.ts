@@ -5,6 +5,12 @@ import {
   markAllNotificationsRead,
 } from "~/server/notifications";
 import { requireUserLogin } from "~/services";
+import {
+  checkRateLimit,
+  readLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 import { Logger } from "~/utils/logger.server";
 
 /**
@@ -17,6 +23,12 @@ import { Logger } from "~/utils/logger.server";
  */
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const user = await requireUserLogin(request);
+
+  const rl = await checkRateLimit(
+    readLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
 
   const url = new URL(request.url);
   const limit = parseInt(url.searchParams.get("limit") || "20", 10);

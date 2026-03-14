@@ -8,6 +8,12 @@ import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { z } from "zod";
 import { requireUserLogin } from "~/services";
 import {
+  checkRateLimit,
+  readLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
+import {
   getTrendingContent,
   getTrendingImages,
   getTrendingVideos,
@@ -46,6 +52,12 @@ const TrendingQuerySchema = z.object({
  */
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const user = await requireUserLogin(request);
+
+  const rl = await checkRateLimit(
+    readLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
 
   const url = new URL(request.url);
 

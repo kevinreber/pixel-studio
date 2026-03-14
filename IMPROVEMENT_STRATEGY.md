@@ -4,492 +4,264 @@
 
 This document outlines a comprehensive strategy for improving the Pixel Studio application across multiple dimensions: code quality, performance, user experience, security, and observability.
 
-## Implementation Phases
+> **Last updated**: March 2026
+> **Queue system**: QStash (Upstash) — Kafka infrastructure exists but is on hold for cost savings.
 
-### Phase 1: Foundation & Quality (Immediate - 2-4 weeks)
+---
 
-**Goal**: Establish solid foundations for maintainable, secure code
+## Completed Features
 
-#### 1.1 TypeScript Strict Mode & Code Quality
+The following items from the original roadmap have been implemented and are in production.
 
-- [ ] Enable strict TypeScript settings in `tsconfig.json`
-  - `noImplicitAny: true`
-  - `noUnusedLocals: true`
-  - `noUnusedParameters: true`
-- [ ] Add comprehensive Zod validation schemas for all API endpoints
-- [ ] Implement consistent error handling patterns across routes
-- [ ] Set up ESLint rules for import organization and code consistency
+### Async Queue System (QStash)
 
-#### 1.2 Component Architecture Refactoring
+- [x] Async image generation with real-time progress tracking
+- [x] Async video generation pipeline
+- [x] Multi-model comparison with parent-child request tracking
+- [x] Processing page with live status updates (`/processing/$requestId`)
+- [x] Local development mode with simulated processing
+- [x] Signature verification and health checks
 
-- [ ] Break down large components (ExploreImageDetailsPage.tsx - 514 lines)
-- [ ] Extract reusable UI components and hooks
-- [ ] Implement proper component composition patterns
-- [ ] Create a component library documentation
+> **Note**: Kafka infrastructure (`infrastructure/kafka/`, consumer scripts) is available but disabled. QStash is the active queue backend (`QUEUE_BACKEND=qstash`). Kafka deployment (~$220/mo for AWS MSK) is deferred until scale demands it.
 
-#### 1.3 Security Hardening
+### Caching Strategy
+
+- [x] Redis/Upstash caching layer (`app/utils/cache.server.ts`)
+- [x] Stale-while-revalidate patterns
+- [x] Pattern-based cache invalidation
+- [x] Error fallback to direct fetch if Redis fails
+
+### Social & Engagement Features
+
+- [x] Following/followers system
+- [x] Achievements system (60+ achievements with XP/credit rewards)
+- [x] Login streaks with daily bonuses and milestone rewards
+- [x] User-to-user tipping (1–1000 credits)
+- [x] Image and video likes
+- [x] Nested comments on images and videos
+- [x] Comment likes
+- [x] Notifications (12 types)
+
+### Content & Discovery
+
+- [x] Prompt marketplace (search, purchase, reviews, ratings)
+- [x] Blog/tutorial system with admin editor, SEO metadata, categories/tags
+- [x] Multi-model image comparison (`/compare/$requestId`)
+- [x] Image remixing with lineage tracking
+- [x] Short URL sharing (`/p/$imageId`)
+- [x] Dynamic sitemap generation (images, videos, users, prompts, blog posts)
+- [x] What's New / changelog page
+- [x] Trending content computation
+
+### Analytics & Monitoring
+
+- [x] User analytics (daily/weekly/monthly stats, style fingerprint)
+- [x] Admin analytics dashboards
+- [x] Prompt analytics and performance metrics
+- [x] Generation logging with metadata
+- [x] Image deletion audit trail
+- [x] Sentry error tracking
+- [x] Winston + OpenTelemetry structured logging (OTLP HTTP → PostHog)
+- [x] PostHog event tracking (60+ events)
+- [x] Vercel Analytics
+
+### Monetization
+
+- [x] Stripe payment integration
+- [x] Credit transaction ledger
+- [x] Creator earnings and payouts system
+- [x] Premium collections
+- [x] External API token management
+
+### Video Generation
+
+- [x] Runway ML (Gen-3 Turbo, Veo 3.1)
+- [x] Luma AI
+- [x] Stability AI
+- [x] Image-to-video conversion (source image support)
+- [x] Video thumbnail extraction
+- [x] Video comments and likes
+
+### Security (Partial)
+
+- [x] CSRF protection (`remix-utils/csrf`)
+- [x] Zod validation on major routes (create, create-video, admin blog, collections, comments)
+
+### CI/CD & Developer Experience
+
+- [x] Husky + lint-staged pre-commit hooks
+- [x] CI pipeline (lint, typecheck, test, build, CodeQL, dependency review)
+- [x] 22 unit test files + 11 E2E test files
+- [x] Vitest with coverage (v8)
+- [x] Playwright E2E tests
+
+### Testing Coverage (Current)
+
+- [x] Unit tests: `app/utils/` (8), `app/server/` (4), `app/services/` (1), `app/components/` (1), `app/contexts/` (1)
+- [x] E2E tests: pages, create interactions, video creation, notifications, user retention, admin flows, generation progress, sets, video support
+
+---
+
+## Remaining Work
+
+### Phase 1: Code Quality & Security (High Priority)
+
+#### 1.1 TypeScript Strict Mode
+
+- [ ] Enable `noImplicitAny: true` in `tsconfig.json`
+- [ ] Enable `noUnusedLocals: true`
+- [ ] Enable `noUnusedParameters: true`
+- [ ] Fix resulting type errors across the codebase
+
+#### 1.2 Zod Validation Expansion
+
+- [ ] Add Zod schemas for all remaining API endpoints (currently only 3 dedicated schema files)
+- [ ] Standardize validation middleware pattern across routes
+
+#### 1.3 Security Gaps
 
 - [ ] Implement Content Security Policy (CSP) headers
-- [ ] Add rate limiting to API endpoints (especially image generation)
-- [ ] Input sanitization and validation middleware
-- [ ] CSRF protection implementation
-- [ ] Audit and update dependencies
+- [x] Add rate limiting to API endpoints (auth, generation, financial, write, read, admin tiers via @upstash/ratelimit)
+- [ ] Input sanitization middleware for user-generated content
+- [ ] Regular dependency audit schedule
 
-### Phase 2: Performance & User Experience (4-6 weeks)
+#### 1.4 Component Architecture
 
-**Goal**: Optimize application performance and enhance user experience
+- [ ] Break down large components (e.g., ExploreImageDetailsPage.tsx)
+- [ ] Extract reusable UI components and hooks
 
-#### 2.1 Image Optimization Strategy
+### Phase 2: Performance (Medium Priority)
 
-- [ ] Implement progressive image loading
-- [ ] Add WebP/AVIF format conversion pipeline
-- [ ] Set up responsive image sizing
-- [ ] Integrate CDN for static assets
-- [ ] Add image compression for uploads
+#### 2.1 Image Optimization
 
-#### 2.2 Caching Strategy Enhancement
+- [ ] WebP/AVIF format conversion pipeline
+- [ ] Progressive image loading
+- [ ] Responsive image sizing (srcset)
+- [ ] CDN integration for static/generated image assets
+- [ ] Image compression for uploads
 
-- [ ] Implement API response caching layers
-- [ ] Add Redis caching for expensive database queries
-- [ ] Set up proper browser caching headers
-- [ ] Implement stale-while-revalidate patterns
-
-#### 2.3 Mobile Experience Improvements
+#### 2.2 Mobile Experience
 
 - [ ] Simplify mobile UI patterns
-- [ ] Add touch gesture support for image viewing
-- [ ] Optimize mobile navigation
-- [ ] Implement mobile-specific image sizes
+- [ ] Touch gesture support for image viewing
+- [ ] Mobile-specific image sizes
 
-### Phase 3: Testing & Quality Assurance (6-8 weeks)
+### Phase 3: Feature Enhancements (Medium Priority)
 
-**Goal**: Establish comprehensive testing coverage and CI/CD pipeline
+#### 3.1 Home Page Discovery
 
-#### 3.1 Testing Infrastructure
+- [ ] Replace static landing page with paginated content discovery
+- [ ] Add "See More" with infinite scroll or pagination
+- [ ] Filtering options (date, popularity, model type)
+- [ ] Personalized recommendations
+- [ ] Category-based browsing
+- **Estimated effort**: 1–2 weeks
 
-- [ ] Set up comprehensive unit testing with Vitest
-- [ ] Add integration tests for API routes
-- [ ] Implement component testing with React Testing Library
-- [ ] Expand Playwright E2E test coverage
+#### 3.2 Google Gemini Integration
+
+- [ ] Add Gemini image generation as a new model option in `app/config/models.ts`
+- [ ] Implement provider in `app/server/` (text-to-image, image editing)
+- [ ] Add conversational image refinement capabilities
+- [ ] High-fidelity text rendering in images
+- **Estimated effort**: 3–4 weeks
+
+#### 3.3 Advanced Image Editing
+
+- [ ] In-browser editing tools with natural language commands
+- [ ] Mask-free editing
+- [ ] Style transfer between user images
+
+#### 3.4 Advanced Video Animation
+
+- [ ] Keyframe editing for custom animations
+- [ ] Duration and easing controls
+- [ ] Animation presets
+- [ ] Additional export formats (GIF, WebM)
+
+### Phase 4: Testing & Quality (Ongoing)
+
+- [ ] Expand unit test coverage toward 80%
+- [ ] Add integration tests for remaining API routes
 - [ ] Add visual regression testing
+- [ ] Payment flow E2E tests
+- [ ] Load testing for image generation pipeline
 
-#### 3.2 Testing Coverage Areas
+### Phase 5: Infrastructure (Low Priority / As Needed)
 
-- [ ] Image generation workflow tests
-- [ ] User authentication and authorization tests
-- [ ] Collection management tests
-- [ ] Payment flow tests
-- [ ] API endpoint tests with various error scenarios
+#### 5.1 Monitoring & Alerting
 
-#### 3.3 CI/CD Pipeline Enhancement
+Current stack (Sentry, PostHog, Winston/OTLP, Vercel Analytics, Google Analytics) covers error tracking, product analytics, structured logging, and web vitals well at current scale.
 
-- [ ] Set up pre-commit hooks with Husky
-- [ ] Automated testing in CI pipeline
-- [ ] Code coverage reporting
-- [ ] Automated dependency updates
+- [ ] Set up Sentry alerting rules (error rate spikes, p99 latency thresholds)
+- [ ] Set up PostHog alerting for key product metrics (generation failures, drop-offs)
+- [ ] Prometheus metrics collection (request latency histograms, DB query performance, queue depth)
+- [ ] Grafana dashboards for system health and real-time operational visibility
+- [ ] Alerting rules for infrastructure (CPU, memory, error rates, performance degradation)
 
-#### 3.4 Future GitHub Actions Workflow (When Ready)
+#### 5.2 Print on Demand
 
-**Note**: Currently using Vercel auto-deployment which works well for simple deployments.
+- [ ] Wire up actual provider API integration (Printful/Printify)
+- [ ] Complete order flow end-to-end
+- Architecture and database models are already in place
 
-**Add GitHub Actions workflow when you need:**
+#### 5.3 Kafka Activation (When Scale Demands It)
 
-- [ ] **Quality Gates & Automated Testing**
+If QStash throughput becomes a bottleneck, the Kafka infrastructure is ready:
 
-  - Prevent broken code from being deployed
-  - Run comprehensive test suite before deployment
-  - Block deployment if tests/linting fail
-  - Code coverage reporting and enforcement
+- [ ] Deploy AWS MSK cluster (`infrastructure/kafka/deploy.sh`)
+- [ ] Set `QUEUE_BACKEND=kafka` and configure broker credentials
+- [ ] Deploy consumer workers (`scripts/startConsumers.ts`)
+- [ ] Deploy WebSocket server (`scripts/startWebSocketServer.ts`)
+- [ ] Set up monitoring for topic lag and throughput
+- **Estimated cost**: ~$220–250/mo for AWS MSK
+- **Risk**: Medium — code is implemented, needs production validation
 
-- [ ] **Multi-Service Deployment Coordination**
+#### 5.4 Collaborative Features (Future)
 
-  - Deploy Kafka consumers to separate servers
-  - Coordinate WebSocket server deployments
-  - Background service health checks
-  - Multi-environment deployments (staging → production)
+- [ ] Shared workspaces for teams
+- [ ] Real-time collaborative editing
+- [ ] Comment and approval workflows
 
-- [ ] **Advanced Monitoring & Notifications**
-  - Post-deployment health checks
-  - Slack/Discord notifications for deployment status
-  - Rollback capabilities for failed deployments
-  - Performance regression detection
+### Accessibility
 
-**Implementation Checklist:**
+- [ ] Improve keyboard navigation
+- [ ] Screen reader support
+- [ ] Color contrast audit
+- [ ] Automatic alt text for generated images
+- [ ] ARIA labels and roles
 
-- [ ] Create `.github/workflows/deploy.yml` with test → deploy → verify pipeline
-- [ ] Set up staging environment for pre-production testing
-- [ ] Configure deployment secrets and environment variables
-- [ ] Add deployment status badges to README
+---
 
-### Phase 4: Observability & Monitoring (8-10 weeks)
+## Technical Debt
 
-**Goal**: Implement comprehensive monitoring with Prometheus and Grafana
-
-#### 4.1 Prometheus Integration
-
-- [ ] Set up Prometheus metrics collection
-- [ ] Add custom application metrics:
-  - Image generation success/failure rates
-  - API endpoint response times
-  - User engagement metrics
-  - Database query performance
-  - AI model usage and costs
-
-#### 4.2 Grafana Dashboards
-
-- [ ] Create system health dashboard
-- [ ] Build user engagement analytics dashboard
-- [ ] Add AI model performance monitoring
-- [ ] Set up business metrics visualization
-- [ ] Create error tracking and alerting dashboard
-
-#### 4.3 Alerting & Monitoring
-
-- [ ] Configure alerting rules for:
-  - High error rates
-  - Performance degradation
-  - Resource utilization
-  - AI model failures
-- [ ] Set up log aggregation and analysis
-- [ ] Implement distributed tracing for complex operations
-
-### Phase 5: Feature Enhancements & UX (10-12 weeks)
-
-**Goal**: Add advanced features and improve user workflows
-
-#### 5.1 Advanced Image Features
-
-- [ ] Batch image operations
-- [ ] Advanced filtering and search functionality
-- [ ] Image comparison tools
-- [ ] Style transfer between images
-- [ ] Image editing capabilities
-
-#### 5.2 Social & Sharing Features
-
-- [ ] Enhanced user profiles with portfolios
-- [ ] Following/followers system implementation
-- [ ] Public gallery features
-- [ ] Social sharing optimization
-- [ ] Community features and challenges
-
-#### 5.3 Workflow Improvements
-
-- [ ] Bulk operations for sets/collections
-- [ ] Keyboard shortcuts implementation
-- [ ] Undo/redo functionality
-- [ ] Draft saving for in-progress work
-- [ ] Export/import functionality
-
-#### 5.4 Priority Feature Implementations
-
-- [ ] **Home Page Discovery Enhancement**
-  - Replace current "recent images only" with paginated discovery
-  - Add "See More" functionality with infinite scroll
-  - Implement advanced filtering and sorting options
-- [ ] **Google Gemini Integration**
-  - Add Gemini 2.5 Flash Image ("Nano Banana") as new AI model option
-  - Implement conversational image editing capabilities
-  - Add multi-image composition features
-- [ ] **Video Animation Pipeline**
-  - Research and integrate image-to-video animation APIs
-  - Build animation controls and export functionality
-  - Add video format support (MP4, GIF, WebM)
-
-## Technical Debt Items
-
-- [ ] Resolve TODO comments in codebase (found in 13+ files)
+- [ ] Resolve TODO comments across codebase
 - [ ] Update deprecated dependencies
-- [ ] Optimize database queries and add proper indexing
-- [ ] Clean up unused code and imports
+- [ ] Optimize database queries and add indexing where needed
 - [ ] Standardize API response formats
-
-## Major Architecture Migrations
-
-### **Prisma ORM to Raw PostgreSQL Migration**
-
-- [ ] **Phase 1: Database Layer Abstraction** (4-6 weeks)
-  - Create database abstraction layer with TypeScript interfaces
-  - Implement raw SQL query builders and connection pooling
-  - Add comprehensive query logging and performance monitoring
-  - Create migration scripts for schema management
-- [ ] **Phase 2: Gradual Service Migration** (8-12 weeks)
-  - Migrate read-heavy services first (user profiles, image browsing)
-  - Replace Prisma queries with raw SQL in critical performance paths
-  - Implement custom connection pooling and transaction management
-  - Add comprehensive unit tests for all database operations
-- [ ] **Phase 3: Complete ORM Removal** (4-6 weeks)
-
-  - Remove all Prisma dependencies and generated clients
-  - Implement custom database seed and migration tools
-  - Performance testing and optimization of all SQL queries
-  - Documentation and training for team on new database layer
-
-- **Estimated Total Time**: 16-24 weeks
-- **Impact**: Improved performance, reduced memory usage, better SQL control, eliminated ORM overhead
-- **Risk Level**: High - requires careful planning and extensive testing
-
-### **Apache Kafka Integration**
-
-#### **HIGHEST PRIORITY: Image Generation Queue** (2-3 weeks)
-
-- [ ] **Replace Blocking Image Generation in create.tsx**
-
-  - Convert synchronous image generation to async event-driven workflow
-  - Users get instant response instead of waiting 30-120 seconds for DALL-E 3
-  - Implement real-time progress tracking with WebSocket integration
-  - Add processing page with live status updates (`/processing/$requestId`)
-  - **Impact**: Massive UX improvement, eliminates timeouts, higher conversion rates
-
-- [ ] **Infrastructure Setup for Image Generation**
-
-  - Set up AWS MSK cluster (3 kafka.t3.small brokers)
-  - Create image generation topics: `image.generation.requests`, `image.generation.status`, `image.generation.complete`
-  - Configure topic partitioning by userId for ordered processing per user
-  - Set up Kafka consumer service for background image processing
-
-- [ ] **Image Generation Pipeline Refactor**
-  - Create Kafka producer in create.tsx action (instant form submission)
-  - Build background consumer service using existing createNewImages logic
-  - Add retry logic for failed generations with exponential backoff
-  - Implement progress tracking for multi-image generations (especially DALL-E 3)
-
-#### **Phase 1: Video Processing Pipeline** (2-3 weeks, during video feature development)
-
-- [ ] Replace SQS with Kafka for video generation queue
-- [ ] Implement real-time status updates streaming
-- [ ] Add comprehensive monitoring and alerting
-- [ ] Extend existing MSK cluster for video processing topics
-
-#### **Phase 2: Real-time User Activities** (2-3 weeks)
-
-- [ ] User activity event streaming (likes, comments, generations)
-- [ ] Real-time notifications system
-- [ ] Social interaction events for activity feeds
-- [ ] WebSocket integration for live updates
-
-#### **Phase 3: AI Model Orchestration** (2-3 weeks)
-
-- [ ] Smart routing between Gemini, DALL-E, and other AI models
-- [ ] Cost optimization through real-time load balancing
-- [ ] Fallback mechanisms for model failures
-- [ ] Performance analytics and A/B testing support
-
-**Estimated Total Time**: 8-12 weeks (prioritizing image generation first)
-**Monthly Cost**: ~$220-250 for AWS MSK infrastructure
-**Impact**: Instant form submissions, 50% improvement in processing reliability, real-time features, 10x scaling capability
-**Risk Level**: Medium - well-established technology with good AWS managed service
-
-### **🚀 KAFKA PRODUCTION NEXT STEPS** (Priority Order)
-
-#### **IMMEDIATE (Next 1-2 weeks)**
-
-- [ ] **Production AWS MSK Cluster Setup**
-
-  - Deploy AWS MSK cluster using `infrastructure/kafka/deploy.sh`
-  - Configure 3-broker cluster with `kafka.t3.small` instances
-  - Set up proper VPC, security groups, and IAM roles
-  - Configure SSL/SASL authentication for security
-
-- [ ] **Production Environment Variables**
-
-  - Update production `.env` with MSK broker endpoints
-  - Configure Kafka SSL and SASL credentials
-  - Set `ENABLE_KAFKA_IMAGE_GENERATION=true` in production
-  - Test connection to MSK from production environment
-
-- [ ] **Background Worker Deployment**
-  - Deploy Kafka consumers to separate server/container
-  - Use `scripts/startConsumers.ts` for production worker management
-  - Configure auto-scaling for consumer instances
-  - Set up PM2 or equivalent for process management
-
-#### **SHORT TERM (2-4 weeks)**
-
-- [ ] **WebSocket Server Production Setup**
-
-  - Deploy WebSocket server using `scripts/startWebSocketServer.ts`
-  - Configure load balancing for WebSocket connections
-  - Set up proper CORS and security headers
-  - Test real-time updates in production environment
-
-- [ ] **Monitoring & Alerting Setup**
-
-  - Set up Kafka topic monitoring (queue depth, lag, throughput)
-  - Configure alerts for failed image generations
-  - Add health check endpoints for all services
-  - Implement logging aggregation for debugging
-
-- [ ] **Error Handling & Resilience**
-  - Add retry logic with exponential backoff
-  - Implement dead letter queues for failed messages
-  - Configure consumer group rebalancing
-  - Add circuit breakers for external API calls
-
-#### **MEDIUM TERM (1-2 months)**
-
-- [ ] **Performance Optimization**
-
-  - Tune Kafka partition strategy for optimal throughput
-  - Optimize consumer configurations for your workload
-  - Add horizontal scaling for worker instances
-  - Implement connection pooling and resource management
-
-- [ ] **Production Testing & Validation**
-  - Load testing with realistic image generation volumes
-  - Test failover scenarios and recovery procedures
-  - Validate data consistency and message ordering
-  - Performance benchmarking vs synchronous flow
-
-**🎯 SUCCESS CRITERIA**
-
-- [ ] Image generation requests process in < 2 seconds
-- [ ] Zero data loss during normal operations
-- [ ] < 1% message failure rate
-- [ ] Real-time status updates working reliably
-- [ ] Clean failover between sync/async modes
-
-## Developer Experience Improvements
-
-- [ ] Add Prettier for consistent code formatting
-- [ ] Implement import sorting automation
-- [ ] Create comprehensive API documentation
-- [ ] Set up development environment automation
-- [ ] Add bundle analysis and optimization
-
-## Accessibility Enhancements
-
-- [ ] Improve keyboard navigation throughout the app
-- [ ] Add comprehensive screen reader support
-- [ ] Ensure proper color contrast ratios
-- [ ] Implement automatic alt text for generated images
-- [ ] Add ARIA labels and roles where needed
-
-## Infrastructure & Deployment
-
-- [ ] Set up proper staging environment
-- [ ] Implement blue-green deployment strategy
-- [ ] Add automated backup and recovery procedures
-- [ ] Set up infrastructure as code (Terraform/CDK)
-- [ ] Implement feature flags system
+- [ ] Clean up unused code and imports
 
 ## Metrics & Success Criteria
 
 ### Technical Metrics
 
 - [ ] Code coverage > 80%
-- [ ] TypeScript strict mode enabled with 0 errors
+- [ ] TypeScript strict mode with 0 errors
 - [ ] Page load time < 2 seconds
-- [ ] API response time < 500ms (95th percentile)
+- [ ] API response time < 500ms (p95)
 - [ ] Zero critical security vulnerabilities
 
 ### Business Metrics
 
-- [ ] User engagement rate improvement
 - [ ] Image generation success rate > 95%
-- [ ] User retention rate tracking
-- [ ] Feature adoption metrics
-- [ ] Customer satisfaction scores
-
-## Resource Requirements
-
-### Development Time Estimates
-
-- **Phase 1**: 2-4 weeks (1-2 developers)
-- **Phase 2**: 4-6 weeks (1-2 developers)
-- **Phase 3**: 6-8 weeks (1-2 developers)
-- **Phase 4**: 8-10 weeks (1 developer + devops)
-- **Phase 5**: 10-12 weeks (2-3 developers)
-
-### Infrastructure Costs
-
-- Prometheus/Grafana hosting
-- CDN services for image optimization
-- Additional monitoring tools
-- Testing infrastructure
-- Staging environment costs
-
----
-
-## Feature Request Backlog
-
-_Section reserved for additional feature requests to be added_
-
-### High Priority Features
-
-- [ ] **Home Page Pagination & Discovery**
-
-  - Add "See More" button to home page for browsing beyond recent images
-  - Implement infinite scroll or pagination for image discovery
-  - Add filtering options (by date, popularity, model type, etc.)
-  - Improve image discovery algorithm beyond just "most recent"
-  - **Estimated Time**: 1-2 weeks
-  - **Impact**: Improved user engagement and content discovery
-
-- [ ] **Google Gemini 2.5 Flash Image Integration ("Nano Banana")**
-  - Integrate [Gemini's native image generation capabilities](https://ai.google.dev/gemini-api/docs/image-generation#javascript)
-  - Features to implement:
-    - Text-to-Image generation with advanced prompting
-    - Image editing (text-and-image-to-image)
-    - Multi-image composition and style transfer
-    - Iterative conversational refinement
-    - High-fidelity text rendering in images
-  - Add model selection UI to choose between existing models and Gemini
-  - **Estimated Time**: 3-4 weeks
-  - **Impact**: Advanced AI capabilities, competitive advantage, better image quality
-
-### Medium Priority Features
-
-- [ ] **Video Animation from Static Images**
-
-  - Allow users to animate their generated images
-  - Integration options to research:
-    - Runway ML API for image-to-video
-    - Stability AI's video generation models
-    - Custom animation effects (parallax, zoom, fade transitions)
-  - Export options: MP4, GIF, WebM formats
-  - **Estimated Time**: 4-6 weeks
-  - **Impact**: Unique feature differentiation, increased user engagement
-
-- [ ] **Advanced Image Editing Suite**
-
-  - Build on Gemini's editing capabilities
-  - In-browser image editing tools
-  - Mask-free editing with natural language commands
-  - Style transfer between user images
-  - **Estimated Time**: 4-5 weeks
-  - **Impact**: Enhanced user creativity and time spent on platform
-
-- [ ] **Enhanced Home Page & Discovery**
-  - Trending images algorithm
-  - Personalized recommendations based on user preferences
-  - Category-based browsing (art styles, themes, models used)
-  - Featured artists/creators section
-  - **Estimated Time**: 2-3 weeks
-  - **Impact**: Improved user retention and content discovery
-
-### Low Priority Features
-
-- [ ] **Advanced Animation Controls**
-
-  - Keyframe editing for custom animations
-  - Duration and easing controls
-  - Multiple animation presets
-  - **Estimated Time**: 3-4 weeks
-  - **Impact**: Power user features
-
-- [ ] **Collaborative Features**
-  - Shared workspaces for teams
-  - Real-time collaborative editing
-  - Comment and approval workflows
-  - **Estimated Time**: 6-8 weeks
-  - **Impact**: Business/team user acquisition
+- [ ] User retention rate tracking (streaks system provides data)
+- [ ] Feature adoption metrics (PostHog provides data)
+- [ ] Marketplace prompt sales growth
 
 ---
 
 ## Notes
 
-- This strategy is designed to be iterative - each phase builds on the previous one
-- Priorities can be adjusted based on business needs and user feedback
-- Regular retrospectives should be conducted at the end of each phase
-- Consider running user research sessions during Phase 2 and 5 to validate UX improvements
+- QStash is the production queue system. Kafka is available as a scale-up option.
+- Priorities should be adjusted based on user feedback and business needs.
+- PostHog and analytics infrastructure are already collecting data for informed decisions.
+- The Prisma ORM migration to raw SQL has been deprioritized — Prisma is working well at current scale.

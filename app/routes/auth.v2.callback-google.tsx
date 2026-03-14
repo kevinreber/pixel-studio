@@ -5,6 +5,12 @@ import {
   getAuthState,
   signOutOfSupabase,
 } from "~/services/supabase.server";
+import {
+  checkRateLimit,
+  authLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 import { createNewUserWithSupabaseData } from "~/server/createNewUser";
 import { commitSession, getSessionCookie } from "~/services/session.server";
 import { AUTH_KEY, USER_ID_KEY } from "~/services/auth.server";
@@ -15,6 +21,12 @@ import {
 } from "~/services/analytics.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
+  const rl = await checkRateLimit(
+    authLimiter,
+    getRateLimitIdentifier(request)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
+
   console.log("HITTING callback-google loader with URL:", request.url);
   const { supabase, headers } = getSupabaseWithHeaders({
     request,

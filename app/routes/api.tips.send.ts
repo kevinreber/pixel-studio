@@ -8,6 +8,12 @@ import { json, type ActionFunctionArgs } from "@remix-run/node";
 import { requireUserLogin } from "~/services/auth.server";
 import { sendTip } from "~/services/tipping.server";
 import { z } from "zod";
+import {
+  checkRateLimit,
+  financialLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 
 const SendTipSchema = z.object({
   recipientId: z.string().min(1),
@@ -18,6 +24,12 @@ const SendTipSchema = z.object({
 
 export async function action({ request }: ActionFunctionArgs) {
   const user = await requireUserLogin(request);
+
+  const rl = await checkRateLimit(
+    financialLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
 
   if (request.method !== "POST") {
     return json({ error: "Method not allowed" }, { status: 405 });
