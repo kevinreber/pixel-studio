@@ -188,11 +188,13 @@ The following items from the original roadmap have been implemented and are in p
 
 ### Phase 5: Infrastructure (Low Priority / As Needed)
 
-#### 5.1 Monitoring Expansion
+#### 5.1 Monitoring & Alerting
 
-- [ ] Prometheus metrics collection (if scale warrants it)
-- [ ] Grafana dashboards for system health
-- [ ] Alerting rules for error rates, performance degradation, resource utilization
+Current stack (Sentry, PostHog, Winston/OTLP, Vercel Analytics, Google Analytics) covers error tracking, product analytics, structured logging, and web vitals. No need for Prometheus/Grafana at current scale.
+
+- [ ] Set up Sentry alerting rules (error rate spikes, p99 latency thresholds)
+- [ ] Set up PostHog alerting for key product metrics (generation failures, drop-offs)
+- [ ] Consider infrastructure monitoring only if scaling beyond Vercel (e.g., self-hosted workers)
 
 #### 5.2 Print on Demand
 
