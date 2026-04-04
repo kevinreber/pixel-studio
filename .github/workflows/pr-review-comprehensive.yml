@@ -3,9 +3,11 @@ name: PR Review with Progress Tracking
 # This example demonstrates how to use the track_progress feature to get
 # visual progress tracking for PR reviews, similar to v0.x agent mode.
 
+# Disabled - uncomment the pull_request trigger to re-enable
 on:
-  pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
+  workflow_dispatch: # manual trigger only
+  # pull_request:
+  #   types: [opened, synchronize, ready_for_review, reopened]
 
 jobs:
   review-with-tracking:
