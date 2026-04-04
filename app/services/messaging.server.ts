@@ -7,14 +7,10 @@ import { prisma } from "~/services/prisma.server";
 export async function getOrCreateConversation(userIdA: string, userIdB: string) {
   const [user1Id, user2Id] = [userIdA, userIdB].sort();
 
-  const existing = await prisma.conversation.findUnique({
+  return prisma.conversation.upsert({
     where: { user1Id_user2Id: { user1Id, user2Id } },
-  });
-
-  if (existing) return existing;
-
-  return prisma.conversation.create({
-    data: { user1Id, user2Id },
+    update: {},
+    create: { user1Id, user2Id },
   });
 }
 
@@ -140,20 +136,13 @@ export async function sendMessage(
  * Get unread message count for a user.
  */
 export async function getUnreadMessageCount(userId: string) {
-  const conversations = await prisma.conversation.findMany({
-    where: {
-      OR: [{ user1Id: userId }, { user2Id: userId }],
-    },
-    select: { id: true },
-  });
-
-  if (conversations.length === 0) return 0;
-
   return prisma.message.count({
     where: {
-      conversationId: { in: conversations.map((c) => c.id) },
       read: false,
       NOT: { senderId: userId },
+      conversation: {
+        OR: [{ user1Id: userId }, { user2Id: userId }],
+      },
     },
   });
 }

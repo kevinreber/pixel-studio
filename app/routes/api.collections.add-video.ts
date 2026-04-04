@@ -65,7 +65,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     await cacheDelete(`user-collections:${user.id}`);
 
     // Track video added to collection
-    trackCollection(user.id, AnalyticsEvents.COLLECTION_IMAGE_ADDED, {
+    trackCollection(user.id, AnalyticsEvents.COLLECTION_VIDEO_ADDED, {
       collectionId,
       title: collection.title,
     });

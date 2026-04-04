@@ -100,7 +100,7 @@ function ConversationList({
               </p>
             )}
           </div>
-          {conv.lastMessage && !conv.lastMessage.read && conv.lastMessage.senderId !== conv.otherUser.id && (
+          {conv.lastMessage && !conv.lastMessage.read && conv.lastMessage.senderId === conv.otherUser.id && (
             <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
           )}
         </button>
@@ -123,10 +123,13 @@ function MessageThread({
   const [messages, setMessages] = React.useState<MessageData[]>([]);
 
   // Load messages when conversation changes
-  React.useEffect(() => {
+  const loadMessages = React.useCallback(() => {
     messagesFetcher.load(`/api/messages/${conversationId}`);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId]);
+  }, [conversationId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  React.useEffect(() => {
+    loadMessages();
+  }, [loadMessages]);
 
   // Update messages when fetcher data arrives
   React.useEffect(() => {
@@ -144,11 +147,9 @@ function MessageThread({
   React.useEffect(() => {
     if (sendFetcher.state === "idle" && sendFetcher.data) {
       formRef.current?.reset();
-      // Reload messages
-      messagesFetcher.load(`/api/messages/${conversationId}`);
+      loadMessages();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sendFetcher.state, sendFetcher.data]);
+  }, [sendFetcher.state, sendFetcher.data, loadMessages]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

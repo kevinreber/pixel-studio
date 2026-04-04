@@ -201,4 +201,71 @@ describe("createNotification", () => {
     expect(result).toBeNull();
     expect(prisma.notification.create).not.toHaveBeenCalled();
   });
+
+  it("should skip notification when user has disabled the preference", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      notifyFollowers: true,
+      notifyLikes: false,
+      notifyComments: true,
+      notifyAchievements: true,
+      notifyStreaks: true,
+    } as never);
+
+    const result = await createNotification({
+      type: "IMAGE_LIKED",
+      recipientId: "user-2",
+      actorId: "user-1",
+      imageId: "image-1",
+    });
+
+    expect(result).toBeNull();
+    expect(prisma.notification.create).not.toHaveBeenCalled();
+  });
+
+  it("should skip NEW_FOLLOWER notification when followers pref is disabled", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      notifyFollowers: false,
+      notifyLikes: true,
+      notifyComments: true,
+      notifyAchievements: true,
+      notifyStreaks: true,
+    } as never);
+
+    const result = await createNotification({
+      type: "NEW_FOLLOWER",
+      recipientId: "user-2",
+      actorId: "user-1",
+    });
+
+    expect(result).toBeNull();
+    expect(prisma.notification.create).not.toHaveBeenCalled();
+  });
+
+  it("should still create IMAGE_COMPLETED notification regardless of prefs (no pref mapping)", async () => {
+    const mockNotification = {
+      id: "notification-5",
+      type: "IMAGE_COMPLETED",
+      recipientId: "user-1",
+      imageId: "image-1",
+      read: false,
+      createdAt: new Date(),
+      actor: null,
+      image: { id: "image-1", title: "Generated", prompt: "A test" },
+      comment: null,
+    };
+
+    vi.mocked(prisma.notification.create).mockResolvedValue(
+      mockNotification as never
+    );
+
+    const result = await createNotification({
+      type: "IMAGE_COMPLETED",
+      recipientId: "user-1",
+      imageId: "image-1",
+    });
+
+    expect(result).toEqual(mockNotification);
+    // Should NOT have checked user preferences since IMAGE_COMPLETED has no pref mapping
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
 });
