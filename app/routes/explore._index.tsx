@@ -29,6 +29,19 @@ export const MODEL_FILTER_OPTIONS = [
   { label: "Luma", value: "luma" },
 ] as const;
 
+export const TAG_FILTER_OPTIONS = [
+  { label: "All Tags", value: "" },
+  { label: "Person", value: "person" },
+  { label: "Landscape", value: "landscape" },
+  { label: "Abstract", value: "abstract" },
+  { label: "Animal", value: "animal" },
+  { label: "Architecture", value: "architecture" },
+  { label: "Fantasy", value: "fantasy" },
+  { label: "Sci-Fi", value: "sci-fi" },
+  { label: "Portrait", value: "portrait" },
+  { label: "Nature", value: "nature" },
+] as const;
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const user = await requireUserLogin(request);
   const searchParams = new URL(request.url).searchParams;
@@ -37,9 +50,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const pageSize = Math.max(Number(searchParams.get("pageSize") || 50), 10);
   const mediaType = (searchParams.get("type") || "all") as MediaTypeFilter;
   const model = searchParams.get("model") || "";
+  const tag = searchParams.get("tag") || "";
 
   // Track search if user is searching or filtering
-  if (searchTerm || mediaType !== "all" || model) {
+  if (searchTerm || mediaType !== "all" || model || tag) {
     trackSearch(user.id, {
       searchTerm: searchTerm || undefined,
       mediaType,
@@ -49,7 +63,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
   }
 
-  const cacheKey = `explore-images?q=${searchTerm}&page=${currentPage}&pageSize=${pageSize}&type=${mediaType}&model=${model}`;
+  const cacheKey = `explore-images?q=${searchTerm}&page=${currentPage}&pageSize=${pageSize}&type=${mediaType}&model=${model}&tag=${tag}`;
   const imagesData = getCachedDataWithRevalidate(
     cacheKey,
     () =>
@@ -59,6 +73,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         pageSize,
         mediaType,
         model,
+        tag,
       }),
     CACHE_TTL_5_MINUTES
   );
@@ -70,6 +85,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     pageSize,
     mediaType,
     model,
+    tag,
   });
 };
 

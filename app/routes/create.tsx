@@ -36,6 +36,8 @@ import {
   getRateLimitIdentifier,
   rateLimitResponse,
 } from "~/services/rateLimit.server";
+import { checkAndUnlockAchievements } from "~/services/achievements.server";
+import { Logger } from "~/utils/logger.server";
 
 // Re-export for backwards compatibility
 export { MODEL_OPTIONS, STYLE_OPTIONS } from "~/config/models";
@@ -496,6 +498,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
 
     trackCreditsSpent(user.id, totalCreditCost, "image_generation");
+
+    // Check for generation-related achievements
+    checkAndUnlockAchievements(user.id, "generation").catch((err) =>
+      Logger.error({ message: "Achievement check failed", error: err instanceof Error ? err : new Error(String(err)) })
+    );
 
     // Redirect to the set page
     return redirect(`/sets/${result.setId}`);

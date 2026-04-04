@@ -6,6 +6,7 @@ import { useLoggedInUser } from "~/hooks";
 import React from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { parseTextWithMentions } from "~/utils/mentions";
 
 interface CommentUser {
   id: string;
@@ -116,7 +117,22 @@ export const ImageComment = ({
               >
                 {user.username}
               </Link>
-              <span className="text-zinc-200">{message}</span>
+              <span className="text-zinc-200">
+                {parseTextWithMentions(message).map((segment, i) =>
+                  segment.type === "mention" ? (
+                    <Link
+                      key={i}
+                      to={`/profile/${segment.username}`}
+                      className="text-primary font-medium hover:underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {segment.content}
+                    </Link>
+                  ) : (
+                    <React.Fragment key={i}>{segment.content}</React.Fragment>
+                  )
+                )}
+              </span>
             </p>
             <div className="flex items-center gap-2 mt-1 text-xs text-zinc-500">
               <span>{formattedDate}</span>

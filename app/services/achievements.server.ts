@@ -23,6 +23,7 @@
 
 import { prisma } from "~/services/prisma.server";
 import { logBonusCredits } from "~/services/creditTransaction.server";
+import { createNotification } from "~/server/notifications/createNotification.server";
 import { Logger } from "~/utils/logger.server";
 
 // Achievement definitions - these will be seeded to the database
@@ -564,6 +565,19 @@ export async function unlockAchievement(
         achievementName: achievement.name,
         tier: achievement.tier,
       },
+    });
+  }
+
+  // Send ACHIEVEMENT_UNLOCKED notification
+  try {
+    await createNotification({
+      type: "ACHIEVEMENT_UNLOCKED",
+      recipientId: userId,
+    });
+  } catch (error) {
+    Logger.error({
+      message: "Failed to create achievement notification",
+      metadata: { userId, achievementCode },
     });
   }
 

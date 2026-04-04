@@ -27,6 +27,8 @@ import { GenerationProgressProvider } from "~/contexts/GenerationProgressContext
 // import { getToast, type Toast } from "utils/toast.server";
 import { getLoggedInUserData } from "./server";
 import { GeneralErrorBoundary } from "./components/GeneralErrorBoundary";
+import { claimDailyBonus } from "~/services/loginStreak.server";
+import { checkAndUnlockAchievements } from "~/services/achievements.server";
 import {
   // sessionStorage,
   // getSessionCookie,
@@ -75,6 +77,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
     userData = await getCachedDataWithRevalidate(cacheKey, () =>
       getLoggedInUserData(sessionAuth)
     );
+
+    // Track daily login streak (fire-and-forget, don't block page load)
+    if (userData?.id) {
+      claimDailyBonus(userData.id)
+        .then((result) => {
+          if (result.success && result.streakMilestone) {
+            // Check streak achievements on milestone
+            checkAndUnlockAchievements(userData!.id, "streak").catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }
   }
 
   // console.log("userData in root loader:", userData);

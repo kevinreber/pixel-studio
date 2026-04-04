@@ -100,6 +100,7 @@ export interface GetImagesOptions {
   pageSize?: number;
   mediaType?: MediaTypeFilter;
   model?: string;
+  tag?: string;
 }
 
 export const getImages = async (
@@ -118,6 +119,7 @@ export const getImages = async (
   const currentPageSize = options.pageSize ?? DEFAULT_PAGE_SIZE;
   const mediaType = options.mediaType ?? "all";
   const modelFilter = options.model ?? "";
+  const tagFilter = options.tag ?? "";
 
   const like = `%${searchTerm}%`;
   const modelLike = modelFilter ? `%${modelFilter}%` : "%";
@@ -129,13 +131,22 @@ export const getImages = async (
     // Get total counts for images and videos
     const [imageCountResult, videoCountResult] = await Promise.all([
       shouldFetchImages
-        ? prisma.$queryRaw`
-            SELECT COUNT(*)::int as count
-            FROM "Image" i
-            WHERE i.private = false
-              AND (i.title LIKE ${like} OR i.prompt LIKE ${like} OR i."stylePreset" LIKE ${like})
-              AND i.model LIKE ${modelLike}
-          `
+        ? tagFilter
+          ? prisma.$queryRaw`
+              SELECT COUNT(DISTINCT i.id)::int as count
+              FROM "Image" i
+              INNER JOIN "ImageTag" t ON t."imageId" = i.id AND LOWER(t.tag) = LOWER(${tagFilter})
+              WHERE i.private = false
+                AND (i.title LIKE ${like} OR i.prompt LIKE ${like} OR i."stylePreset" LIKE ${like})
+                AND i.model LIKE ${modelLike}
+            `
+          : prisma.$queryRaw`
+              SELECT COUNT(*)::int as count
+              FROM "Image" i
+              WHERE i.private = false
+                AND (i.title LIKE ${like} OR i.prompt LIKE ${like} OR i."stylePreset" LIKE ${like})
+                AND i.model LIKE ${modelLike}
+            `
         : Promise.resolve([{ count: 0 }]),
       shouldFetchVideos
         ? prisma.$queryRaw`
@@ -164,15 +175,26 @@ export const getImages = async (
     // Fetch only what we need instead of all records
     const [rawImages, rawVideos] = await Promise.all([
       shouldFetchImages
-        ? prisma.$queryRaw`
-            SELECT i.id, i.title, i.prompt, i.model, i."stylePreset", i."userId", i."createdAt"
-            FROM "Image" i
-            WHERE i.private = false
-              AND (i.title LIKE ${like} OR i.prompt LIKE ${like} OR i."stylePreset" LIKE ${like})
-              AND i.model LIKE ${modelLike}
-            ORDER BY i."createdAt" DESC
-            LIMIT ${currentPageSize + skip}
-          `
+        ? tagFilter
+          ? prisma.$queryRaw`
+              SELECT DISTINCT i.id, i.title, i.prompt, i.model, i."stylePreset", i."userId", i."createdAt"
+              FROM "Image" i
+              INNER JOIN "ImageTag" t ON t."imageId" = i.id AND LOWER(t.tag) = LOWER(${tagFilter})
+              WHERE i.private = false
+                AND (i.title LIKE ${like} OR i.prompt LIKE ${like} OR i."stylePreset" LIKE ${like})
+                AND i.model LIKE ${modelLike}
+              ORDER BY i."createdAt" DESC
+              LIMIT ${currentPageSize + skip}
+            `
+          : prisma.$queryRaw`
+              SELECT i.id, i.title, i.prompt, i.model, i."stylePreset", i."userId", i."createdAt"
+              FROM "Image" i
+              WHERE i.private = false
+                AND (i.title LIKE ${like} OR i.prompt LIKE ${like} OR i."stylePreset" LIKE ${like})
+                AND i.model LIKE ${modelLike}
+              ORDER BY i."createdAt" DESC
+              LIMIT ${currentPageSize + skip}
+            `
         : Promise.resolve([]),
       shouldFetchVideos
         ? prisma.$queryRaw`
