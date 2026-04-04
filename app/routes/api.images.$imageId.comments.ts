@@ -14,6 +14,9 @@ import {
   getRateLimitIdentifier,
   rateLimitResponse,
 } from "~/services/rateLimit.server";
+import { checkAndUnlockAchievements } from "~/services/achievements.server";
+import { processMentions } from "~/server/processMentions.server";
+import { Logger } from "~/utils/logger.server";
 
 export const action = async ({
   request,
@@ -51,6 +54,21 @@ export const action = async ({
         commentId: comment.id,
         messageLength: validatedData.comment.length,
       });
+
+      // Check comment-related achievements for the commenter
+      checkAndUnlockAchievements(user.id, "engagement").catch((err) =>
+        Logger.error({ message: "Achievement check failed", error: err instanceof Error ? err : new Error(String(err)) })
+      );
+
+      // Process @mentions and notify mentioned users
+      processMentions({
+        message: validatedData.comment,
+        actorId: user.id,
+        imageId: validatedData.imageId,
+        commentId: comment.id,
+      }).catch((err) =>
+        Logger.error({ message: "Mention processing failed", error: err instanceof Error ? err : new Error(String(err)) })
+      );
 
       // Validate the response
       const response = CommentResponseSchema.parse({

@@ -12,6 +12,7 @@ import {
   type ExplorePageLoader,
   MEDIA_TYPE_OPTIONS,
   MODEL_FILTER_OPTIONS,
+  TAG_FILTER_OPTIONS,
 } from "../routes/explore._index";
 import { Loader2, Search as MagnifyingGlassIcon, Image, Video, X } from "lucide-react";
 import {
@@ -163,6 +164,7 @@ const ExplorePageAccessor = () => {
   // Get current filter values
   const currentMediaType = searchParams.get("type") || "all";
   const currentModel = searchParams.get("model") || "";
+  const currentTag = searchParams.get("tag") || "";
 
   // Helper to update filters while preserving other params
   const updateFilter = (key: string, value: string) => {
@@ -193,6 +195,9 @@ const ExplorePageAccessor = () => {
           )}
           {currentModel && (
             <input type="hidden" name="model" value={currentModel} />
+          )}
+          {currentTag && (
+            <input type="hidden" name="tag" value={currentTag} />
           )}
           <div className="mt-2 flex rounded-md shadow-sm">
             <div className="relative flex flex-grow items-stretch focus-within:z-10">
@@ -258,13 +263,28 @@ const ExplorePageAccessor = () => {
               />
             ))}
           </div>
+
+          {/* Separator */}
+          <div className="h-6 w-px bg-border mx-1 hidden sm:block" />
+
+          {/* Tag Filters */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {TAG_FILTER_OPTIONS.map((option) => (
+              <FilterChip
+                key={`tag-${option.value}`}
+                label={option.label}
+                isActive={currentTag === option.value}
+                onClick={() => updateFilter("tag", option.value)}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Active Filters Summary & Results Info */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 flex-wrap">
             {/* Show active non-default filters */}
-            {(currentMediaType !== "all" || currentModel) && (
+            {(currentMediaType !== "all" || currentModel || currentTag) && (
               <>
                 <span className="text-xs text-muted-foreground">
                   Active filters:
@@ -282,6 +302,12 @@ const ExplorePageAccessor = () => {
                   <ActiveFilterBadge
                     label={activeModelLabel}
                     onRemove={() => updateFilter("model", "")}
+                  />
+                )}
+                {currentTag && (
+                  <ActiveFilterBadge
+                    label={TAG_FILTER_OPTIONS.find((t) => t.value === currentTag)?.label || currentTag}
+                    onRemove={() => updateFilter("tag", "")}
                   />
                 )}
                 <button

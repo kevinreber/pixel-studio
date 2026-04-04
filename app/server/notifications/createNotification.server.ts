@@ -10,8 +10,18 @@ interface CreateNotificationParams {
   commentId?: string;
 }
 
+// Map notification types to user preference fields
+const NOTIFICATION_PREF_MAP: Partial<Record<NotificationType, string>> = {
+  NEW_FOLLOWER: "notifyFollowers",
+  IMAGE_LIKED: "notifyLikes",
+  IMAGE_COMMENT: "notifyComments",
+  ACHIEVEMENT_UNLOCKED: "notifyAchievements",
+  STREAK_MILESTONE: "notifyStreaks",
+};
+
 /**
  * Creates a notification for a user.
+ * Respects user notification preferences — skips creation if user has disabled the type.
  * Used when someone follows them, likes their image, comments on their image, or their image generation completes.
  */
 export const createNotification = async ({
@@ -28,6 +38,29 @@ export const createNotification = async ({
       metadata: { type, recipientId, actorId },
     });
     return null;
+  }
+
+  // Check user notification preferences
+  const prefField = NOTIFICATION_PREF_MAP[type];
+  if (prefField) {
+    const recipient = await prisma.user.findUnique({
+      where: { id: recipientId },
+      select: {
+        notifyFollowers: true,
+        notifyLikes: true,
+        notifyComments: true,
+        notifyAchievements: true,
+        notifyStreaks: true,
+      },
+    });
+
+    if (recipient && recipient[prefField as keyof typeof recipient] === false) {
+      Logger.info({
+        message: "Skipping notification - user preference disabled",
+        metadata: { type, recipientId, prefField },
+      });
+      return null;
+    }
   }
 
   Logger.info({

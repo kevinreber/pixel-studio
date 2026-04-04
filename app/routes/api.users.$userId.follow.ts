@@ -14,6 +14,7 @@ import {
   getRateLimitIdentifier,
   rateLimitResponse,
 } from "~/services/rateLimit.server";
+import { checkAndUnlockAchievements } from "~/services/achievements.server";
 
 // Prevent automatic revalidation of parent routes after follow/unfollow actions
 // The UI handles optimistic updates, so we don't need to refetch all data
@@ -45,6 +46,13 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       trackSocial(user.id, AnalyticsEvents.USER_UNFOLLOWED, {
         targetUserId,
       });
+    }
+
+    // Check for social achievements (follower milestones for the target user)
+    if (request.method === "POST") {
+      checkAndUnlockAchievements(targetUserId, "social").catch((err) =>
+        Logger.error({ message: "Achievement check failed", error: err instanceof Error ? err : new Error(String(err)) })
+      );
     }
 
     // Invalidate caches after successful operation

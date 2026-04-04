@@ -33,87 +33,103 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(cuid())
+  id             String   @id @default(cuid())
   // sessionToken String   @unique
   expirationDate DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userId String
 
   // non-unique foreign key
   @@index([userId])
-
 }
 
 model User {
-  id           String        @id @default(cuid())
+  id                 String    @id @default(cuid())
   archived_google_id String?
-  new_supabase_id String?
-  name         String?
-  username     String       @unique
-  email        String       @unique
-  password     Password?
-  image        String?
-  credits      Int           @default(5)
-  featureFlags String[]      @default([]) // A/B testing flags: ["new_ui", "video_beta", etc.]
-  accounts     Account[]
-  sessions     Session[]
-  images       Image[]
-  videos       Video[]
-  sets         Set[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime?     @updatedAt
-  comments     Comment[]
-  imageLikes   ImageLike[]
-  commentLikes CommentLike[]
-  videoLikes   VideoLike[]
-  videoComments VideoComment[]
-  videoCommentLikes VideoCommentLike[]
-  collections  Collection[]
-  roles        Role[]
-  followedBy   Follow[]      @relation("FollowedBy")
-  following    Follow[]      @relation("Following")
-  notificationsReceived Notification[] @relation("NotificationRecipient")
-  notificationsTriggered Notification[] @relation("NotificationActor")
-  generationLogs GenerationLog[]
-  creditTransactions CreditTransaction[]
+  new_supabase_id    String?
+  name               String?
+  username           String    @unique
+  email              String    @unique
+  password           Password?
+  image              String?
+  credits            Int       @default(5)
+  featureFlags       String[]  @default([]) // A/B testing flags: ["new_ui", "video_beta", etc.]
+
+  // User preferences
+  theme          String  @default("dark") // "dark", "light", "system"
+  privateProfile Boolean @default(false) // Hide profile from public
+  privateImages  Boolean @default(false) // Default new images to private
+
+  // Notification preferences (all enabled by default)
+  notifyFollowers        Boolean             @default(true)
+  notifyLikes            Boolean             @default(true)
+  notifyComments         Boolean             @default(true)
+  notifyAchievements     Boolean             @default(true)
+  notifyStreaks          Boolean             @default(true)
+  accounts               Account[]
+  sessions               Session[]
+  images                 Image[]
+  videos                 Video[]
+  sets                   Set[]
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime?           @updatedAt
+  comments               Comment[]
+  imageLikes             ImageLike[]
+  commentLikes           CommentLike[]
+  videoLikes             VideoLike[]
+  videoComments          VideoComment[]
+  videoCommentLikes      VideoCommentLike[]
+  collections            Collection[]
+  roles                  Role[]
+  followedBy             Follow[]            @relation("FollowedBy")
+  following              Follow[]            @relation("Following")
+  notificationsReceived  Notification[]      @relation("NotificationRecipient")
+  notificationsTriggered Notification[]      @relation("NotificationActor")
+  generationLogs         GenerationLog[]
+  creditTransactions     CreditTransaction[]
   // Analytics relations
-  userAnalytics     UserAnalytics[]
-  promptAnalytics   PromptAnalytics[]
-  styleFingerprint  StyleFingerprint?
+  userAnalytics          UserAnalytics[]
+  promptAnalytics        PromptAnalytics[]
+  styleFingerprint       StyleFingerprint?
 
   // Marketplace relations
   marketplacePrompts MarketplacePrompt[]
-  promptPurchases    PromptPurchase[]   @relation("PromptPurchases")
+  promptPurchases    PromptPurchase[]    @relation("PromptPurchases")
   promptReviews      PromptReview[]
 
   // Tipping relations
-  tipsSent           Tip[]              @relation("TipsSent")
-  tipsReceived       Tip[]              @relation("TipsReceived")
+  tipsSent     Tip[] @relation("TipsSent")
+  tipsReceived Tip[] @relation("TipsReceived")
 
   // Collection purchases
   collectionPurchases CollectionPurchase[] @relation("CollectionPurchases")
 
   // Print on demand relations
-  printOrders        PrintOrder[]
-  printRoyalties     PrintOrder[]       @relation("PrintRoyalties")
+  printOrders    PrintOrder[]
+  printRoyalties PrintOrder[] @relation("PrintRoyalties")
 
   // Earnings relations
-  creatorEarnings    CreatorEarnings[]
-  payouts            Payout[]
+  creatorEarnings CreatorEarnings[]
+  payouts         Payout[]
+
+  // Messaging relations
+  conversationsAsUser1 Conversation[] @relation("ConversationUser1")
+  conversationsAsUser2 Conversation[] @relation("ConversationUser2")
+  messagesSent         Message[]
 
   // Admin/Retention features
-  imageDeletions ImageDeletionLog[]  // Images deleted by this admin
-  loginStreak     LoginStreak?
-  achievements    UserAchievement[]
+  imageDeletions ImageDeletionLog[] // Images deleted by this admin
+  loginStreak    LoginStreak?
+  achievements   UserAchievement[]
 
   // Multi-model comparison requests
   comparisonRequests ComparisonRequest[]
 
   // Blog posts authored
-  blogPosts          BlogPost[]
+  blogPosts BlogPost[]
 }
 
 model Password {
@@ -123,11 +139,11 @@ model Password {
 }
 
 model Prompt {
-  id              String   @id @default(cuid())
-  originalPrompt  String 
-  newPrompt       String 
-  createdAt       DateTime @default(now())
-  userId          String 
+  id             String   @id @default(cuid())
+  originalPrompt String
+  newPrompt      String
+  createdAt      DateTime @default(now())
+  userId         String
 }
 
 // @reference: See Permisions - Managing Roles sand Permissions
@@ -159,13 +175,13 @@ model Role {
 }
 
 model Set {
-  id          String    @id @default(cuid())
-  prompt      String
-  createdAt   DateTime  @default(now())
-  images      Image[]
-  videos      Video[]
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String          @id @default(cuid())
+  prompt         String
+  createdAt      DateTime        @default(now())
+  images         Image[]
+  videos         Video[]
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   generationLogs GenerationLog[]
 
   // Link back to comparison generation if part of a comparison
@@ -175,39 +191,40 @@ model Set {
 }
 
 model Video {
-  id            String    @id @default(cuid())
-  title         String?   @default("Untitled")
-  prompt        String
-  model         String?   @default("runway-gen3")
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId        String
-  private       Boolean?  @default(false)
-  set           Set?      @relation(fields: [setId], references: [id], onDelete: Cascade)
-  setId         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime? @updatedAt
+  id        String    @id @default(cuid())
+  title     String?   @default("Untitled")
+  prompt    String
+  model     String?   @default("runway-gen3")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  private   Boolean?  @default(false)
+  set       Set?      @relation(fields: [setId], references: [id], onDelete: Cascade)
+  setId     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 
   // Video-specific parameters
-  duration      Int?      // Duration in seconds
-  fps           Int?      // Frames per second
-  aspectRatio   String?   // "16:9", "9:16", "1:1"
-  resolution    String?   // "720p", "1080p", "4K"
+  duration    Int? // Duration in seconds
+  fps         Int? // Frames per second
+  aspectRatio String? // "16:9", "9:16", "1:1"
+  resolution  String? // "720p", "1080p", "4K"
 
   // Source image (for image-to-video generation)
-  sourceImageId String?
+  sourceImageId  String?
   sourceImageUrl String?
 
   // Generation status
-  status        String?   @default("pending") // "pending", "processing", "complete", "failed"
-  progress      Int?      @default(0)         // 0-100
-  errorMessage  String?
+  status       String? @default("pending") // "pending", "processing", "complete", "failed"
+  progress     Int?    @default(0) // 0-100
+  errorMessage String?
 
   // External provider data
-  externalId    String?   // ID from video generation API
+  externalId String? // ID from video generation API
 
   // Social features
-  comments      VideoComment[]
-  likes         VideoLike[]
+  comments    VideoComment[]
+  likes       VideoLike[]
+  collections CollectionHasVideo[]
 
   @@index([userId])
   @@index([setId])
@@ -217,49 +234,49 @@ model Video {
 }
 
 model Image {
-  id          String               @id @default(cuid())
-  title       String?              @default("Untitled")
-  prompt      String
-  model       String?              @default("dall-e")
-  stylePreset String?              @default("none")
-  blurDataURL String?              // Base64-encoded blur placeholder for progressive loading
-  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String
-  comments    Comment[]
-  likes       ImageLike[]
-  collections CollectionHasImage[]
+  id            String               @id @default(cuid())
+  title         String?              @default("Untitled")
+  prompt        String
+  model         String?              @default("dall-e")
+  stylePreset   String?              @default("none")
+  blurDataURL   String? // Base64-encoded blur placeholder for progressive loading
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  comments      Comment[]
+  likes         ImageLike[]
+  collections   CollectionHasImage[]
   notifications Notification[]
-  private     Boolean?             @default(false)
+  private       Boolean?             @default(false)
   // NOTE: To avoid DB being overwritten, I am setting "set" and "setId" as optional for now
-  set         Set?                 @relation(fields: [setId], references: [id], onDelete: Cascade)
-  setId       String?
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime?            @updatedAt
+  set           Set?                 @relation(fields: [setId], references: [id], onDelete: Cascade)
+  setId         String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime?            @updatedAt
 
   // Generation parameters
-  width            Int?             // Image width in pixels
-  height           Int?             // Image height in pixels
-  quality          String?          // "standard", "hd" (DALL-E 3), "high", "medium", "low" (GPT Image)
-  generationStyle  String?          // "vivid", "natural" (DALL-E 3 style parameter)
-  negativePrompt   String?          // Text describing what to avoid (Stable Diffusion)
-  seed             Int?             // Seed for reproducible results
-  cfgScale         Float?           // CFG scale 1-35 (Stable Diffusion)
-  steps            Int?             // Diffusion steps 10-50 (Stable Diffusion)
-  promptUpsampling Boolean?         @default(false) // Prompt enhancement (Flux)
+  width            Int? // Image width in pixels
+  height           Int? // Image height in pixels
+  quality          String? // "standard", "hd" (DALL-E 3), "high", "medium", "low" (GPT Image)
+  generationStyle  String? // "vivid", "natural" (DALL-E 3 style parameter)
+  negativePrompt   String? // Text describing what to avoid (Stable Diffusion)
+  seed             Int? // Seed for reproducible results
+  cfgScale         Float? // CFG scale 1-35 (Stable Diffusion)
+  steps            Int? // Diffusion steps 10-50 (Stable Diffusion)
+  promptUpsampling Boolean? @default(false) // Prompt enhancement (Flux)
 
   // Remix fields - for tracking image lineage when remixed with different models
-  isRemix       Boolean?  @default(false)  // True if this image was created by remixing another
-  parentImageId String?                     // Reference to the original image that was remixed
-  parentImage   Image?    @relation("ImageRemixes", fields: [parentImageId], references: [id], onDelete: SetNull)
-  remixes       Image[]   @relation("ImageRemixes") // Images that were remixed from this one
+  isRemix       Boolean? @default(false) // True if this image was created by remixing another
+  parentImageId String? // Reference to the original image that was remixed
+  parentImage   Image?   @relation("ImageRemixes", fields: [parentImageId], references: [id], onDelete: SetNull)
+  remixes       Image[]  @relation("ImageRemixes") // Images that were remixed from this one
 
   // Smart tagging
-  tags             ImageTag[]
-  attributes       ImageAttribute[]
+  tags       ImageTag[]
+  attributes ImageAttribute[]
 
   // Monetization
-  tips             Tip[]
-  printOrders      PrintOrder[]
+  tips        Tip[]
+  printOrders PrintOrder[]
 
   @@index([userId])
   @@index([setId])
@@ -271,7 +288,7 @@ model Image {
 
 model ImageLike {
   user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  image   Image   @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  image   Image  @relation(fields: [imageId], references: [id], onDelete: Cascade)
   userId  String
   imageId String
 
@@ -290,18 +307,18 @@ model VideoLike {
 }
 
 model Comment {
-  id        String        @id @default(cuid())
-  message   String
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  image     Image          @relation(fields: [imageId], references: [id], onDelete: Cascade)
-  imageId   String
-  parent    Comment?      @relation("ParentChild", fields: [parentId], references: [id], onDelete: Cascade)
-  children  Comment[]     @relation("ParentChild")
-  parentId  String?
-  likes     CommentLike[]
+  id            String         @id @default(cuid())
+  message       String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  image         Image          @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  imageId       String
+  parent        Comment?       @relation("ParentChild", fields: [parentId], references: [id], onDelete: Cascade)
+  children      Comment[]      @relation("ParentChild")
+  parentId      String?
+  likes         CommentLike[]
   notifications Notification[]
 
   @@index([userId])
@@ -353,14 +370,15 @@ model Collection {
   user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String
   images      CollectionHasImage[]
+  videos      CollectionHasVideo[]
 
   // Premium collection features
-  isPublic    Boolean              @default(true)
-  isPremium   Boolean              @default(false)
-  price       Int?                 // Price in credits (null if free)
-  thumbnail   String?              // Custom thumbnail URL
-  purchaseCount Int                @default(0)
-  purchases   CollectionPurchase[]
+  isPublic      Boolean              @default(true)
+  isPremium     Boolean              @default(false)
+  price         Int? // Price in credits (null if free)
+  thumbnail     String? // Custom thumbnail URL
+  purchaseCount Int                  @default(0)
+  purchases     CollectionPurchase[]
 
   @@index([userId])
   @@index([isPublic, isPremium])
@@ -371,40 +389,52 @@ model CollectionHasImage {
   collectionId String
   imageId      String
   collection   Collection? @relation(fields: [collectionId], references: [id], onDelete: Cascade)
-  image        Image?       @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  image        Image?      @relation(fields: [imageId], references: [id], onDelete: Cascade)
 
   @@index([collectionId, imageId])
   @@index([collectionId])
   @@index([imageId])
 }
 
-model GenerationLog {
-  id           String    @id @default(cuid())
-  requestId    String    @unique
-  userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+model CollectionHasVideo {
+  id           String      @id @default(cuid())
+  collectionId String
+  videoId      String
+  collection   Collection? @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  video        Video?      @relation(fields: [videoId], references: [id], onDelete: Cascade)
 
-  type         String    // "image" or "video"
-  status       String    // "complete" or "failed"
+  @@unique([collectionId, videoId])
+  @@index([collectionId])
+  @@index([videoId])
+}
+
+model GenerationLog {
+  id        String @id @default(cuid())
+  requestId String @unique
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type   String // "image" or "video"
+  status String // "complete" or "failed"
 
   // Request details
-  prompt       String
-  model        String
-  metadata     Json?     // Store all generation params (numberOfImages, style, aspectRatio, duration, etc.)
+  prompt   String
+  model    String
+  metadata Json? // Store all generation params (numberOfImages, style, aspectRatio, duration, etc.)
 
   // Result
-  setId        String?   // Link to Set if successful
-  set          Set?      @relation(fields: [setId], references: [id], onDelete: SetNull)
-  errorMessage String?   // Error details if failed
+  setId        String? // Link to Set if successful
+  set          Set?    @relation(fields: [setId], references: [id], onDelete: SetNull)
+  errorMessage String? // Error details if failed
 
   // Cost tracking
-  creditCost   Int
+  creditCost      Int
   creditsRefunded Boolean @default(false) // Track if credits were refunded for failures
 
   // Tracking
-  createdAt    DateTime  @default(now())
-  completedAt  DateTime? // When generation finished (success or failure)
-  duration     Int?      // Generation duration in seconds
+  createdAt   DateTime  @default(now())
+  completedAt DateTime? // When generation finished (success or failure)
+  duration    Int? // Generation duration in seconds
 
   @@index([userId, createdAt])
   @@index([status])
@@ -413,29 +443,29 @@ model GenerationLog {
 }
 
 model CreditTransaction {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Transaction type
-  type        String   // "purchase", "spend", "refund", "admin_adjustment", "bonus"
+  type String // "purchase", "spend", "refund", "admin_adjustment", "bonus"
 
   // Amount (positive for additions, negative for deductions)
-  amount      Int
+  amount Int
 
   // Balance after transaction
   balanceAfter Int
 
   // Transaction details
-  description String?  // Human-readable description
-  metadata    Json?    // Additional data (Stripe session ID, generation request ID, etc.)
+  description String? // Human-readable description
+  metadata    Json? // Additional data (Stripe session ID, generation request ID, etc.)
 
   // References
-  stripeSessionId    String?  // Link to Stripe checkout session
-  generationLogId    String?  // Link to generation that spent credits
+  stripeSessionId String? // Link to Stripe checkout session
+  generationLogId String? // Link to generation that spent credits
 
   // Tracking
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
   @@index([type])
@@ -446,24 +476,24 @@ model CreditTransaction {
 // Audit log for deleted images
 // Preserves record of deleted images for accountability and history
 model ImageDeletionLog {
-  id          String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // Original image data (preserved for audit trail)
-  imageId     String   // Original image ID (not FK since image is deleted)
-  imageTitle  String?
-  imagePrompt String
-  imageModel  String?
-  imageUserId String   // Original owner's user ID
+  imageId        String // Original image ID (not FK since image is deleted)
+  imageTitle     String?
+  imagePrompt    String
+  imageModel     String?
+  imageUserId    String // Original owner's user ID
   imageCreatedAt DateTime // When the image was originally created
 
   // Deletion metadata
-  deletedBy   String   // Admin user ID who deleted the image
-  deletedByUser User   @relation(fields: [deletedBy], references: [id], onDelete: SetNull)
-  reason      String?  // Optional reason for deletion
-  deletedAt   DateTime @default(now())
+  deletedBy     String // Admin user ID who deleted the image
+  deletedByUser User     @relation(fields: [deletedBy], references: [id], onDelete: SetNull)
+  reason        String? // Optional reason for deletion
+  deletedAt     DateTime @default(now())
 
   // Additional context (stored as JSON for flexibility)
-  metadata    Json?    // Original image metadata (dimensions, generation params, etc.)
+  metadata Json? // Original image metadata (dimensions, generation params, etc.)
 
   @@index([imageId])
   @@index([imageUserId])
@@ -472,9 +502,9 @@ model ImageDeletionLog {
 }
 
 model Follow {
-  follower    User   @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  follower    User     @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
   followerId  String
-  following   User   @relation("FollowedBy", fields: [followingId], references: [id], onDelete: Cascade)
+  following   User     @relation("FollowedBy", fields: [followingId], references: [id], onDelete: Cascade)
   followingId String
   createdAt   DateTime @default(now())
 
@@ -483,21 +513,56 @@ model Follow {
 }
 
 // =============================================================================
+// MESSAGING
+// =============================================================================
+
+model Conversation {
+  id            String    @id @default(cuid())
+  user1Id       String
+  user1         User      @relation("ConversationUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2Id       String
+  user2         User      @relation("ConversationUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+  messages      Message[]
+  lastMessageAt DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([user1Id, user2Id])
+  @@index([user1Id, lastMessageAt])
+  @@index([user2Id, lastMessageAt])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content        String       @db.Text
+  read           Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@index([conversationId, read])
+}
+
+// =============================================================================
 // USER RETENTION FEATURES
 // =============================================================================
 
 // Daily Login Streak Tracking
 model LoginStreak {
-  id              String    @id @default(cuid())
-  userId          String    @unique
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  currentStreak   Int       @default(0)
-  longestStreak   Int       @default(0)
-  lastLoginDate   DateTime?              // Date of last login (date only, no time)
-  lastBonusClaimed DateTime?             // Last time daily bonus was claimed
-  totalDaysLoggedIn Int     @default(0)  // Lifetime login days
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentStreak     Int       @default(0)
+  longestStreak     Int       @default(0)
+  lastLoginDate     DateTime? // Date of last login (date only, no time)
+  lastBonusClaimed  DateTime? // Last time daily bonus was claimed
+  totalDaysLoggedIn Int       @default(0) // Lifetime login days
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([userId])
   @@index([lastLoginDate])
@@ -505,18 +570,18 @@ model LoginStreak {
 
 // Achievement Definitions
 model Achievement {
-  id          String   @id @default(cuid())
-  code        String   @unique           // Unique identifier: "first_generation", "streak_7", etc.
-  name        String                     // Display name
-  description String                     // Achievement description
-  category    String                     // "generation", "social", "streak", "engagement"
-  icon        String?                    // Icon identifier or URL
-  tier        String   @default("bronze") // "bronze", "silver", "gold", "platinum"
-  requirement Int      @default(1)       // Threshold to unlock (e.g., 10 for "10 images generated")
-  xpReward    Int      @default(10)      // XP awarded when unlocked
-  creditReward Int     @default(0)       // Bonus credits when unlocked
-  isSecret    Boolean  @default(false)   // Hidden until unlocked
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  code         String   @unique // Unique identifier: "first_generation", "streak_7", etc.
+  name         String // Display name
+  description  String // Achievement description
+  category     String // "generation", "social", "streak", "engagement"
+  icon         String? // Icon identifier or URL
+  tier         String   @default("bronze") // "bronze", "silver", "gold", "platinum"
+  requirement  Int      @default(1) // Threshold to unlock (e.g., 10 for "10 images generated")
+  xpReward     Int      @default(10) // XP awarded when unlocked
+  creditReward Int      @default(0) // Bonus credits when unlocked
+  isSecret     Boolean  @default(false) // Hidden until unlocked
+  createdAt    DateTime @default(now())
 
   // Users who have unlocked this achievement
   userAchievements UserAchievement[]
@@ -533,7 +598,7 @@ model UserAchievement {
   achievementId String
   achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
   unlockedAt    DateTime    @default(now())
-  progress      Int         @default(0)   // Current progress toward achievement
+  progress      Int         @default(0) // Current progress toward achievement
   notified      Boolean     @default(false) // Whether user was notified
 
   @@unique([userId, achievementId])
@@ -588,15 +653,15 @@ model Notification {
 // ============================================
 
 model ImageTag {
-  id         String   @id @default(cuid())
-  imageId    String
-  image      Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  id      String @id @default(cuid())
+  imageId String
+  image   Image  @relation(fields: [imageId], references: [id], onDelete: Cascade)
 
-  tag        String   // e.g., "person", "landscape", "abstract", "animal"
-  confidence Float    // 0-1 confidence score from AI
-  source     String   @default("ai_vision") // "ai_vision" or "user" for manual tags
+  tag        String // e.g., "person", "landscape", "abstract", "animal"
+  confidence Float // 0-1 confidence score from AI
+  source     String @default("ai_vision") // "ai_vision" or "user" for manual tags
 
-  createdAt  DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([imageId, tag])
   @@index([imageId])
@@ -605,15 +670,15 @@ model ImageTag {
 }
 
 model ImageAttribute {
-  id         String   @id @default(cuid())
-  imageId    String
-  image      Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  id      String @id @default(cuid())
+  imageId String
+  image   Image  @relation(fields: [imageId], references: [id], onDelete: Cascade)
 
-  category   String   // "color", "style", "mood", "subject", "technique"
-  value      String   // "warm", "surreal", "peaceful", "portrait", "digital art"
-  confidence Float    // 0-1 confidence score
+  category   String // "color", "style", "mood", "subject", "technique"
+  value      String // "warm", "surreal", "peaceful", "portrait", "digital art"
+  confidence Float // 0-1 confidence score
 
-  createdAt  DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([imageId, category, value])
   @@index([imageId])
@@ -626,12 +691,12 @@ model ImageAttribute {
 // ============================================
 
 model UserAnalytics {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  period    String   // "daily", "weekly", "monthly"
-  date      DateTime // Start of the period
+  period String // "daily", "weekly", "monthly"
+  date   DateTime // Start of the period
 
   // Generation stats
   totalGenerations      Int @default(0)
@@ -645,10 +710,10 @@ model UserAnalytics {
   creditsEarned    Int @default(0) // from marketplace/tips
 
   // Model usage breakdown (JSON: { "dall-e": 10, "stable-diffusion": 5 })
-  modelUsage       Json?
+  modelUsage Json?
 
   // Style usage breakdown (JSON: { "vivid": 8, "natural": 7 })
-  styleUsage       Json?
+  styleUsage Json?
 
   // Engagement received
   likesReceived    Int @default(0)
@@ -656,8 +721,8 @@ model UserAnalytics {
   followersGained  Int @default(0)
 
   // Engagement given
-  likesGiven       Int @default(0)
-  commentsGiven    Int @default(0)
+  likesGiven    Int @default(0)
+  commentsGiven Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -668,29 +733,29 @@ model UserAnalytics {
 }
 
 model PromptAnalytics {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  promptHash String   // SHA-256 hash of the prompt for privacy
+  promptHash    String // SHA-256 hash of the prompt for privacy
   promptPreview String? // First 50 chars for display (optional)
 
   // Performance metrics
-  usageCount          Int @default(1)
-  successRate         Float @default(100) // percentage
-  averageGenerationTime Int @default(0)
+  usageCount            Int   @default(1)
+  successRate           Float @default(100) // percentage
+  averageGenerationTime Int   @default(0)
 
   // Engagement metrics (for public images using this prompt)
-  totalLikes     Int @default(0)
-  totalComments  Int @default(0)
-  totalViews     Int @default(0)
+  totalLikes    Int @default(0)
+  totalComments Int @default(0)
+  totalViews    Int @default(0)
 
   // Best performing model/style combo
-  bestModel      String?
-  bestStyle      String?
+  bestModel String?
+  bestStyle String?
 
-  firstUsedAt    DateTime @default(now())
-  lastUsedAt     DateTime @default(now())
+  firstUsedAt DateTime @default(now())
+  lastUsedAt  DateTime @default(now())
 
   @@unique([userId, promptHash])
   @@index([userId, usageCount])
@@ -698,29 +763,29 @@ model PromptAnalytics {
 }
 
 model StyleFingerprint {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Dominant characteristics (computed from user's images)
-  dominantColors     Json?  // ["warm", "cool", "vibrant", "muted"]
-  dominantStyles     Json?  // ["surreal", "realistic", "abstract"]
-  dominantSubjects   Json?  // ["portrait", "landscape", "fantasy"]
-  dominantMoods      Json?  // ["peaceful", "dramatic", "mysterious"]
+  dominantColors   Json? // ["warm", "cool", "vibrant", "muted"]
+  dominantStyles   Json? // ["surreal", "realistic", "abstract"]
+  dominantSubjects Json? // ["portrait", "landscape", "fantasy"]
+  dominantMoods    Json? // ["peaceful", "dramatic", "mysterious"]
 
   // AI model preferences
-  preferredModels    Json?  // { "dall-e": 0.6, "stable-diffusion": 0.3 }
+  preferredModels Json? // { "dall-e": 0.6, "stable-diffusion": 0.3 }
 
   // Common prompt themes (keywords extracted from prompts)
-  commonKeywords     Json?  // ["cinematic", "detailed", "fantasy"]
+  commonKeywords Json? // ["cinematic", "detailed", "fantasy"]
 
   // Computed scores
-  diversityScore     Float? // How varied their creations are (0-1)
-  consistencyScore   Float? // How consistent their style is (0-1)
-  experimentalScore  Float? // How often they try new things (0-1)
+  diversityScore    Float? // How varied their creations are (0-1)
+  consistencyScore  Float? // How consistent their style is (0-1)
+  experimentalScore Float? // How often they try new things (0-1)
 
-  computedAt         DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  computedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 // ============================================
@@ -728,46 +793,46 @@ model StyleFingerprint {
 // ============================================
 
 model MarketplacePrompt {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Prompt content
-  title       String
-  description String?  @db.Text
-  prompt      String   @db.Text
+  title          String
+  description    String? @db.Text
+  prompt         String  @db.Text
   negativePrompt String? @db.Text
 
   // Categorization
-  category    String   // "landscape", "portrait", "abstract", "fantasy", "sci-fi", etc.
-  tags        String[] // Searchable tags
+  category String // "landscape", "portrait", "abstract", "fantasy", "sci-fi", etc.
+  tags     String[] // Searchable tags
 
   // Recommended settings
   recommendedModel  String?
   recommendedStyle  String?
-  recommendedParams Json?    // { width, height, steps, cfgScale, etc. }
+  recommendedParams Json? // { width, height, steps, cfgScale, etc. }
 
   // Pricing
-  price       Int      // In credits
+  price Int // In credits
 
   // Status
-  isPublished Boolean  @default(false)
-  isFeatured  Boolean  @default(false)
+  isPublished Boolean @default(false)
+  isFeatured  Boolean @default(false)
 
   // Stats
-  purchaseCount  Int   @default(0)
-  viewCount      Int   @default(0)
-  averageRating  Float?
+  purchaseCount Int    @default(0)
+  viewCount     Int    @default(0)
+  averageRating Float?
 
   // Sample images (IDs of images created with this prompt)
   sampleImageIds String[]
 
   // Reviews
-  reviews     PromptReview[]
-  purchases   PromptPurchase[]
+  reviews   PromptReview[]
+  purchases PromptPurchase[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([isPublished])
@@ -778,14 +843,14 @@ model MarketplacePrompt {
 }
 
 model PromptPurchase {
-  id        String   @id @default(cuid())
-  buyerId   String
-  buyer     User     @relation("PromptPurchases", fields: [buyerId], references: [id], onDelete: Cascade)
+  id      String @id @default(cuid())
+  buyerId String
+  buyer   User   @relation("PromptPurchases", fields: [buyerId], references: [id], onDelete: Cascade)
 
-  promptId  String
-  prompt    MarketplacePrompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  promptId String
+  prompt   MarketplacePrompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
 
-  pricePaid Int      // Capture price at time of purchase
+  pricePaid Int // Capture price at time of purchase
 
   createdAt DateTime @default(now())
 
@@ -795,15 +860,15 @@ model PromptPurchase {
 }
 
 model PromptReview {
-  id       String   @id @default(cuid())
+  id       String            @id @default(cuid())
   promptId String
   prompt   MarketplacePrompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
 
-  userId   String
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  rating   Int      // 1-5 stars
-  comment  String?  @db.Text
+  rating  Int // 1-5 stars
+  comment String? @db.Text
 
   // Was this review helpful?
   helpfulCount Int @default(0)
@@ -821,21 +886,21 @@ model PromptReview {
 // ============================================
 
 model Tip {
-  id          String   @id @default(cuid())
-  senderId    String
-  sender      User     @relation("TipsSent", fields: [senderId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  senderId String
+  sender   User   @relation("TipsSent", fields: [senderId], references: [id], onDelete: Cascade)
 
   recipientId String
-  recipient   User     @relation("TipsReceived", fields: [recipientId], references: [id], onDelete: Cascade)
+  recipient   User   @relation("TipsReceived", fields: [recipientId], references: [id], onDelete: Cascade)
 
   // Optional: Tip for a specific image
-  imageId     String?
-  image       Image?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  imageId String?
+  image   Image?  @relation(fields: [imageId], references: [id], onDelete: SetNull)
 
-  amount      Int      // In credits
-  message     String?  // Optional thank-you message
+  amount  Int // In credits
+  message String? // Optional thank-you message
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([senderId])
   @@index([recipientId, createdAt])
@@ -847,16 +912,16 @@ model Tip {
 // ============================================
 
 model CollectionPurchase {
-  id           String     @id @default(cuid())
-  buyerId      String
-  buyer        User       @relation("CollectionPurchases", fields: [buyerId], references: [id], onDelete: Cascade)
+  id      String @id @default(cuid())
+  buyerId String
+  buyer   User   @relation("CollectionPurchases", fields: [buyerId], references: [id], onDelete: Cascade)
 
   collectionId String
   collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 
-  pricePaid    Int
+  pricePaid Int
 
-  createdAt    DateTime   @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([buyerId, collectionId])
   @@index([collectionId])
@@ -868,40 +933,40 @@ model CollectionPurchase {
 // ============================================
 
 model PrintProduct {
-  id          String   @id @default(cuid())
-  name        String   // "Canvas Print", "Poster", "Metal Print", etc.
+  id          String  @id @default(cuid())
+  name        String // "Canvas Print", "Poster", "Metal Print", etc.
   description String?
 
   // Pricing tiers by size
-  sizes       Json     // [{ name: "Small", dimensions: "8x10", basePrice: 25 }, ...]
+  sizes Json // [{ name: "Small", dimensions: "8x10", basePrice: 25 }, ...]
 
   // Provider info
-  provider    String   // "printful", "printify", etc.
+  provider          String // "printful", "printify", etc.
   providerProductId String?
 
-  isActive    Boolean  @default(true)
+  isActive Boolean @default(true)
 
-  orders      PrintOrder[]
+  orders PrintOrder[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model PrintOrder {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  imageId     String
-  image       Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  imageId String
+  image   Image  @relation(fields: [imageId], references: [id], onDelete: Cascade)
 
-  productId   String
-  product     PrintProduct @relation(fields: [productId], references: [id])
+  productId String
+  product   PrintProduct @relation(fields: [productId], references: [id])
 
   // Order details
-  size        String   // Selected size
-  quantity    Int      @default(1)
-  price       Int      // Total price in cents
+  size     String // Selected size
+  quantity Int    @default(1)
+  price    Int // Total price in cents
 
   // Shipping
   shippingAddress Json
@@ -909,7 +974,7 @@ model PrintOrder {
   shippingCost    Int?
 
   // Status
-  status      String   @default("pending") // "pending", "processing", "shipped", "delivered", "cancelled"
+  status String @default("pending") // "pending", "processing", "shipped", "delivered", "cancelled"
 
   // Provider tracking
   providerOrderId String?
@@ -918,11 +983,11 @@ model PrintOrder {
 
   // Creator earnings (if not their own image)
   creatorId       String?
-  creator         User?    @relation("PrintRoyalties", fields: [creatorId], references: [id], onDelete: SetNull)
-  creatorEarnings Int?     // Royalty amount in cents
+  creator         User?   @relation("PrintRoyalties", fields: [creatorId], references: [id], onDelete: SetNull)
+  creatorEarnings Int? // Royalty amount in cents
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   shippedAt   DateTime?
   deliveredAt DateTime?
 
@@ -937,24 +1002,24 @@ model PrintOrder {
 // ============================================
 
 model CreatorEarnings {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Earnings by source
-  source      String   // "marketplace", "tips", "print_royalties"
+  source String // "marketplace", "tips", "print_royalties"
 
   // Reference to the transaction
-  referenceId String   // ID of the PromptPurchase, Tip, or PrintOrder
+  referenceId   String // ID of the PromptPurchase, Tip, or PrintOrder
   referenceType String // "prompt_purchase", "tip", "print_order"
 
-  amount      Int      // Amount earned in credits (or cents for print)
+  amount Int // Amount earned in credits (or cents for print)
 
   // Payout status
-  isPaidOut   Boolean  @default(false)
-  payoutId    String?  // Reference to Payout when paid
+  isPaidOut Boolean @default(false)
+  payoutId  String? // Reference to Payout when paid
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId, isPaidOut])
   @@index([userId, createdAt])
@@ -962,18 +1027,18 @@ model CreatorEarnings {
 }
 
 model Payout {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  amount      Int      // Total payout amount
-  currency    String   @default("USD")
+  amount   Int // Total payout amount
+  currency String @default("USD")
 
   // Payout method
-  method      String   // "stripe", "paypal", "credits"
+  method String // "stripe", "paypal", "credits"
 
   // Status
-  status      String   @default("pending") // "pending", "processing", "completed", "failed"
+  status String @default("pending") // "pending", "processing", "completed", "failed"
 
   // External reference
   stripePayoutId String?
@@ -981,9 +1046,9 @@ model Payout {
   // For credit conversions
   creditsConverted Int?
 
-  metadata    Json?
+  metadata Json?
 
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
   processedAt DateTime?
   completedAt DateTime?
 
@@ -996,35 +1061,35 @@ model Payout {
 // ============================================
 
 model BlogPost {
-  id          String   @id @default(cuid())
-  slug        String   @unique  // URL-friendly slug: "how-to-create-ai-art"
-  title       String
-  excerpt     String?  @db.Text  // Short description for listings/SEO
-  content     String   @db.Text  // Markdown content
-  coverImage  String?  // Cover image URL
+  id         String  @id @default(cuid())
+  slug       String  @unique // URL-friendly slug: "how-to-create-ai-art"
+  title      String
+  excerpt    String? @db.Text // Short description for listings/SEO
+  content    String  @db.Text // Markdown content
+  coverImage String? // Cover image URL
 
   // Author info
-  authorId    String
-  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   // Categorization
-  category    String   @default("tutorial")  // "tutorial", "guide", "news", "tips"
-  tags        String[] // Searchable tags
+  category String   @default("tutorial") // "tutorial", "guide", "news", "tips"
+  tags     String[] // Searchable tags
 
   // SEO
-  metaTitle       String?  // Custom meta title (falls back to title)
-  metaDescription String?  // Custom meta description (falls back to excerpt)
+  metaTitle       String? // Custom meta title (falls back to title)
+  metaDescription String? // Custom meta description (falls back to excerpt)
 
   // Status
-  status      String   @default("draft")  // "draft", "published", "archived"
+  status      String    @default("draft") // "draft", "published", "archived"
   publishedAt DateTime?
 
   // Engagement
-  viewCount   Int      @default(0)
+  viewCount Int @default(0)
 
   // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([slug])
   @@index([status, publishedAt])
@@ -1038,24 +1103,24 @@ model BlogPost {
 
 // Parent request for multi-model comparison generation
 model ComparisonRequest {
-  id          String   @id @default(cuid())
-  requestId   String   @unique  // Parent request ID for tracking
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String @id @default(cuid())
+  requestId String @unique // Parent request ID for tracking
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Request details
-  prompt          String
-  models          String[] // Array of model IDs to generate with
-  numberOfImages  Int      @default(1) // Per model
-  stylePreset     String?
-  private         Boolean  @default(false)
+  prompt         String
+  models         String[] // Array of model IDs to generate with
+  numberOfImages Int      @default(1) // Per model
+  stylePreset    String?
+  private        Boolean  @default(false)
 
   // Generation parameters (shared across models where applicable)
-  width           Int?
-  height          Int?
+  width  Int?
+  height Int?
 
   // Status tracking
-  status      String   @default("queued") // queued, processing, complete, partial, failed
+  status String @default("queued") // queued, processing, complete, partial, failed
 
   // Child generations (one per model)
   generations ComparisonGeneration[]
@@ -1063,7 +1128,7 @@ model ComparisonRequest {
   // Cost tracking
   totalCreditCost Int
 
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
   completedAt DateTime?
 
   @@index([userId])
@@ -1073,26 +1138,26 @@ model ComparisonRequest {
 
 // Individual generation within a comparison request
 model ComparisonGeneration {
-  id                  String   @id @default(cuid())
+  id                  String            @id @default(cuid())
   comparisonRequestId String
   comparisonRequest   ComparisonRequest @relation(fields: [comparisonRequestId], references: [id], onDelete: Cascade)
 
   // Model being used for this generation
-  model       String
+  model String
 
   // Per-model status tracking
-  status      String   @default("queued") // queued, processing, complete, failed
-  progress    Int      @default(0) // 0-100
+  status   String @default("queued") // queued, processing, complete, failed
+  progress Int    @default(0) // 0-100
 
   // Result linking
-  setId       String?  // Links to Set when complete
-  set         Set?     @relation(fields: [setId], references: [id], onDelete: SetNull)
+  setId String? // Links to Set when complete
+  set   Set?    @relation(fields: [setId], references: [id], onDelete: SetNull)
 
   // Error tracking
-  error       String?
+  error String?
 
   // Timing
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
   startedAt   DateTime?
   completedAt DateTime?
 

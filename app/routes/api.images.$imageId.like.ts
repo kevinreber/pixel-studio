@@ -13,6 +13,9 @@ import {
   getRateLimitIdentifier,
   rateLimitResponse,
 } from "~/services/rateLimit.server";
+import { checkAndUnlockAchievements } from "~/services/achievements.server";
+import { prisma } from "~/services/prisma.server";
+import { Logger } from "~/utils/logger.server";
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const user = await requireUserLogin(request);
@@ -35,6 +38,17 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       targetId: imageId,
       targetType: "image",
     });
+
+    // Check engagement achievements for the image owner (likes received)
+    const image = await prisma.image.findUnique({
+      where: { id: imageId },
+      select: { userId: true },
+    });
+    if (image) {
+      checkAndUnlockAchievements(image.userId, "engagement").catch((err) =>
+        Logger.error({ message: "Achievement check failed", error: err instanceof Error ? err : new Error(String(err)) })
+      );
+    }
   } else if (request.method === "DELETE") {
     await deleteImageLike({ imageId, userId: user.id });
     trackEngagement(user.id, AnalyticsEvents.IMAGE_UNLIKED, {

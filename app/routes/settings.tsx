@@ -23,6 +23,10 @@ import {
   ChevronRight,
   Settings as SettingsIcon,
   RefreshCw,
+  Bell,
+  Shield,
+  Palette,
+  Download,
 } from "lucide-react";
 
 const UsernameSchema = z
@@ -179,6 +183,98 @@ export default function Index() {
                   <CardTitle className="text-base mb-1">Credit History</CardTitle>
                   <CardDescription>
                     Track your credit usage and purchases
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        </div>
+
+        {/* Preferences Section */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-muted-foreground">
+            Preferences
+          </h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Link to="/settings/notifications" className="group">
+              <Card className="h-full transition-colors hover:bg-accent/50 hover:border-accent">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="p-2 rounded-lg bg-yellow-500/10">
+                      <Bell className="w-5 h-5 text-yellow-500" />
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <CardTitle className="text-base mb-1">
+                    Notification Preferences
+                  </CardTitle>
+                  <CardDescription>
+                    Choose which notifications you receive
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link to="/settings/privacy" className="group">
+              <Card className="h-full transition-colors hover:bg-accent/50 hover:border-accent">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="p-2 rounded-lg bg-red-500/10">
+                      <Shield className="w-5 h-5 text-red-500" />
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <CardTitle className="text-base mb-1">
+                    Privacy
+                  </CardTitle>
+                  <CardDescription>
+                    Control your profile and content visibility
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link to="/settings/theme" className="group">
+              <Card className="h-full transition-colors hover:bg-accent/50 hover:border-accent">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="p-2 rounded-lg bg-indigo-500/10">
+                      <Palette className="w-5 h-5 text-indigo-500" />
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <CardTitle className="text-base mb-1">
+                    Theme
+                  </CardTitle>
+                  <CardDescription>
+                    Choose your preferred appearance
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link to="/settings/data-export" className="group">
+              <Card className="h-full transition-colors hover:bg-accent/50 hover:border-accent">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="p-2 rounded-lg bg-teal-500/10">
+                      <Download className="w-5 h-5 text-teal-500" />
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <CardTitle className="text-base mb-1">
+                    Export Data
+                  </CardTitle>
+                  <CardDescription>
+                    Download a copy of all your data
                   </CardDescription>
                 </CardContent>
               </Card>
