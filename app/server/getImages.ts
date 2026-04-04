@@ -126,7 +126,8 @@ export const getImages = async (
 
   try {
     const shouldFetchImages = mediaType === "all" || mediaType === "images";
-    const shouldFetchVideos = mediaType === "all" || mediaType === "videos";
+    // Videos don't have tags, so skip video results when filtering by tag
+    const shouldFetchVideos = (mediaType === "all" || mediaType === "videos") && !tagFilter;
 
     // Get total counts for images and videos
     const [imageCountResult, videoCountResult] = await Promise.all([

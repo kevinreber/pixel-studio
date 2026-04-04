@@ -7,6 +7,9 @@ vi.mock("~/services/prisma.server", () => ({
     notification: {
       create: vi.fn(),
     },
+    user: {
+      findUnique: vi.fn(),
+    },
   },
 }));
 
@@ -23,6 +26,14 @@ import { prisma } from "~/services/prisma.server";
 describe("createNotification", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: user has all notification preferences enabled
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      notifyFollowers: true,
+      notifyLikes: true,
+      notifyComments: true,
+      notifyAchievements: true,
+      notifyStreaks: true,
+    } as never);
   });
 
   it("should create a NEW_FOLLOWER notification", async () => {

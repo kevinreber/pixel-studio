@@ -14,8 +14,10 @@ const MENTION_REGEX = /@([a-zA-Z0-9_-]{3,30})/g;
  */
 export function extractMentions(text: string): string[] {
   const mentions = new Set<string>();
+  // Create a new regex instance to avoid global lastIndex issues
+  const regex = new RegExp(MENTION_REGEX.source, "g");
   let match;
-  while ((match = MENTION_REGEX.exec(text)) !== null) {
+  while ((match = regex.exec(text)) !== null) {
     mentions.add(match[1].toLowerCase());
   }
   return Array.from(mentions);

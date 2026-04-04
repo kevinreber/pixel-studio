@@ -29,6 +29,7 @@ import { getLoggedInUserData } from "./server";
 import { GeneralErrorBoundary } from "./components/GeneralErrorBoundary";
 import { claimDailyBonus } from "~/services/loginStreak.server";
 import { checkAndUnlockAchievements } from "~/services/achievements.server";
+import { cacheGet, cacheSet, getCachedDataWithRevalidate } from "~/utils/cache.server";
 import {
   // sessionStorage,
   // getSessionCookie,
@@ -38,7 +39,6 @@ import {
 } from "./services";
 import "./tailwind.css";
 import "./globals.css";
-import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 
 // Prevent revalidation after fetcher actions (like follow/unfollow)
 // The UI handles optimistic updates, so we don't need to refetch all data
@@ -79,13 +79,19 @@ export async function loader({ request }: LoaderFunctionArgs) {
     );
 
     // Track daily login streak (fire-and-forget, don't block page load)
+    // Use a cache flag to avoid running the serializable transaction on every navigation
     if (userData?.id) {
-      claimDailyBonus(userData.id)
-        .then((result) => {
-          if (result.success && result.streakMilestone) {
-            // Check streak achievements on milestone
-            checkAndUnlockAchievements(userData!.id, "streak").catch(() => {});
-          }
+      const streakCacheKey = `streak-claimed-today:${userData.id}`;
+      cacheGet<string>(streakCacheKey)
+        .then((cached) => {
+          if (cached) return; // Already claimed today, skip
+          return claimDailyBonus(userData!.id).then((result) => {
+            // Cache for 1 hour to avoid repeated DB calls
+            cacheSet(streakCacheKey, "true", 3600).catch(() => {});
+            if (result.success && result.streakMilestone) {
+              checkAndUnlockAchievements(userData!.id, "streak").catch(() => {});
+            }
+          });
         })
         .catch(() => {});
     }

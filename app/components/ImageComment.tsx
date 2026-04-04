@@ -122,7 +122,7 @@ export const ImageComment = ({
                   segment.type === "mention" ? (
                     <Link
                       key={i}
-                      to={`/profile/${segment.username}`}
+                      to={`/users?q=${encodeURIComponent(segment.username ?? "")}`}
                       className="text-primary font-medium hover:underline"
                       onClick={(e) => e.stopPropagation()}
                     >
