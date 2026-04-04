@@ -50,31 +50,37 @@
       {
         "matcher": "Bash(git commit*)",
         "hooks": [
-          "echo '⚠️  REMINDER: Ensure npm run lint && npm run typecheck && npm run test:run && npm run build all pass before committing!'"
+          { "type": "command", "command": "echo '⚠️  REMINDER: Ensure npm run lint && npm run typecheck && npm run test:run && npm run build all pass before committing!'" }
         ]
       },
       {
         "matcher": "Bash(gh pr create*)",
         "hooks": [
-          "bash scripts/rebase-from-main.sh",
-          "bash scripts/check-changelog-updated.sh"
+          { "type": "command", "command": "bash scripts/rebase-from-main.sh" },
+          { "type": "command", "command": "bash scripts/check-changelog-updated.sh" }
         ]
       }
     ],
     "PostToolUse": [
       {
         "matcher": "Edit(prisma/schema.prisma)",
-        "hooks": ["npx prisma format"]
+        "hooks": [
+          { "type": "command", "command": "npx prisma format" }
+        ]
       }
     ],
     "Stop": [
       {
         "matcher": "Edit(app/**/*.ts)",
-        "hooks": ["npm run typecheck --silent 2>&1 | head -20 || true"]
+        "hooks": [
+          { "type": "command", "command": "npm run typecheck --silent 2>&1 | head -20 || true" }
+        ]
       },
       {
         "matcher": "Edit(app/**/*.tsx)",
-        "hooks": ["npm run typecheck --silent 2>&1 | head -20 || true"]
+        "hooks": [
+          { "type": "command", "command": "npm run typecheck --silent 2>&1 | head -20 || true" }
+        ]
       }
     ]
   }
