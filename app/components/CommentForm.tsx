@@ -20,6 +20,7 @@ export const CommentForm = ({ imageId }: { imageId: string }) => {
   const isLoading = fetcher.state !== "idle";
   const [lastSubmitTime, setLastSubmitTime] = React.useState(0);
   const [showMentions, setShowMentions] = React.useState(false);
+  const [commentValue, setCommentValue] = React.useState("");
   const SUBMIT_DELAY = 1000; // Minimum time (ms) between submissions
 
   React.useEffect(() => {
@@ -33,6 +34,7 @@ export const CommentForm = ({ imageId }: { imageId: string }) => {
   // Track @ mentions as user types
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    setCommentValue(value);
     const cursorPos = e.target.selectionStart ?? value.length;
     const textBeforeCursor = value.slice(0, cursorPos);
     const mentionMatch = textBeforeCursor.match(/@([a-zA-Z0-9_-]{0,30})$/);
@@ -53,19 +55,20 @@ export const CommentForm = ({ imageId }: { imageId: string }) => {
   const insertMention = (username: string) => {
     const input = inputRef.current;
     if (!input) return;
-    const value = input.value;
-    const cursorPos = input.selectionStart ?? value.length;
-    const textBeforeCursor = value.slice(0, cursorPos);
+    const cursorPos = input.selectionStart ?? commentValue.length;
+    const textBeforeCursor = commentValue.slice(0, cursorPos);
     const mentionStart = textBeforeCursor.lastIndexOf("@");
     if (mentionStart === -1) return;
 
-    const newValue = value.slice(0, mentionStart) + `@${username} ` + value.slice(cursorPos);
-    // Update input value using native setter to trigger React's change detection
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
-    nativeInputValueSetter?.call(input, newValue);
-    input.dispatchEvent(new Event("input", { bubbles: true }));
+    const newValue = commentValue.slice(0, mentionStart) + `@${username} ` + commentValue.slice(cursorPos);
+    setCommentValue(newValue);
     setShowMentions(false);
-    input.focus();
+    // Focus and set cursor position after React re-renders
+    requestAnimationFrame(() => {
+      input.focus();
+      const newCursorPos = mentionStart + username.length + 2; // @username + space
+      input.setSelectionRange(newCursorPos, newCursorPos);
+    });
   };
 
   const mentionUsers = searchFetcher.data?.users ?? [];
@@ -76,8 +79,7 @@ export const CommentForm = ({ imageId }: { imageId: string }) => {
 
     if (isLoading || now - lastSubmitTime < SUBMIT_DELAY) return;
 
-    const formData = new FormData(event.currentTarget);
-    const comment = formData.get("comment")?.toString() ?? "";
+    const comment = commentValue.trim();
 
     try {
       // Validate the data before submitting
@@ -96,6 +98,7 @@ export const CommentForm = ({ imageId }: { imageId: string }) => {
         }
       );
 
+      setCommentValue("");
       formRef.current?.reset();
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -140,6 +143,7 @@ export const CommentForm = ({ imageId }: { imageId: string }) => {
         <Input
           ref={inputRef}
           name="comment"
+          value={commentValue}
           placeholder="Add a comment... Use @ to mention"
           className="flex-1 text-sm border-none bg-transparent focus-visible:ring-0 placeholder:text-zinc-500"
           disabled={isLoading}

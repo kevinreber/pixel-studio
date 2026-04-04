@@ -1,6 +1,7 @@
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
 import { requireUserLogin } from "~/services";
 import { z } from "zod";
+import { prisma } from "~/services/prisma.server";
 import {
   getUserConversations,
   getOrCreateConversation,
@@ -69,6 +70,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   if (result.data.targetUserId === user.id) {
     return json({ error: "Cannot message yourself" }, { status: 400 });
+  }
+
+  // Validate target user exists
+  const targetUser = await prisma.user.findUnique({
+    where: { id: result.data.targetUserId },
+    select: { id: true },
+  });
+
+  if (!targetUser) {
+    return json({ error: "User not found" }, { status: 404 });
   }
 
   const conversation = await getOrCreateConversation(

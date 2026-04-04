@@ -117,15 +117,24 @@ export async function loader({ request }: LoaderFunctionArgs) {
   );
 }
 
+function getThemeClass(theme?: string | null): string {
+  if (theme === "light") return "light";
+  if (theme === "system") return ""; // Let the system preference apply
+  return "dark"; // Default to dark
+}
+
 function Document({
   children,
   env,
+  theme,
 }: {
   children: React.ReactNode;
   env?: Record<string, string | undefined>;
+  theme?: string | null;
 }) {
+  const themeClass = getThemeClass(theme);
   return (
-    <html lang="en" className="dark h-full overflow-x-hidden" suppressHydrationWarning>
+    <html lang="en" className={`${themeClass} h-full overflow-x-hidden`.trim()} suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -158,6 +167,15 @@ function Document({
         <meta name="theme-color" content="#000000" />
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href="https://pixelstudio.ai" />
+        {/* Handle "system" theme preference */}
+        {themeClass === "" && (
+          <script
+            suppressHydrationWarning
+            dangerouslySetInnerHTML={{
+              __html: `(function(){try{var d=document.documentElement;if(window.matchMedia('(prefers-color-scheme:dark)').matches){d.classList.add('dark')}else{d.classList.add('light')}}catch(e){}})()`,
+            }}
+          />
+        )}
         <Meta />
         <Links />
         {/* Google Analytics Script */}
@@ -203,7 +221,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <Document env={loaderData?.ENV}>
+      <Document env={loaderData?.ENV} theme={loaderData?.userData?.theme}>
         {!isHome && <NavigationSidebar />}
         {children}
       </Document>

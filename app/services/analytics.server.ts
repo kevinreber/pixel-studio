@@ -66,6 +66,8 @@ export const AnalyticsEvents = {
   COLLECTION_DELETED: "collection_deleted",
   COLLECTION_IMAGE_ADDED: "collection_image_added",
   COLLECTION_IMAGE_REMOVED: "collection_image_removed",
+  COLLECTION_VIDEO_ADDED: "collection_video_added",
+  COLLECTION_VIDEO_REMOVED: "collection_video_removed",
 
   // Social
   USER_FOLLOWED: "user_followed",

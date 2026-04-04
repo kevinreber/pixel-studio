@@ -1,5 +1,5 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useFetcher } from "@remix-run/react";
+import { Form, useNavigation } from "@remix-run/react";
 import { requireUserLogin } from "~/services/auth.server";
 import { prisma } from "~/services/prisma.server";
 import { PageContainer } from "~/components";
@@ -12,6 +12,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Download, FileJson } from "lucide-react";
+import {
+  checkRateLimit,
+  writeLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   await requireUserLogin(request);
@@ -20,6 +26,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export async function action({ request }: ActionFunctionArgs) {
   const user = await requireUserLogin(request);
+
+  const rl = await checkRateLimit(
+    writeLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
 
   // Gather all user data for export
   const [userData, images, videos, collections, comments, likes, follows] =
@@ -134,8 +146,8 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function DataExportSettings() {
-  const fetcher = useFetcher();
-  const isExporting = fetcher.state !== "idle";
+  const navigation = useNavigation();
+  const isExporting = navigation.state === "submitting";
 
   return (
     <PageContainer>
@@ -178,12 +190,12 @@ export default function DataExportSettings() {
               </ul>
             </div>
 
-            <fetcher.Form method="post">
+            <Form method="post" reloadDocument>
               <Button type="submit" disabled={isExporting}>
                 <Download className="h-4 w-4 mr-2" />
                 {isExporting ? "Preparing export..." : "Download My Data"}
               </Button>
-            </fetcher.Form>
+            </Form>
           </CardContent>
         </Card>
       </div>

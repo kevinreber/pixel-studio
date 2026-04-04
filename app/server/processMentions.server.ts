@@ -25,7 +25,7 @@ export async function processMentions({
   // Look up users by username (case-insensitive match via lowercase stored usernames)
   const mentionedUsers = await prisma.user.findMany({
     where: {
-      username: { in: usernames },
+      username: { in: usernames, mode: "insensitive" },
     },
     select: { id: true, username: true },
   });

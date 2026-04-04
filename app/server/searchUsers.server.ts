@@ -40,14 +40,16 @@ export const searchUsers = async (
   const skip = (page - 1) * pageSize;
 
   // Build the where clause for searching
+  // Exclude users who have set their profile to private
   const whereClause = searchTerm
     ? {
+        privateProfile: { not: true },
         OR: [
           { username: { contains: searchTerm, mode: "insensitive" as const } },
           { name: { contains: searchTerm, mode: "insensitive" as const } },
         ],
       }
-    : {};
+    : { privateProfile: { not: true } };
 
   const [users, totalCount] = await Promise.all([
     prisma.user.findMany({
