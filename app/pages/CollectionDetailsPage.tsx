@@ -96,7 +96,6 @@ const CollectionDetailsAccessor = ({
                     createdAt: new Date(image.createdAt || Date.now()),
                     user: image.user || { id: "", username: "", image: null },
                     setId: image.setId || null,
-                    blurURL: "",
                     comments: [],
                     likes: [],
                   } as ImageDetail
