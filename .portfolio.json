@@ -1,0 +1,9 @@
+{
+  "displayName": "Pixel Studio AI",
+  "description": "AI-powered creative platform for generating images and videos using DALL-E, Stable Diffusion, Flux, and more. Features collections, social interactions, prompt marketplace, and creator monetization.",
+  "tech": ["Remix", "React", "TypeScript", "Prisma", "Supabase", "Redis", "Kafka", "Stripe"],
+  "thumbnail": "docs/images/thumbnail.png",
+  "demo": "docs/images/demo.gif",
+  "liveUrl": "https://pixelstudioai.com",
+  "order": 0
+}
