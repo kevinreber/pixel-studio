@@ -1,5 +1,6 @@
 import { prisma } from "~/services/prisma.server";
 import {
+  getS3BucketBlurURL,
   getS3BucketThumbnailURL,
   getS3BucketURL,
   getS3VideoURL,
@@ -41,6 +42,7 @@ export const getSet = async ({ setId }: { setId: string }) => {
       ...image,
       url: getS3BucketURL(image.id),
       thumbnailURL: getS3BucketThumbnailURL(image.id),
+      blurURL: getS3BucketBlurURL(image.id),
     }));
 
     // Append Video source URLs

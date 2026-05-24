@@ -35,6 +35,7 @@ interface SetImage {
   setId: string | null;
   url: string;
   thumbnailURL: string;
+  blurURL: string;
 }
 
 interface SetVideo {
@@ -225,7 +226,6 @@ const SetDetailsAccessor = () => {
                   <ImageCard
                     imageData={{
                       ...image,
-                      blurURL: "",
                       user: setUser as { id: string; username: string; image: string | null },
                       comments: [],
                       likes: [],

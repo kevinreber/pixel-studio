@@ -137,7 +137,6 @@ const MediaGrid = ({
                   comments: [],
                   likes: [],
                   setId: null,
-                  blurURL: "",
                 } as ImageDetail
               }
             />
