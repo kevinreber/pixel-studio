@@ -15,8 +15,6 @@ node_modules
 /blob-report/
 /playwright/.cache/
 
-# PR screenshots — captured ad-hoc for review purposes; should never
-# be committed to the runtime repo (binary diffs bloat history).
-/pr-screenshots/
+# Local auth state from ad-hoc Playwright capture runs — never commit.
 /tests/.auth.json
 /tests/.auth-chunks/
