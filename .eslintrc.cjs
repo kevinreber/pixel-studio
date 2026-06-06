@@ -19,7 +19,22 @@ module.exports = {
     commonjs: true,
     es6: true,
   },
-  ignorePatterns: ["!**/.server", "!**/.client", "@/**", "build", "node_modules"],
+  ignorePatterns: [
+    "!**/.server",
+    "!**/.client",
+    "@/**",
+    "build",
+    "node_modules",
+    // Design handoff is a read-only reference bundle (prototype JSX, in-browser
+    // Babel transform, no real imports). Lint rules don't apply to it and the
+    // files are kept as the source of truth for the redesign brief.
+    "design_handoff_pixel_studio_redesign/**",
+    // Playwright HTML report — minified vendor bundles, gitignored at the
+    // repo root via /playwright-report/, but the eslint glob still catches
+    // it on some CI checkouts.
+    "playwright-report/**",
+    "tmp-screenshots/**",
+  ],
 
   // Base config
   extends: ["eslint:recommended"],

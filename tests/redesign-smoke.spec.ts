@@ -152,8 +152,10 @@ test.describe("Public pages still load", () => {
 test.describe("Static assets", () => {
   test("Onest + Geist Mono are linked in <head>", async ({ page }) => {
     await page.goto("/");
+    // Match the stylesheet specifically; head also has a preconnect link to
+    // fonts.googleapis.com whose href doesn't include the font family list.
     const fontLink = await page
-      .locator('link[href*="fonts.googleapis.com"]')
+      .locator('link[rel="stylesheet"][href*="fonts.googleapis.com"]')
       .first()
       .getAttribute("href");
     expect(fontLink).toContain("Onest");

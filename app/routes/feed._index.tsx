@@ -373,7 +373,7 @@ export default function FeedPage() {
                 <Check className="h-5 w-5" strokeWidth={2.4} />
               </span>
               <p className="text-[15px] font-semibold text-fg">
-                You're all caught up
+                You&apos;re all caught up
               </p>
               <Link to="/explore" prefetch="intent" className="text-[13px] font-semibold text-[var(--accent-text)] hover:underline">
                 Discover more creations

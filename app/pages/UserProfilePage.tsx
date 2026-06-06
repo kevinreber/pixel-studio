@@ -1,5 +1,4 @@
 import {
-  Await,
   useLoaderData,
   Link,
   useNavigation,
@@ -11,8 +10,6 @@ import {
   PageContainer,
   ImageCard,
   VideoCard,
-  ErrorList,
-  ImageGridSkeleton,
   FollowButton,
   FollowListModal,
 } from "~/components";
@@ -26,13 +23,6 @@ import type { ProfileMediaItem, ProfileVideo, UserProfileData } from "~/server/g
 interface FollowStats {
   followersCount: number;
   followingCount: number;
-}
-
-// Type for the resolved combined promise data
-interface ResolvedProfileData {
-  userData: UserProfileData;
-  followStats: FollowStats;
-  isFollowing: boolean;
 }
 
 const UserDoesNotExist = () => {
