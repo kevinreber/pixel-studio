@@ -29,6 +29,10 @@ import {
   ArrowDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AdminStatCard } from "~/components/ps";
+import { getCachedDataWithRevalidate } from "~/utils/cache.server";
+
+const ADMIN_CACHE_TTL = 60;
 
 type Period = "week" | "month";
 
@@ -59,12 +63,29 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const period = (url.searchParams.get("period") as Period) || "month";
 
+  const usagePeriod = period === "week" ? "week" : "month";
   const [modelRankings, popularityTrends, modelUsage, modelSuccessRates] =
     await Promise.all([
-      getModelRankings(period),
-      getModelPopularityTrends(14),
-      getModelUsageBreakdown(period === "week" ? "week" : "month"),
-      getModelSuccessRates(period === "week" ? "week" : "month"),
+      getCachedDataWithRevalidate(
+        `admin:model-rankings:${period}`,
+        () => getModelRankings(period),
+        ADMIN_CACHE_TTL,
+      ),
+      getCachedDataWithRevalidate(
+        "admin:model-popularity-trends:14",
+        () => getModelPopularityTrends(14),
+        ADMIN_CACHE_TTL,
+      ),
+      getCachedDataWithRevalidate(
+        `admin:model-usage:${usagePeriod}`,
+        () => getModelUsageBreakdown(usagePeriod),
+        ADMIN_CACHE_TTL,
+      ),
+      getCachedDataWithRevalidate(
+        `admin:model-success:${usagePeriod}`,
+        () => getModelSuccessRates(usagePeriod),
+        ADMIN_CACHE_TTL,
+      ),
     ]);
 
   // Process trends for chart - aggregate by model across days
@@ -195,72 +216,42 @@ export default function AdminModelsPage() {
         <PeriodSelector currentPeriod={currentPeriod} />
       </div>
 
-      {/* Summary Cards */}
+      {/* Summary */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Generations
-            </CardTitle>
-            <Sparkles className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {totalGenerations.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              This {currentPeriod}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Models</CardTitle>
-            <BarChart3 className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{modelRankings.length}</div>
-            <p className="text-xs text-muted-foreground">Models in use</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Unique Users</CardTitle>
-            <Users className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {totalUniqueUsers.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">Using AI models</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Avg Success Rate
-            </CardTitle>
-            <Award className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div
-              className={cn(
-                "text-2xl font-bold",
-                avgSuccessRate >= 90
-                  ? "text-green-600"
-                  : avgSuccessRate >= 70
-                    ? "text-yellow-600"
-                    : "text-red-600"
-              )}
-            >
-              {avgSuccessRate}%
-            </div>
-            <p className="text-xs text-muted-foreground">Across all models</p>
-          </CardContent>
-        </Card>
+        <AdminStatCard
+          label="Total Generations"
+          value={totalGenerations.toLocaleString()}
+          sub={`This ${currentPeriod}`}
+          icon={<Sparkles className="h-4 w-4" />}
+          tone="warning"
+        />
+        <AdminStatCard
+          label="Active Models"
+          value={modelRankings.length}
+          sub="Models in use"
+          icon={<BarChart3 className="h-4 w-4" />}
+          tone="info"
+        />
+        <AdminStatCard
+          label="Unique Users"
+          value={totalUniqueUsers.toLocaleString()}
+          sub="Using AI models"
+          icon={<Users className="h-4 w-4" />}
+          tone="accent"
+        />
+        <AdminStatCard
+          label="Avg Success Rate"
+          value={`${avgSuccessRate}%`}
+          sub="Across all models"
+          icon={<Award className="h-4 w-4" />}
+          tone={
+            avgSuccessRate >= 90
+              ? "success"
+              : avgSuccessRate >= 70
+                ? "warning"
+                : "danger"
+          }
+        />
       </div>
 
       {/* Model Rankings */}

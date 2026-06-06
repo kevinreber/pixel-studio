@@ -229,24 +229,78 @@ const UserProfileAccessor = ({
         </Dialog>
       )}
 
-      {/* Sticky Header */}
+      {/* Profile banner + meta — redesign */}
       <div className="pb-4">
-        {/* Profile Header */}
-        <div className="flex flex-col md:flex-row gap-8 items-start md:items-center pb-8 border-b border-zinc-200 dark:border-zinc-800">
-          {/* Avatar */}
-          {userData.image && (
-            <Avatar className="w-32 h-32">
-              <AvatarImage src={userData.image} alt={userData.username} />
-              <AvatarFallback className="text-2xl">
-                {userData.name?.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-          )}
-
-          {/* Profile Info */}
-          <div className="flex-1">
-            <div className="flex items-center gap-4 mb-4">
-              <h1 className="text-xl">{userData.username}</h1>
+        <div className="relative isolate mb-8 rounded-xl">
+          {/* Gradient banner */}
+          <div
+            aria-hidden
+            className="h-[180px] w-full rounded-xl"
+            style={{
+              background:
+                "linear-gradient(120deg, var(--accent) 0%, rgba(255,90,180,0.65) 55%, rgba(255,170,90,0.6) 100%)",
+            }}
+          />
+          {/* Header row over banner */}
+          <div className="-mt-12 flex flex-col items-start gap-6 px-1 md:flex-row md:items-end">
+            <div className="relative">
+              <div className="rounded-full bg-bg p-1.5 shadow-md">
+                {userData.image ? (
+                  <Avatar className="h-[112px] w-[112px] md:h-[112px] md:w-[112px]">
+                    <AvatarImage src={userData.image} alt={userData.username} />
+                    <AvatarFallback className="text-2xl">
+                      {userData.name?.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                ) : (
+                  <div className="grid h-[112px] w-[112px] place-items-center rounded-full bg-accent-soft text-3xl font-bold text-[var(--accent-text)]">
+                    {userData.name?.charAt(0) || userData.username.charAt(0)}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-1 flex-col gap-3 pb-1">
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-[26px] font-bold tracking-[-0.02em]">
+                  {userData.name || userData.username}
+                </h1>
+                <span className="rounded-full border border-border-accent bg-accent-soft px-2.5 py-0.5 text-[11.5px] font-semibold text-[var(--accent-text)]">
+                  Top creator
+                </span>
+              </div>
+              <div className="text-[13.5px] text-fg-muted">
+                @{userData.username}
+              </div>
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-1">
+                <div className="mono text-[15px] text-fg">
+                  <span className="font-semibold">{totalCount}</span>{" "}
+                  <span className="text-fg-subtle text-[12.5px] uppercase tracking-wider">
+                    posts
+                  </span>
+                </div>
+                <button
+                  onClick={openFollowersModal}
+                  className="mono text-[15px] text-fg hover:opacity-70"
+                >
+                  <span className="font-semibold">{followersCount}</span>{" "}
+                  <span className="text-fg-subtle text-[12.5px] uppercase tracking-wider">
+                    followers
+                  </span>
+                </button>
+                <button
+                  onClick={openFollowingModal}
+                  className="mono text-[15px] text-fg hover:opacity-70"
+                >
+                  <span className="font-semibold">
+                    {followStats.followingCount}
+                  </span>{" "}
+                  <span className="text-fg-subtle text-[12.5px] uppercase tracking-wider">
+                    following
+                  </span>
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 pb-1">
               <FollowButton
                 targetUserId={profileUserId}
                 isFollowing={initialIsFollowing}
@@ -255,33 +309,12 @@ const UserProfileAccessor = ({
               <Link
                 to={`/profile/${profileUserId}/sets`}
                 prefetch="intent"
-                className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
+                className="inline-flex h-[38px] items-center justify-center gap-2 whitespace-nowrap rounded-sm border border-border-strong bg-surface-2 px-3.5 text-[14px] font-semibold text-fg hover:bg-surface-hover"
                 data-testid="view-sets-button"
               >
                 <Layers className="h-4 w-4" />
-                View Sets
+                View sets
               </Link>
-            </div>
-
-            <div className="flex gap-8 mb-4">
-              <div>
-                <span className="font-semibold">{totalCount}</span>{" "}
-                <span className="text-zinc-500">posts</span>
-              </div>
-              <button
-                onClick={openFollowersModal}
-                className="hover:opacity-70 transition-opacity text-left"
-              >
-                <span className="font-semibold">{followersCount}</span>{" "}
-                <span className="text-zinc-500">followers</span>
-              </button>
-              <button
-                onClick={openFollowingModal}
-                className="hover:opacity-70 transition-opacity text-left"
-              >
-                <span className="font-semibold">{followStats.followingCount}</span>{" "}
-                <span className="text-zinc-500">following</span>
-              </button>
             </div>
           </div>
         </div>
@@ -292,48 +325,58 @@ const UserProfileAccessor = ({
           onValueChange={(value) => setContentFilter(value as ContentFilter)}
           className="mt-4"
         >
-          <TabsList className="w-full justify-center bg-transparent border-b border-zinc-200 dark:border-zinc-800 rounded-none p-0">
+          <TabsList className="w-full justify-center rounded-none border-b border-[var(--border)] bg-transparent p-0">
             <TabsTrigger
               value="all"
-              className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
+              className="flex items-center gap-2 rounded-none border-b-2 border-transparent bg-transparent px-4 py-3 text-[12.5px] font-semibold uppercase tracking-[0.08em] text-fg-subtle data-[state=active]:border-[var(--accent)] data-[state=active]:bg-transparent data-[state=active]:text-[var(--accent-text)] data-[state=active]:shadow-none"
             >
               <Grid className="h-4 w-4" />
-              ALL
+              All
             </TabsTrigger>
             <TabsTrigger
               value="images"
-              className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
+              className="flex items-center gap-2 rounded-none border-b-2 border-transparent bg-transparent px-4 py-3 text-[12.5px] font-semibold uppercase tracking-[0.08em] text-fg-subtle data-[state=active]:border-[var(--accent)] data-[state=active]:bg-transparent data-[state=active]:text-[var(--accent-text)] data-[state=active]:shadow-none"
             >
               <Image className="h-4 w-4" />
-              IMAGES
+              Images
               {imageCount > 0 && (
-                <span className="text-xs text-zinc-500">({imageCount})</span>
+                <span className="mono text-[11px] text-fg-subtle">
+                  {imageCount}
+                </span>
               )}
             </TabsTrigger>
             <TabsTrigger
               value="videos"
-              className="flex items-center gap-2 rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none"
+              className="flex items-center gap-2 rounded-none border-b-2 border-transparent bg-transparent px-4 py-3 text-[12.5px] font-semibold uppercase tracking-[0.08em] text-fg-subtle data-[state=active]:border-[var(--accent)] data-[state=active]:bg-transparent data-[state=active]:text-[var(--accent-text)] data-[state=active]:shadow-none"
             >
               <Film className="h-4 w-4" />
-              VIDEOS
+              Videos
               {videoCount > 0 && (
-                <span className="text-xs text-zinc-500">({videoCount})</span>
+                <span className="mono text-[11px] text-fg-subtle">
+                  {videoCount}
+                </span>
               )}
             </TabsTrigger>
           </TabsList>
         </Tabs>
 
-        {/* Content Grid */}
-        <div className="mt-4">
+        {/* Content Grid — uniform squares */}
+        <div className="mt-6">
           {filteredItems.length > 0 ? (
-            <ul className="grid grid-cols-2 md:grid-cols-3 gap-1 md:gap-4 lg:gap-6">
+            <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
               {filteredItems.map((item) =>
                 item.type === "image" ? (
-                  <li key={item.id} className="hover:!opacity-60">
+                  <li
+                    key={item.id}
+                    className="group relative overflow-hidden rounded-md border border-[var(--border)] bg-surface-2 transition-all duration-200 hover:-translate-y-[2px] hover:border-border-accent hover:shadow-lg"
+                  >
                     <ImageCard imageData={item} />
                   </li>
                 ) : (
-                  <li key={item.id} className="hover:!opacity-60">
+                  <li
+                    key={item.id}
+                    className="group relative overflow-hidden rounded-md border border-[var(--border)] bg-surface-2 transition-all duration-200 hover:-translate-y-[2px] hover:border-border-accent hover:shadow-lg"
+                  >
                     <button
                       type="button"
                       className="w-full text-left"
@@ -440,62 +483,18 @@ export default function UserProfilePage() {
   const navigation = useNavigation();
   const isNavigating = navigation.state !== "idle";
 
-  // Resolve all promises together
-  // Use profileUserId as dependency - promises only need to change when viewing a different profile
-  const combinedPromise = React.useMemo(
-    () =>
-      Promise.all([data.userData, data.followStats, data.isFollowing]).then(
-        ([userData, followStats, isFollowing]) => ({
-          userData,
-          followStats,
-          isFollowing,
-        })
-      ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data.profileUserId]
-  );
-
+  // The loader now resolves all data eagerly (warm cache) and returns json(),
+  // so we render directly — no Suspense / Await needed. v3_singleFetch made
+  // the previous deferred + composed-promise approach stall on the client.
   return (
     <PageContainer>
-      <React.Suspense
-        fallback={
-          <div className="w-full max-w-7xl mx-auto px-4 md:px-8 lg:px-12">
-            <div className="animate-pulse">
-              <div className="flex flex-col md:flex-row gap-8 items-start md:items-center pb-8">
-                <div className="w-32 h-32 rounded-full bg-gray-700/50" />
-                <div className="flex-1">
-                  <div className="h-8 w-48 bg-gray-700/50 rounded mb-4" />
-                  <div className="flex gap-8 mb-4">
-                    <div className="h-6 w-20 bg-gray-700/50 rounded" />
-                    <div className="h-6 w-20 bg-gray-700/50 rounded" />
-                    <div className="h-6 w-20 bg-gray-700/50 rounded" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <ImageGridSkeleton />
-          </div>
-        }
-      >
-        <Await
-          resolve={combinedPromise as unknown as Promise<ResolvedProfileData>}
-          errorElement={
-            <ErrorList
-              errors={["There was an error loading the user profile"]}
-            />
-          }
-        >
-          {(resolvedData) => (
-            <UserProfileWrapper
-              userData={resolvedData.userData}
-              followStats={resolvedData.followStats}
-              isFollowing={resolvedData.isFollowing}
-              profileUserId={data.profileUserId}
-              isNavigating={isNavigating}
-            />
-          )}
-        </Await>
-      </React.Suspense>
+      <UserProfileWrapper
+        userData={data.userData as unknown as UserProfileData}
+        followStats={data.followStats}
+        isFollowing={data.isFollowing}
+        profileUserId={data.profileUserId}
+        isNavigating={isNavigating}
+      />
     </PageContainer>
   );
 }

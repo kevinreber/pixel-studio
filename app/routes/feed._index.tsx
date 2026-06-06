@@ -15,7 +15,8 @@ import {
 } from "~/components";
 import { fallbackImageSource } from "~/client";
 import { requireUserLogin } from "~/services/auth.server";
-import { Loader2, UserPlus, Play } from "lucide-react";
+import { Loader2, UserPlus, Play, Rss, Check } from "lucide-react";
+import { PageHeader, Segmented } from "~/components/ps";
 import ImageModal from "~/components/ImageModal";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -335,9 +336,22 @@ export default function FeedPage() {
 
   return (
     <PageContainer>
-      <div className="flex flex-col justify-between w-full max-w-5xl m-auto">
-        <h1 className="text-2xl font-bold mb-3">Your Feed</h1>
-        <p className="text-zinc-500 mb-6">Images and videos from people you follow</p>
+      <div className="mx-auto w-full max-w-3xl">
+        <PageHeader
+          icon={<Rss className="h-[20px] w-[20px]" strokeWidth={2} />}
+          title="Your feed"
+          subtitle="Fresh work from the people you follow"
+          actions={
+            <Segmented
+              value="following"
+              onChange={() => undefined}
+              options={[
+                { value: "following", label: "Following" },
+                { value: "foryou", label: "For you" },
+              ]}
+            />
+          }
+        />
         <React.Suspense fallback={<LoadingSkeleton />}>
           <Await
             resolve={loaderData.feedData}
@@ -347,14 +361,23 @@ export default function FeedPage() {
           >
             <div className="relative">
               {isLoading ? (
-                <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  </div>
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-bg/50 backdrop-blur-sm">
+                  <Loader2 className="h-8 w-8 animate-spin text-fg-muted" />
                 </div>
               ) : (
                 <FeedAccessor />
               )}
+            </div>
+            <div className="mt-12 flex flex-col items-center gap-2 border-t border-[var(--border)] py-10 text-center">
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-success-soft text-success">
+                <Check className="h-5 w-5" strokeWidth={2.4} />
+              </span>
+              <p className="text-[15px] font-semibold text-fg">
+                You're all caught up
+              </p>
+              <Link to="/explore" prefetch="intent" className="text-[13px] font-semibold text-[var(--accent-text)] hover:underline">
+                Discover more creations
+              </Link>
             </div>
           </Await>
         </React.Suspense>

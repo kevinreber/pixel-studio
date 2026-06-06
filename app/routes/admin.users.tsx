@@ -29,6 +29,10 @@ import {
   Coins,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AdminStatCard } from "~/components/ps";
+import { getCachedDataWithRevalidate } from "~/utils/cache.server";
+
+const ADMIN_CACHE_TTL = 60;
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
@@ -38,6 +42,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     throw new Response("Forbidden", { status: 403 });
   }
 
+  // Cache each aggregate for 60s. Dev DB has connection_limit=1; without
+  // caching, every tab visit pays the full serial cost.
   const [
     recentSignups,
     creditDistribution,
@@ -46,12 +52,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
     activityBreakdown,
     signupTrends,
   ] = await Promise.all([
-    getRecentSignups(10),
-    getCreditDistribution(),
-    getZeroCreditUsers(10),
-    getTopCreditHolders(10),
-    getUserActivityBreakdown(),
-    getSignupTrends(14),
+    getCachedDataWithRevalidate("admin:recent-signups:10", () => getRecentSignups(10), ADMIN_CACHE_TTL),
+    getCachedDataWithRevalidate("admin:credit-distribution", () => getCreditDistribution(), ADMIN_CACHE_TTL),
+    getCachedDataWithRevalidate("admin:zero-credit-users:10", () => getZeroCreditUsers(10), ADMIN_CACHE_TTL),
+    getCachedDataWithRevalidate("admin:top-credit-holders:10", () => getTopCreditHolders(10), ADMIN_CACHE_TTL),
+    getCachedDataWithRevalidate("admin:user-activity-breakdown", () => getUserActivityBreakdown(), ADMIN_CACHE_TTL),
+    getCachedDataWithRevalidate("admin:signup-trends:14", () => getSignupTrends(14), ADMIN_CACHE_TTL),
   ]);
 
   return json({
@@ -79,51 +85,36 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-8">
-      {/* Activity Overview Cards */}
+      {/* Activity Overview */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Today</CardTitle>
-            <Activity className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activityBreakdown.activeToday}</div>
-            <p className="text-xs text-muted-foreground">Users who generated content</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active This Week</CardTitle>
-            <TrendingUp className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activityBreakdown.activeThisWeek}</div>
-            <p className="text-xs text-muted-foreground">Last 7 days</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active This Month</CardTitle>
-            <Users className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activityBreakdown.activeThisMonth}</div>
-            <p className="text-xs text-muted-foreground">Last 30 days</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inactive Users</CardTitle>
-            <AlertCircle className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activityBreakdown.inactive}</div>
-            <p className="text-xs text-muted-foreground">No activity in 30 days</p>
-          </CardContent>
-        </Card>
+        <AdminStatCard
+          label="Active Today"
+          value={activityBreakdown.activeToday}
+          sub="Users who generated content"
+          icon={<Activity className="h-4 w-4" />}
+          tone="success"
+        />
+        <AdminStatCard
+          label="Active This Week"
+          value={activityBreakdown.activeThisWeek}
+          sub="Last 7 days"
+          icon={<TrendingUp className="h-4 w-4" />}
+          tone="info"
+        />
+        <AdminStatCard
+          label="Active This Month"
+          value={activityBreakdown.activeThisMonth}
+          sub="Last 30 days"
+          icon={<Users className="h-4 w-4" />}
+          tone="accent"
+        />
+        <AdminStatCard
+          label="Inactive Users"
+          value={activityBreakdown.inactive}
+          sub="No activity in 30 days"
+          icon={<AlertCircle className="h-4 w-4" />}
+          tone="warning"
+        />
       </div>
 
       {/* Signup Trends Chart */}

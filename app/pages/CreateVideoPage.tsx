@@ -1,10 +1,10 @@
 import { PageContainer } from "~/components";
-import { CreateVideoPageForm } from "~/components/CreateVideoPageForm";
+import CreateVideoPageRedesigned from "./CreateVideoPageRedesigned";
 
 const CreateVideoPage = () => {
   return (
     <PageContainer>
-      <CreateVideoPageForm />
+      <CreateVideoPageRedesigned />
     </PageContainer>
   );
 };

@@ -64,6 +64,16 @@ startTransition(() => {
     </StrictMode>
   );
 
-  // Initialize PostHog after hydration
-  initPostHog();
+  // Initialize PostHog after hydration is fully committed. PostHog autocapture
+  // synchronously injects a <script> into <body>, which shifts SSR DOM children
+  // out from under React's in-progress hydration and causes "Expected server
+  // HTML to contain a matching <link> in <body>" mismatches in <Scripts />.
+  // Defer to the next macrotask so React's hydration commit runs first.
+  if (typeof window !== "undefined") {
+    if (document.readyState === "complete") {
+      setTimeout(initPostHog, 0);
+    } else {
+      window.addEventListener("load", () => setTimeout(initPostHog, 0), { once: true });
+    }
+  }
 });

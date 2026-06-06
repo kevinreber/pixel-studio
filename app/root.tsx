@@ -16,7 +16,8 @@ import { Analytics } from "@vercel/analytics/react";
 import posthog from "posthog-js";
 // import { Toaster, toast as showToast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
-import NavigationSidebar from "components/NavigationSidebar";
+import { AppShell } from "components/ps";
+import { isUserAdmin, type UserWithRoles } from "~/utils/isAdmin";
 import { csrf } from "./utils/csrf.server";
 import { getEnv } from "./utils/env.server";
 import { combineHeaders } from "./utils/combineHeaders";
@@ -123,6 +124,13 @@ function getThemeClass(theme?: string | null): string {
   return "dark"; // Default to dark
 }
 
+function getDataTheme(theme?: string | null): string | undefined {
+  if (theme === "light") return "light";
+  if (theme === "dark") return "dark";
+  if (theme === "system") return undefined;
+  return "dark";
+}
+
 function Document({
   children,
   env,
@@ -133,11 +141,24 @@ function Document({
   theme?: string | null;
 }) {
   const themeClass = getThemeClass(theme);
+  const dataTheme = getDataTheme(theme);
   return (
-    <html lang="en" className={`${themeClass} h-full overflow-x-hidden`.trim()} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${themeClass} h-full overflow-x-hidden`.trim()}
+      data-theme={dataTheme}
+      suppressHydrationWarning
+    >
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
+        {/* Onest (UI) + Geist Mono (numbers/stats) per redesign tokens */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap"
+        />
         {/* Default SEO tags - overridden by route-specific meta functions */}
         <title>Pixel Studio AI - Create Stunning AI Art & Videos</title>
         <meta
@@ -172,7 +193,7 @@ function Document({
           <script
             suppressHydrationWarning
             dangerouslySetInnerHTML={{
-              __html: `(function(){try{var d=document.documentElement;if(window.matchMedia('(prefers-color-scheme:dark)').matches){d.classList.add('dark')}else{d.classList.add('light')}}catch(e){}})()`,
+              __html: `(function(){try{var d=document.documentElement;var sys=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';d.classList.add(sys);d.setAttribute('data-theme',sys);}catch(e){}})()`,
             }}
           />
         )}
@@ -217,15 +238,34 @@ export function Layout({ children }: { children: React.ReactNode }) {
   // useRouteLoaderData returns undefined when data isn't available (e.g., during error rendering)
   const loaderData = useRouteLoaderData<typeof loader>("root");
   const location = useLocation();
-  const isHome = location.pathname === "/";
+  // Routes that intentionally render *without* the app shell:
+  // landing (own marketing nav), login, processing splash.
+  const path = location.pathname;
+  const isBare =
+    path === "/" || path.startsWith("/login") || path.startsWith("/auth");
+
+  const userData = loaderData?.userData ?? null;
+  const isAdmin = isUserAdmin(userData as UserWithRoles | null);
+  const shellUser = userData
+    ? {
+        id: userData.id,
+        name: userData.name ?? null,
+        username: userData.username ?? null,
+        image: userData.image ?? null,
+        credits: (userData as { credits?: number }).credits ?? 0,
+      }
+    : null;
 
   return (
-    <>
-      <Document env={loaderData?.ENV} theme={loaderData?.userData?.theme}>
-        {!isHome && <NavigationSidebar />}
-        {children}
-      </Document>
-    </>
+    <Document env={loaderData?.ENV} theme={userData?.theme}>
+      {isBare ? (
+        children
+      ) : (
+        <AppShell user={shellUser} isAdmin={isAdmin}>
+          {children}
+        </AppShell>
+      )}
+    </Document>
   );
 }
 

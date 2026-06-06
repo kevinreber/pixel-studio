@@ -1,443 +1,610 @@
-import { PageContainer } from "~/components";
-import PixelStudioIcon from "components/PixelStudioIcon";
-import { Link, useNavigation } from "@remix-run/react";
-import { useEffect, useState, useCallback } from "react";
+import * as React from "react";
+import { Link } from "@remix-run/react";
 import {
-  Loader2,
-  Sparkles,
-  Zap,
-  Users,
-  ImageIcon,
-  Video,
   ArrowRight,
+  Sparkles,
+  Cpu,
+  Video,
+  Palette,
+  Shuffle,
+  Wallet,
+  Users,
+  Check,
 } from "lucide-react";
+import PixelStudioIcon from "components/PixelStudioIcon";
+import { Button, Badge, ArtTile, ThemeToggle } from "~/components/ps";
+import { cn } from "@/lib/utils";
 
-const BONSAI_TREE_SRC =
-  "https://ai-icon-generator-resized.s3.us-east-2.amazonaws.com/resized-clov1aotv003pr2ygixlp9pmi";
-const ISO_SPACE_STATION =
-  "https://ai-icon-generator-resized.s3.us-east-2.amazonaws.com/resized-clov0tnth001hr2ygj2wec2wn";
-const PIRATE_SPACE_SHIP =
-  "https://ai-icon-generator-resized.s3.us-east-2.amazonaws.com/resized-clkp3riui0001r2wj7q3t8tav";
-const MAN_STANDING_STARGATE =
-  "https://ai-icon-generator-resized.s3.us-east-2.amazonaws.com/resized-cllfyj6la0001r2otvu0ms49w";
-const BROOKLYN_BRIDGE_FROM_TRAIN =
-  "https://ai-icon-generator-resized.s3.us-east-2.amazonaws.com/resized-clov3hb17001gr2qvnx15mvf7";
-
-const ROTATING_WORDS = [
-  "stunning portraits",
-  "epic landscapes",
-  "abstract art",
-  "cinematic scenes",
-  "fantasy worlds",
-  "AI videos",
+const HERO_IMAGES = [
+  "/assets/hero/resized-clov1aotv003pr2ygixlp9pmi.jpg",
+  "/assets/hero/resized-clov3hb17001gr2qvnx15mvf7.jpg",
+  "/assets/hero/resized-cllfyj6la0001r2otvu0ms49w.jpg",
+  "/assets/hero/resized-clkp3riui0001r2wj7q3t8tav.jpg",
+  "/assets/hero/resized-clov0tnth001hr2ygj2wec2wn.jpg",
 ];
 
 const EXAMPLE_PROMPTS = [
-  "A cyberpunk city at sunset with neon reflections on wet streets",
-  "An enchanted forest with bioluminescent mushrooms and fireflies",
-  "A steampunk airship floating above Victorian London",
-  "An astronaut playing guitar on the surface of Mars",
-  "A cozy Japanese café during cherry blossom season",
+  "An astronaut playing guitar on Mars",
+  "Cyberpunk Tokyo in the rain",
+  "Cozy cabin, snowfall, oil painting",
+  "Bioluminescent forest at night",
+];
+
+const STATS = [
+  { value: "1.9M", label: "creations" },
+  { value: "12,000+", label: "creators" },
+  { value: "12", label: "models" },
+  { value: "4.9★", label: "rating" },
 ];
 
 const FEATURES = [
   {
-    icon: Sparkles,
-    title: "10+ AI Models",
-    description: "DALL-E, Flux, Stable Diffusion, Ideogram, and more",
+    icon: <Cpu className="h-5 w-5" />,
+    title: "12 leading models",
+    desc: "Stable Diffusion, Flux, DALL·E, Ideogram and more — switch any time without leaving your flow.",
+    tone: "accent",
   },
   {
-    icon: Video,
-    title: "AI Video Generation",
-    description: "Create videos with Runway, Luma, and Stability AI",
+    icon: <Video className="h-5 w-5" />,
+    title: "Images & video",
+    desc: "Generate stills, then bring them to life with text- and image-to-video models.",
+    tone: "info",
   },
   {
-    icon: Users,
-    title: "Creative Community",
-    description: "Share, explore, and remix art from other creators",
+    icon: <Palette className="h-5 w-5" />,
+    title: "Style presets",
+    desc: "Anime, cinematic, photographic, 3D, comic and more, applied with one click.",
+    tone: "warning",
   },
   {
-    icon: Zap,
-    title: "Instant Results",
-    description: "Generate high-quality images in seconds",
+    icon: <Shuffle className="h-5 w-5" />,
+    title: "Remix & compare",
+    desc: "Iterate from anyone's image. Side-by-side compare across multiple models.",
+    tone: "accent",
   },
+  {
+    icon: <Wallet className="h-5 w-5" />,
+    title: "Sell prompts",
+    desc: "Publish prompts and premium collections — earn credits when others buy.",
+    tone: "success",
+  },
+  {
+    icon: <Users className="h-5 w-5" />,
+    title: "Community feed",
+    desc: "Follow makers you love, like and comment, get notified on remixes.",
+    tone: "info",
+  },
+] as const;
+
+const PROVIDERS = [
+  "Stability AI",
+  "Black Forest Labs",
+  "OpenAI",
+  "Ideogram",
+  "Runway",
+  "Luma AI",
+  "Replicate",
+  "Hugging Face",
 ];
 
-function useRotatingText(words: string[], intervalMs: number) {
-  const [index, setIndex] = useState(0);
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setIndex((prev) => (prev + 1) % words.length);
-    }, intervalMs);
-    return () => clearInterval(timer);
-  }, [words.length, intervalMs]);
-  return words[index];
+const PRICING = [
+  {
+    name: "Free",
+    price: "$0",
+    cadence: "/mo",
+    description: "Try it out and share with the community.",
+    features: [
+      "50 credits/mo",
+      "Standard models",
+      "Public gallery",
+      "Community support",
+    ],
+    cta: "Get started",
+    featured: false,
+  },
+  {
+    name: "Pro",
+    price: "$18",
+    cadence: "/mo",
+    description: "For serious makers and small teams.",
+    features: [
+      "2,500 credits/mo",
+      "All 12 models + video",
+      "Private creations & sets",
+      "Priority generation",
+      "Commercial license",
+    ],
+    cta: "Start Pro",
+    featured: true,
+  },
+  {
+    name: "Studio",
+    price: "$49",
+    cadence: "/mo",
+    description: "Higher volume, API access, team workspaces.",
+    features: [
+      "8,000 credits/mo",
+      "Everything in Pro",
+      "API access",
+      "Team workspaces",
+      "Dedicated support",
+    ],
+    cta: "Start Studio",
+    featured: false,
+  },
+] as const;
+
+const TONE_TILE: Record<string, string> = {
+  accent: "bg-accent-soft text-[var(--accent-text)] border-border-accent",
+  info: "bg-info-soft text-info border-transparent",
+  warning: "bg-warning-soft text-warning border-transparent",
+  success: "bg-success-soft text-success border-transparent",
+};
+
+function useTypewriter(words: string[], delay = 46) {
+  const [text, setText] = React.useState("");
+  const [idx, setIdx] = React.useState(0);
+  React.useEffect(() => {
+    let i = 0;
+    let deleting = false;
+    const target = words[idx];
+    let t: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      if (!deleting) {
+        i++;
+        setText(target.slice(0, i));
+        if (i >= target.length) {
+          t = setTimeout(() => {
+            deleting = true;
+            tick();
+          }, 1800);
+          return;
+        }
+        t = setTimeout(tick, delay);
+      } else {
+        i -= 2;
+        setText(target.slice(0, Math.max(i, 0)));
+        if (i <= 0) {
+          setIdx((p) => (p + 1) % words.length);
+          return;
+        }
+        t = setTimeout(tick, delay / 2);
+      }
+    };
+    t = setTimeout(tick, 400);
+    return () => clearTimeout(t);
+  }, [idx, words, delay]);
+  return text;
 }
 
-function useTypewriter(prompts: string[], typingSpeed = 40, pauseMs = 2000) {
-  const [currentPrompt, setCurrentPrompt] = useState("");
-  const [promptIndex, setPromptIndex] = useState(0);
+export default function LandingPage() {
+  const typed = useTypewriter(EXAMPLE_PROMPTS);
 
-  useEffect(() => {
-    const fullText = prompts[promptIndex];
-    let charIndex = 0;
-    let isDeleting = false;
-    let timeout: ReturnType<typeof setTimeout>;
-
-    const tick = () => {
-      if (!isDeleting) {
-        setCurrentPrompt(fullText.slice(0, charIndex + 1));
-        charIndex++;
-        if (charIndex === fullText.length) {
-          isDeleting = true;
-          timeout = setTimeout(tick, pauseMs);
-          return;
-        }
-        timeout = setTimeout(tick, typingSpeed);
-      } else {
-        setCurrentPrompt(fullText.slice(0, charIndex - 1));
-        charIndex--;
-        if (charIndex === 0) {
-          isDeleting = false;
-          setPromptIndex((prev) => (prev + 1) % prompts.length);
-          return;
-        }
-        timeout = setTimeout(tick, typingSpeed / 2);
+  // Manual smooth-scroll for in-page anchors. Remix's <ScrollRestoration />
+  // intercepts plain <a href="#…"> clicks and prevents the native scroll,
+  // so the URL hash updates but the viewport stays put. Wire it ourselves.
+  const scrollToAnchor =
+    (id: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+      e.preventDefault();
+      const el = document.getElementById(id);
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const top = rect.top + window.scrollY - 72; // account for sticky nav
+      window.scrollTo({ top, behavior: "smooth" });
+      // Keep the URL in sync so users can share / bookmark the section.
+      if (typeof history !== "undefined") {
+        history.replaceState(null, "", `#${id}`);
       }
     };
 
-    timeout = setTimeout(tick, typingSpeed);
-    return () => clearTimeout(timeout);
-  }, [promptIndex, prompts, typingSpeed, pauseMs]);
-
-  return currentPrompt;
-}
-
-const LandingPage = () => {
-  const navigation = useNavigation();
-  const isNavigating = navigation.state !== "idle";
-  const rotatingWord = useRotatingText(ROTATING_WORDS, 3000);
-  const typedPrompt = useTypewriter(EXAMPLE_PROMPTS);
-  const [activePrompt, setActivePrompt] = useState<number | null>(null);
-
-  const handlePromptClick = useCallback((index: number) => {
-    setActivePrompt(index);
-  }, []);
-
   return (
-    <PageContainer
-      styles={{ width: "100%", height: "100%", padding: 0, margin: 0 }}
-    >
-      <main className="h-full relative">
-        {isNavigating && (
-          <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-          </div>
-        )}
-
-        {/* Navigation */}
-        <div className="absolute top-6 left-6 z-10 opacity-0 animate-fade-in">
-          <Link to="/" className="flex align-baseline">
-            <div className="w-8 mr-3">
+    <div className="min-h-screen bg-bg text-fg">
+      {/* Marketing nav */}
+      <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--bg)]/85 backdrop-blur">
+        <div className="mx-auto flex h-16 w-full max-w-[1280px] items-center justify-between px-4 md:px-8">
+          <Link to="/" className="flex items-center gap-2">
+            <div className="h-8 w-8">
               <PixelStudioIcon />
             </div>
-            <h2 className="text-2xl m-0">Pixel Studio</h2>
+            <span className="text-lg font-bold tracking-tight">Pixel Studio</span>
           </Link>
+          <nav className="hidden items-center gap-6 text-[14px] font-medium text-fg-muted md:flex">
+            <Link to="/explore" className="hover:text-fg">
+              Explore
+            </Link>
+            <a
+              href="#lp-models"
+              onClick={scrollToAnchor("lp-models")}
+              className="hover:text-fg"
+            >
+              Models
+            </a>
+            <a
+              href="#lp-pricing"
+              onClick={scrollToAnchor("lp-pricing")}
+              className="hover:text-fg"
+            >
+              Pricing
+            </a>
+          </nav>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link to="/login" className="hidden md:block">
+              <Button variant="ghost" size="sm">
+                Sign in
+              </Button>
+            </Link>
+            <Link to="/create">
+              <Button
+                variant="primary"
+                size="sm"
+                iconRight={<ArrowRight className="h-4 w-4" />}
+              >
+                Start creating
+              </Button>
+            </Link>
+          </div>
         </div>
+      </header>
 
-        <div className="relative isolate overflow-hidden bg-zinc-950">
-          {/* Animated scrolling background grid */}
-          <div
-            className="absolute inset-0 -z-10 overflow-hidden [mask-image:radial-gradient(100%_100%_at_top_right,white,transparent)]"
-            aria-hidden="true"
-          >
-            <div
-              className="absolute -inset-[200px] animate-grid-scroll"
-              style={{
-                backgroundImage: `
-                  linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
-                  linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)
-                `,
-                backgroundSize: "200px 200px",
-              }}
-            />
-            {/* Highlighted grid cells */}
-            <div
-              className="absolute -inset-[200px] animate-grid-scroll"
-              style={{
-                backgroundImage: `
-                  radial-gradient(circle at 100px 100px, rgba(128,128,128,0.08) 0%, transparent 50%)
-                `,
-                backgroundSize: "400px 400px",
-              }}
-            />
-          </div>
+      {/* Hero */}
+      <section className="relative overflow-hidden">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10"
+          style={{
+            background:
+              "radial-gradient(60% 60% at 18% 18%, var(--accent-soft) 0%, transparent 60%), radial-gradient(60% 60% at 82% 18%, rgba(255,90,180,0.15) 0%, transparent 60%)",
+          }}
+        />
+        <div className="mx-auto grid w-full max-w-[1280px] gap-12 px-4 py-16 md:grid-cols-[1.1fr_1fr] md:px-8 md:py-24">
+          <div>
+            <Badge tone="accent" icon={<Sparkles className="h-3 w-3" />}>
+              1.9M creations and counting
+            </Badge>
+            <h1 className="mt-5 text-[44px] font-bold leading-[1.02] tracking-[-0.035em] md:text-[64px]">
+              Create stunning{" "}
+              <span
+                className="bg-clip-text text-transparent"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(100deg, var(--accent), #c4a3ff 60%, #ff9ad1)",
+                }}
+              >
+                art &amp; video
+              </span>{" "}
+              from a sentence.
+            </h1>
+            <p className="mt-5 max-w-[560px] text-[16px] leading-[1.55] text-fg-muted">
+              Pixel Studio brings 12 leading AI image and video models into a
+              single creative workspace. Prompt, remix, compare, and ship.
+            </p>
 
-          {/* Animated gradient blob */}
-          <div
-            className="absolute left-1/2 right-0 top-0 -z-10 -ml-24 transform-gpu overflow-hidden blur-3xl lg:ml-24 xl:ml-48"
-            aria-hidden="true"
-          >
-            <div
-              className="aspect-[801/1036] w-[50.0625rem] bg-gradient-to-tr from-[#ff80b5] via-[#9089fc] to-[#ff80b5] opacity-30 bg-[length:200%_200%] animate-gradient-shift"
-              style={{
-                clipPath:
-                  "polygon(63.1% 29.5%, 100% 17.1%, 76.6% 3%, 48.4% 0%, 44.6% 4.7%, 54.5% 25.3%, 59.8% 49%, 55.2% 57.8%, 44.4% 57.2%, 27.8% 47.9%, 35.1% 81.5%, 0% 97.7%, 39.2% 100%, 35.2% 81.4%, 97.2% 52.8%, 63.1% 29.5%)",
-              }}
-            />
-          </div>
-
-          {/* Second gradient blob for depth */}
-          <div
-            className="absolute left-0 bottom-0 -z-10 transform-gpu overflow-hidden blur-3xl"
-            aria-hidden="true"
-          >
-            <div
-              className="aspect-[1036/801] w-[40rem] bg-gradient-to-tr from-[#9089fc] via-[#ff80b5] to-[#9089fc] opacity-20 bg-[length:200%_200%] animate-gradient-shift"
-              style={{
-                clipPath:
-                  "polygon(20% 80%, 40% 60%, 60% 70%, 80% 40%, 100% 60%, 100% 100%, 0% 100%)",
-                animationDelay: "4s",
-              }}
-            />
-          </div>
-
-          <div className="overflow-hidden">
-            {/* Hero Section */}
-            <div className="mx-auto max-w-7xl px-6 pb-32 pt-36 sm:pt-60 lg:px-8 lg:pt-32 min-h-screen">
-              <div className="mx-auto max-w-2xl gap-x-14 lg:mx-0 lg:flex lg:max-w-none lg:items-center">
-                {/* Hero Text */}
-                <div className="w-full max-w-xl lg:shrink-0 xl:max-w-2xl relative z-10">
-                  <h1
-                    className="text-4xl font-bold tracking-tight text-gray-200 sm:text-5xl opacity-0 animate-fade-in-up"
-                    style={{ animationDelay: "0.1s" }}
-                  >
-                    Create{" "}
-                    <span className="relative inline-block">
-                      <span
-                        key={rotatingWord}
-                        className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 animate-text-reveal"
-                      >
-                        {rotatingWord}
-                      </span>
-                    </span>{" "}
-                    with AI.
-                  </h1>
-                  <p
-                    className="relative mt-6 text-lg leading-8 text-gray-400 sm:max-w-md lg:max-w-none opacity-0 animate-fade-in-up"
-                    style={{ animationDelay: "0.3s" }}
-                  >
-                    Transform your ideas into mesmerizing art and videos in
-                    seconds. No design experience needed — just describe what
-                    you imagine and watch AI bring it to life.
-                  </p>
-
-                  {/* CTA Buttons */}
-                  <div
-                    className="mt-10 flex items-center gap-x-6 opacity-0 animate-fade-in-up"
-                    style={{ animationDelay: "0.5s" }}
-                  >
-                    <Link
-                      to="/create"
-                      prefetch="intent"
-                      className="group relative rounded-md bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 hover:bg-indigo-500 hover:shadow-indigo-500/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-all duration-300"
-                    >
-                      <span className="flex items-center gap-2">
-                        Start creating
-                        <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                      </span>
-                    </Link>
-                    <Link
-                      to="/explore"
-                      prefetch="intent"
-                      className="rounded-md px-5 py-3 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 border border-gray-600 hover:border-gray-400 hover:bg-white/5 transition-all duration-300"
-                    >
-                      Explore gallery
-                    </Link>
-                  </div>
-
-                  {/* Interactive Prompt Typewriter */}
-                  <div
-                    className="mt-12 opacity-0 animate-fade-in-up"
-                    style={{ animationDelay: "0.7s" }}
-                  >
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-                      Try a prompt like...
-                    </p>
-                    <div className="relative rounded-lg border border-gray-700/50 bg-gray-900/50 backdrop-blur-sm p-4 hover:border-indigo-500/30 transition-colors duration-500">
-                      <div className="flex items-start gap-3">
-                        <ImageIcon className="h-5 w-5 text-indigo-400 shrink-0 mt-0.5" />
-                        <p className="text-gray-300 text-sm leading-relaxed">
-                          {typedPrompt}
-                          <span className="inline-block w-0.5 h-4 bg-indigo-400 ml-0.5 animate-pulse align-middle" />
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Image Gallery with animations */}
-                <div className="mt-14 flex justify-end gap-8 sm:-mt-44 sm:justify-start sm:pl-20 lg:mt-0 lg:pl-0 relative z-0">
-                  <div className="ml-auto w-44 flex-none space-y-8 pt-32 sm:ml-0 sm:pt-80 lg:order-last lg:pt-36 xl:order-none xl:pt-80">
-                    <GalleryImage
-                      src={BONSAI_TREE_SRC}
-                      alt="AI generated bonsai tree"
-                      delay="0.2s"
-                      floatClass="animate-float"
-                    />
-                  </div>
-                  <div className="mr-auto w-44 flex-none space-y-8 sm:mr-0 sm:pt-52 lg:pt-36">
-                    <GalleryImage
-                      src={BROOKLYN_BRIDGE_FROM_TRAIN}
-                      alt="AI generated Brooklyn Bridge scene"
-                      delay="0.4s"
-                      floatClass="animate-float-slow"
-                    />
-                    <GalleryImage
-                      src={PIRATE_SPACE_SHIP}
-                      alt="AI generated pirate space ship"
-                      delay="0.6s"
-                      floatClass="animate-float-slower"
-                    />
-                  </div>
-                  <div className="w-44 flex-none space-y-8 pt-32 sm:pt-0">
-                    <GalleryImage
-                      src={MAN_STANDING_STARGATE}
-                      alt="AI generated man at stargate"
-                      delay="0.5s"
-                      floatClass="animate-float-slow"
-                    />
-                    <GalleryImage
-                      src={ISO_SPACE_STATION}
-                      alt="AI generated isometric space station"
-                      delay="0.7s"
-                      floatClass="animate-float"
-                    />
-                  </div>
-                </div>
-              </div>
+            {/* Auto-typing prompt bar */}
+            <div className="mt-7 flex h-[58px] items-center gap-2 rounded-md border border-border-strong bg-surface-1 px-3 shadow-sm">
+              <Sparkles className="h-5 w-5 text-[var(--accent-text)]" />
+              <span className="flex-1 truncate font-sans text-[15px] text-fg">
+                {typed}
+                <span className="animate-ps-caret text-[var(--accent-text)]">▎</span>
+              </span>
+              <Link to="/create">
+                <Button
+                  variant="primary"
+                  size="md"
+                  iconRight={<ArrowRight className="h-4 w-4" />}
+                >
+                  Generate
+                </Button>
+              </Link>
             </div>
 
-            {/* Features Section */}
-            <div className="mx-auto max-w-7xl px-6 pb-24 lg:px-8">
-              <div className="mx-auto max-w-2xl text-center mb-16">
-                <h2
-                  className="text-3xl font-bold tracking-tight text-gray-200 sm:text-4xl opacity-0 animate-fade-in-up"
-                  style={{ animationDelay: "0.9s" }}
+            {/* Example chips */}
+            <div className="mt-4 flex flex-wrap gap-2">
+              {EXAMPLE_PROMPTS.slice(0, 3).map((p) => (
+                <span
+                  key={p}
+                  className="rounded-full border border-[var(--border)] bg-surface-2 px-3 py-1.5 text-[12.5px] text-fg-muted"
                 >
-                  Everything you need to create
-                </h2>
-              </div>
-              <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-                {FEATURES.map((feature, i) => (
-                  <FeatureCard
-                    key={feature.title}
-                    icon={feature.icon}
-                    title={feature.title}
-                    description={feature.description}
-                    delay={`${1.0 + i * 0.15}s`}
-                  />
+                  {p}
+                </span>
+              ))}
+            </div>
+
+            {/* Social proof */}
+            <div className="mt-7 flex items-center gap-3">
+              <div className="flex -space-x-2">
+                {[0, 1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="grid h-8 w-8 place-items-center overflow-hidden rounded-full border-2 border-bg bg-surface-3"
+                  >
+                    <img
+                      src={HERO_IMAGES[i]}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
                 ))}
               </div>
-            </div>
-
-            {/* Prompt Showcase Section */}
-            <div className="mx-auto max-w-7xl px-6 pb-32 lg:px-8">
-              <div
-                className="opacity-0 animate-fade-in-up"
-                style={{ animationDelay: "1.6s" }}
-              >
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-4 text-center">
-                  Get inspired — click a prompt to try it
-                </p>
-                <div className="flex flex-wrap justify-center gap-3">
-                  {EXAMPLE_PROMPTS.map((prompt, i) => (
-                    <Link
-                      key={i}
-                      to={`/create?prompt=${encodeURIComponent(prompt)}`}
-                      prefetch="intent"
-                      className={`group rounded-full border px-4 py-2 text-sm transition-all duration-300 ${
-                        activePrompt === i
-                          ? "border-indigo-500 bg-indigo-500/10 text-indigo-300"
-                          : "border-gray-700 text-gray-400 hover:border-indigo-500/50 hover:text-gray-200 hover:bg-white/5"
-                      }`}
-                      onClick={() => handlePromptClick(i)}
-                    >
-                      <span className="flex items-center gap-2">
-                        <Sparkles className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        {prompt.length > 50
-                          ? prompt.slice(0, 50) + "..."
-                          : prompt}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
+              <p className="text-[13px] text-fg-muted">
+                Joined by 12,000+ creators this month
+              </p>
             </div>
           </div>
-        </div>
-      </main>
-    </PageContainer>
-  );
-};
 
-function GalleryImage({
-  src,
-  alt,
-  delay,
-  floatClass,
-}: {
-  src: string;
-  alt: string;
-  delay: string;
-  floatClass: string;
-}) {
-  return (
-    <div className={floatClass}>
-      <div
-        className="relative opacity-0 animate-fade-in-up"
-        style={{ animationDelay: delay }}
+          {/* Floating gallery */}
+          <div className="relative hidden h-[520px] md:block">
+            <FloatTile
+              src={HERO_IMAGES[0]}
+              style={{ top: 0, right: "44%", width: 180, height: 240 }}
+              delay={0}
+            />
+            <FloatTile
+              src={HERO_IMAGES[1]}
+              style={{ top: 30, right: 0, width: 200, height: 260 }}
+              delay={1.4}
+            />
+            <FloatTile
+              src={HERO_IMAGES[2]}
+              style={{ top: 230, right: "30%", width: 170, height: 220 }}
+              delay={0.6}
+            />
+            <FloatTile
+              src={HERO_IMAGES[3]}
+              style={{ top: 270, right: 0, width: 200, height: 200 }}
+              delay={2.1}
+            />
+            <FloatTile
+              src={HERO_IMAGES[4]}
+              style={{ top: 80, right: "60%", width: 150, height: 180 }}
+              delay={1}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Stats strip */}
+      <section className="border-y border-[var(--border)] bg-surface-1">
+        <div className="mx-auto grid w-full max-w-[1280px] grid-cols-2 gap-6 px-4 py-10 md:grid-cols-4 md:px-8">
+          {STATS.map((s) => (
+            <div key={s.label}>
+              <div className="mono text-[32px] font-bold leading-none tracking-[-0.02em] text-fg">
+                {s.value}
+              </div>
+              <div className="mt-1 text-[12.5px] text-fg-subtle">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="mx-auto w-full max-w-[1280px] px-4 py-20 md:px-8">
+        <h2 className="text-[34px] font-bold tracking-[-0.025em] md:text-[42px]">
+          Everything you need to{" "}
+          <span className="text-[var(--accent-text)]">make</span>.
+        </h2>
+        <p className="mt-3 max-w-[560px] text-[15px] text-fg-muted">
+          One workspace. Every model. Every output type. Built so you stay in
+          the flow instead of switching tabs.
+        </p>
+        <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map((f) => (
+            <article
+              key={f.title}
+              className="rounded-lg border border-[var(--border)] bg-surface-1 p-5 transition-colors hover:border-border-strong"
+            >
+              <div
+                className={cn(
+                  "mb-4 grid h-10 w-10 place-items-center rounded-md border",
+                  TONE_TILE[f.tone],
+                )}
+              >
+                {f.icon}
+              </div>
+              <h3 className="text-[17px] font-semibold tracking-[-0.01em]">
+                {f.title}
+              </h3>
+              <p className="mt-2 text-[13.5px] leading-[1.55] text-fg-muted">
+                {f.desc}
+              </p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* Providers */}
+      <section
+        id="lp-models"
+        className="border-y border-[var(--border)] bg-surface-1 py-16"
       >
-        <img
-          src={src}
-          alt={alt}
-          className="aspect-[2/3] w-full rounded-xl bg-gray-900/5 object-cover shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-indigo-500/10"
-          decoding="async"
-          loading="lazy"
-        />
-        <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-gray-900/10 transition-all duration-500 hover:ring-indigo-500/20" />
-      </div>
+        <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8">
+          <p className="u-label">Powered by the world&apos;s best models</p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {PROVIDERS.map((p) => (
+              <span
+                key={p}
+                className="rounded-full border border-[var(--border)] bg-surface-2 px-3.5 py-1.5 text-[13px] font-semibold text-fg"
+              >
+                {p}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Community gallery */}
+      <section className="mx-auto w-full max-w-[1280px] px-4 py-20 md:px-8">
+        <div className="mb-8 flex items-end justify-between gap-6">
+          <div>
+            <h2 className="text-[32px] font-bold tracking-[-0.025em] md:text-[40px]">
+              Made by the community
+            </h2>
+            <p className="mt-2 max-w-[520px] text-[14px] text-fg-muted">
+              A few recent creations from people on Pixel Studio.
+            </p>
+          </div>
+          <Link
+            to="/explore"
+            className="hidden text-[13.5px] font-semibold text-[var(--accent-text)] hover:underline md:inline"
+          >
+            Explore all →
+          </Link>
+        </div>
+        <div className="columns-2 gap-4 [column-fill:_balance] md:columns-4">
+          {HERO_IMAGES.concat(HERO_IMAGES)
+            .slice(0, 8)
+            .map((src, i) => (
+              <div
+                key={i}
+                className="mb-4 break-inside-avoid overflow-hidden rounded-md border border-[var(--border)]"
+              >
+                <ArtTile src={src} radius="" alt="" />
+              </div>
+            ))}
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section id="lp-pricing" className="bg-surface-1 py-20">
+        <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8">
+          <div className="mb-12 text-center">
+            <h2 className="text-[36px] font-bold tracking-[-0.025em] md:text-[44px]">
+              Pricing that scales with you
+            </h2>
+            <p className="mx-auto mt-3 max-w-[520px] text-[15px] text-fg-muted">
+              Buy credits, use any model, cancel any time.
+            </p>
+          </div>
+          <div className="grid gap-5 md:grid-cols-3">
+            {PRICING.map((tier) => (
+              <div
+                key={tier.name}
+                className={cn(
+                  "relative flex flex-col gap-4 rounded-lg border p-6",
+                  tier.featured
+                    ? "border-[var(--accent)] bg-surface-1 shadow-glow"
+                    : "border-[var(--border)] bg-surface-2",
+                )}
+              >
+                {tier.featured && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <Badge tone="accent">Popular</Badge>
+                  </span>
+                )}
+                <div>
+                  <div className="text-[15px] font-semibold text-fg">
+                    {tier.name}
+                  </div>
+                  <div className="mt-3 flex items-baseline gap-1">
+                    <span className="mono text-[44px] font-bold leading-none tracking-[-0.02em] text-fg">
+                      {tier.price}
+                    </span>
+                    <span className="text-[14px] text-fg-subtle">
+                      {tier.cadence}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-[13px] text-fg-muted">
+                    {tier.description}
+                  </p>
+                </div>
+                <ul className="flex flex-col gap-2 text-[13.5px]">
+                  {tier.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-fg">
+                      <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-success" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link to="/checkout" className="mt-auto">
+                  <Button
+                    variant={tier.featured ? "primary" : "outline"}
+                    size="md"
+                    className="w-full"
+                  >
+                    {tier.cta}
+                  </Button>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="mx-auto w-full max-w-[1280px] px-4 py-20 md:px-8">
+        <div
+          className="relative overflow-hidden rounded-2xl px-8 py-16 text-center md:px-16 md:py-24"
+          style={{
+            background:
+              "linear-gradient(120deg, var(--accent) 0%, rgba(255,90,180,0.85) 55%, rgba(255,170,90,0.85) 100%)",
+          }}
+        >
+          <h2 className="mx-auto max-w-[640px] text-[34px] font-bold tracking-[-0.025em] text-white md:text-[44px]">
+            Make something nobody&apos;s ever seen.
+          </h2>
+          <p className="mx-auto mt-3 max-w-[520px] text-[15px] text-white/85">
+            Get 50 free credits when you join. Try every model. No credit card.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Link to="/create">
+              <Button variant="secondary" size="lg">
+                Start creating
+              </Button>
+            </Link>
+            <Link to="/explore">
+              <Button
+                variant="outline"
+                size="lg"
+                className="border-white/30 bg-white/10 text-white hover:bg-white/20"
+              >
+                Browse community
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-[var(--border)] bg-surface-1">
+        <div className="mx-auto flex w-full max-w-[1280px] flex-col items-center justify-between gap-6 px-4 py-10 md:flex-row md:px-8">
+          <div className="flex items-center gap-2 text-[13.5px] text-fg-muted">
+            <div className="h-6 w-6">
+              <PixelStudioIcon />
+            </div>
+            © {new Date().getFullYear()} Pixel Studio
+          </div>
+          <div className="flex flex-wrap gap-5 text-[13px] text-fg-muted">
+            <Link to="/explore">Explore</Link>
+            <Link to="/whats-new">What&apos;s new</Link>
+            <Link to="/checkout">Pricing</Link>
+            <a href="https://github.com" className="hover:text-fg">
+              GitHub
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
 
-function FeatureCard({
-  icon: Icon,
-  title,
-  description,
+function FloatTile({
+  src,
+  style,
   delay,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  description: string;
-  delay: string;
+  src: string;
+  style: React.CSSProperties;
+  delay: number;
 }) {
   return (
     <div
-      className="group relative rounded-2xl border border-gray-800 bg-gray-900/30 backdrop-blur-sm p-6 hover:border-indigo-500/30 hover:bg-gray-900/50 transition-all duration-500 opacity-0 animate-fade-in-up"
-      style={{ animationDelay: delay }}
+      className="absolute overflow-hidden rounded-lg border border-border-strong shadow-lg"
+      style={{
+        ...style,
+        animation: `ps-float 7s ease-in-out ${delay}s infinite`,
+      }}
     >
-      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-500/10 group-hover:bg-indigo-500/20 transition-colors duration-300">
-        <Icon className="h-5 w-5 text-indigo-400" />
-      </div>
-      <h3 className="text-sm font-semibold text-gray-200">{title}</h3>
-      <p className="mt-2 text-sm text-gray-500 group-hover:text-gray-400 transition-colors duration-300">
-        {description}
-      </p>
+      <ArtTile src={src} radius="" alt="" />
     </div>
   );
 }
-
-export default LandingPage;

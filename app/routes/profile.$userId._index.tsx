@@ -1,4 +1,4 @@
-import { type LoaderFunctionArgs, MetaFunction, defer } from "@remix-run/node";
+import { type LoaderFunctionArgs, MetaFunction, json } from "@remix-run/node";
 import { ShouldRevalidateFunctionArgs, useLoaderData } from "@remix-run/react";
 import UserProfilePage from "~/pages/UserProfilePage";
 import { getUserDataByUserId, getUserFollowStats, isFollowing } from "~/server";
@@ -62,25 +62,28 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const currentUserId = sessionAuth?.id || null;
 
   const cacheKey = `user-profile:${userId}:${currentPage}:${pageSize}`;
-  const userDataPromise = getCachedDataWithRevalidate(cacheKey, () =>
-    getUserDataByUserId(userId, currentPage, pageSize)
-  );
-
-  // Get follow stats
   const followStatsCacheKey = `user-follow-stats:${userId}`;
-  const followStatsPromise = getCachedDataWithRevalidate(followStatsCacheKey, () =>
-    getUserFollowStats(userId)
-  );
 
-  // Check if current user is following this profile
-  const isFollowingPromise = currentUserId && currentUserId !== userId
-    ? isFollowing({ followerId: currentUserId, followingId: userId })
-    : Promise.resolve(false);
+  // v3_singleFetch makes defer() a no-op, and composing streamed promises with
+  // Promise.all on the client used to stall the Suspense boundary. Resolve
+  // eagerly here — the cache layer makes warm hits effectively free, and cold
+  // hits stream from the Remix data fetch instead of from a separate Suspense.
+  const [userData, followStats, isFollowingResult] = await Promise.all([
+    getCachedDataWithRevalidate(cacheKey, () =>
+      getUserDataByUserId(userId, currentPage, pageSize),
+    ),
+    getCachedDataWithRevalidate(followStatsCacheKey, () =>
+      getUserFollowStats(userId),
+    ),
+    currentUserId && currentUserId !== userId
+      ? isFollowing({ followerId: currentUserId, followingId: userId })
+      : Promise.resolve(false),
+  ]);
 
-  return defer({
-    userData: userDataPromise,
-    followStats: followStatsPromise,
-    isFollowing: isFollowingPromise,
+  return json({
+    userData,
+    followStats,
+    isFollowing: isFollowingResult,
     profileUserId: userId,
   });
 };

@@ -41,6 +41,9 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getCachedDataWithRevalidate } from "~/utils/cache.server";
+
+const ADMIN_CACHE_TTL = 60;
 
 interface SearchedUser {
   id: string;
@@ -100,26 +103,32 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }));
   }
 
-  // Get recent admin adjustments
-  const recentAdjustments = await prisma.creditTransaction.findMany({
-    where: { type: "admin_adjustment" },
-    select: {
-      id: true,
-      amount: true,
-      description: true,
-      createdAt: true,
-      user: {
+  // Get recent admin adjustments (60s cache — admins rarely make changes in
+  // bursts and the query joins user, so it's worth caching).
+  const recentAdjustments = await getCachedDataWithRevalidate(
+    "admin:recent-adjustments:20",
+    () =>
+      prisma.creditTransaction.findMany({
+        where: { type: "admin_adjustment" },
         select: {
           id: true,
-          username: true,
-          email: true,
-          image: true,
+          amount: true,
+          description: true,
+          createdAt: true,
+          user: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+              image: true,
+            },
+          },
         },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 20,
-  });
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      }),
+    ADMIN_CACHE_TTL,
+  );
 
   return json({
     searchQuery,

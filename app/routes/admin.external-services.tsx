@@ -3,6 +3,7 @@ import { useLoaderData, useRevalidator } from "@remix-run/react";
 import { requireUserLogin } from "~/services/auth.server";
 import { getUserWithRoles, isAdmin } from "~/server/isAdmin.server";
 import { getAllTokenBalances, type TokenBalance } from "~/services/externalTokens.server";
+import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 import {
   Card,
   CardContent,
@@ -13,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { AdminStatCard } from "~/components/ps";
 import {
   RefreshCw,
   ExternalLink,
@@ -36,7 +38,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
     throw new Response("Forbidden - Admin access required", { status: 403 });
   }
 
-  const tokenBalances = await getAllTokenBalances();
+  // 60s cache. Each call hits multiple external provider APIs in parallel,
+  // so without caching every tab visit re-checks every provider's balance.
+  const tokenBalances = await getCachedDataWithRevalidate(
+    "admin:token-balances",
+    () => getAllTokenBalances(),
+    60,
+  );
 
   return json({
     tokenBalances,
@@ -195,55 +203,34 @@ export default function AdminExternalServices() {
 
       {/* Status Summary */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Services</CardTitle>
-            <Wallet className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{tokenBalances.length}</div>
-            <p className="text-xs text-muted-foreground">Integrated APIs</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-green-500/5 border-green-500/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {statusCounts.available || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">Services healthy</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-yellow-500/5 border-yellow-500/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Low Balance</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
-              {statusCounts.low || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">Need attention</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-red-500/5 border-red-500/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Issues</CardTitle>
-            <XCircle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {(statusCounts.depleted || 0) + (statusCounts.error || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">Require action</p>
-          </CardContent>
-        </Card>
+        <AdminStatCard
+          label="Total Services"
+          value={tokenBalances.length}
+          sub="Integrated APIs"
+          icon={<Wallet className="h-4 w-4" />}
+          tone="accent"
+        />
+        <AdminStatCard
+          label="Active"
+          value={statusCounts.available || 0}
+          sub="Services healthy"
+          icon={<CheckCircle2 className="h-4 w-4" />}
+          tone="success"
+        />
+        <AdminStatCard
+          label="Low Balance"
+          value={statusCounts.low || 0}
+          sub="Need attention"
+          icon={<AlertTriangle className="h-4 w-4" />}
+          tone="warning"
+        />
+        <AdminStatCard
+          label="Issues"
+          value={(statusCounts.depleted || 0) + (statusCounts.error || 0)}
+          sub="Require action"
+          icon={<XCircle className="h-4 w-4" />}
+          tone="danger"
+        />
       </div>
 
       {/* Image Generation Services */}

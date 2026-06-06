@@ -633,7 +633,9 @@ async function processImageGenerationLocally(
     await logGenerationFailed({
       requestId,
       errorMessage,
-      refundCredits: false, // Credits already deducted in route action
+      // Credits were charged upfront in the route action; refund them on
+      // failure so the user isn't out for a generation they never got.
+      refundCredits: true,
     });
   }
 }
@@ -932,7 +934,9 @@ async function processVideoGenerationLocally(
     await logGenerationFailed({
       requestId,
       errorMessage,
-      refundCredits: false, // Credits already deducted in route action
+      // Credits were charged upfront in the route action; refund them on
+      // failure so the user isn't out for a generation they never got.
+      refundCredits: true,
     });
   }
 }

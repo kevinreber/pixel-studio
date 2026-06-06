@@ -147,8 +147,23 @@ export const getProviderInfoByCompany = (company: string): ProviderInfo => {
   };
 };
 
+// Explicit overrides for models whose user-facing name doesn't follow from
+// the value (renames, deprecations, etc.). Checked before the generic
+// title-case rules below.
+const MODEL_DISPLAY_NAMES: Record<string, string> = {
+  // OpenAI dropped DALL-E 3 from active projects (migrated to gpt-image-1)
+  // and we route the call accordingly. UI shows the current OpenAI label.
+  "dall-e-3": "OpenAI Image",
+  // DALL-E 2 was removed from the picker but historical images still need a
+  // friendly label.
+  "dall-e-2": "DALL-E 2 (legacy)",
+  // gpt-image-1 may eventually be stored directly. Friendly alias.
+  "gpt-image-1": "OpenAI Image",
+};
+
 // Format model name for display
 const formatModelName = (model: string): string => {
+  if (MODEL_DISPLAY_NAMES[model]) return MODEL_DISPLAY_NAMES[model];
   return model
     .replace(/-/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase())

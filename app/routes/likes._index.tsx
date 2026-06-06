@@ -13,7 +13,9 @@ import {
   ImageGridSkeleton,
 } from "~/components";
 import { requireUserLogin } from "~/services/auth.server";
-import { Loader2 } from "lucide-react";
+import { Loader2, Heart } from "lucide-react";
+import { PageHeader, EmptyState, Button } from "~/components/ps";
+import { Link } from "@remix-run/react";
 import { ImageDetail } from "~/server/getImage";
 import ImageModal from "~/components/ImageModal";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -52,7 +54,7 @@ const ImageCard = ({
 }) => {
   return (
     <div
-      className="relative w-full h-full pt-[100%]"
+      className="group relative w-full overflow-hidden rounded-md border border-[var(--border)] bg-surface-2 pt-[100%] transition-all duration-200 hover:-translate-y-[3px] hover:border-border-accent hover:shadow-lg"
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
@@ -66,7 +68,7 @@ const ImageCard = ({
         loading="lazy"
         src={imageData!.thumbnailURL}
         alt={imageData!.prompt}
-        className="absolute inset-0 w-full h-full object-cover cursor-pointer"
+        className="absolute inset-0 h-full w-full cursor-pointer object-cover"
         decoding="async"
         onError={(e) => {
           const target = e.currentTarget;
@@ -113,25 +115,32 @@ const LikePageAccessor = () => {
   return (
     <div className="relative min-h-[400px]">
       {images.length === 0 ? (
-        <p className="text-center w-full block italic font-light">
-          No images found
-        </p>
+        <EmptyState
+          icon={<Heart className="h-[27px] w-[27px]" strokeWidth={1.8} />}
+          title="No liked creations yet"
+          subtitle="Tap the heart on anything you love and it'll show up here."
+          action={
+            <Link to="/explore" prefetch="intent">
+              <Button variant="primary" size="md">
+                Browse Explore
+              </Button>
+            </Link>
+          }
+        />
       ) : (
-        <>
-          <ul className="grid grid-cols-2 md:grid-cols-3 gap-1 md:gap-4 lg:gap-6">
-            {images.map(
-              (image, index) =>
-                image && (
-                  <li key={image.id} className="hover:!opacity-60">
-                    <ImageCard
-                      imageData={image}
-                      onImageClick={() => setSelectedImageIndex(index)}
-                    />
-                  </li>
-                )
-            )}
-          </ul>
-        </>
+        <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+          {images.map(
+            (image, index) =>
+              image && (
+                <li key={image.id}>
+                  <ImageCard
+                    imageData={image}
+                    onImageClick={() => setSelectedImageIndex(index)}
+                  />
+                </li>
+              )
+          )}
+        </ul>
       )}
 
       {currentImage !== null && (
@@ -163,30 +172,36 @@ export default function LikedImages() {
 
   return (
     <PageContainer>
-      <div className="flex flex-col justify-between w-full max-w-5xl m-auto">
-        <h1 className="text-2xl font-bold mb-3">Liked Images</h1>
-        <React.Suspense fallback={<LoadingSkeleton />}>
-          <Await
-            resolve={loaderData.images}
-            errorElement={
-              <ErrorList errors={["There was an error loading images"]} />
-            }
-          >
-            <div className="relative">
-              {isLoading ? (
-                <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-50">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  </div>
-                </div>
-              ) : (
-                <LikePageAccessor />
-              )}
-            </div>
-          </Await>
-        </React.Suspense>
-      </div>
+      <PsLikedHeader />
+      <React.Suspense fallback={<LoadingSkeleton />}>
+        <Await
+          resolve={loaderData.images}
+          errorElement={
+            <ErrorList errors={["There was an error loading images"]} />
+          }
+        >
+          <div className="relative">
+            {isLoading ? (
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-bg/50 backdrop-blur-sm">
+                <Loader2 className="h-8 w-8 animate-spin text-fg-muted" />
+              </div>
+            ) : (
+              <LikePageAccessor />
+            )}
+          </div>
+        </Await>
+      </React.Suspense>
     </PageContainer>
+  );
+}
+
+function PsLikedHeader() {
+  return (
+    <PageHeader
+      icon={<Heart className="h-[20px] w-[20px]" strokeWidth={2} />}
+      title="Liked"
+      subtitle="Creations you've saved with a heart"
+    />
   );
 }
 

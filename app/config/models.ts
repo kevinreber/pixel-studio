@@ -77,25 +77,22 @@ export const MODEL_OPTIONS = [
     recommended: true,
   },
   {
-    name: "DALL-E 3",
+    // OpenAI deprecated `dall-e-3` and migrated projects to `gpt-image-1`.
+    // We keep the internal `value: "dall-e-3"` so existing DB records, pricing
+    // config, and generation logs continue to work — the server-side call
+    // transparently routes to gpt-image-1 (see createNewDallEImages.ts).
+    name: "OpenAI Image",
     value: "dall-e-3",
     image: "/assets/model-thumbs/dalle3.jpg",
-    description: "State-of-the-art image generator from OpenAI.",
+    description: "OpenAI's latest image generation model. High-quality output with strong prompt adherence.",
     company: "OpenAI",
     supportsStyles: false,
     creditCost: 6,
     recommended: true,
   },
-  {
-    name: "DALL-E 2",
-    value: "dall-e-2",
-    image: "/assets/model-thumbs/dalle2.jpg",
-    description: "Reliable image generator from OpenAI.",
-    company: "OpenAI",
-    supportsStyles: false,
-    creditCost: 1,
-    recommended: true,
-  },
+  // DALL-E 2 was removed from the picker — OpenAI deprecated it alongside
+  // dall-e-3. Server-side support remains in createNewDallEImages.ts so any
+  // historical images with model="dall-e-2" still display correctly.
 
   // Replicate Models
   {
