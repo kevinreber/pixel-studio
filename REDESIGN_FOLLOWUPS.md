@@ -19,9 +19,7 @@ PR: https://github.com/kevinreber/pixel-studio/pull/150
   - Confirm pageviews + autocapture events are landing in PostHog.
   - Watch browser console + Sentry for any `Hydration failed` warnings.
 
-- [ ] **Remove `pr-screenshots/` from the repo**
-  - It carries 30+ PNGs (`before/`, `after/`, `mobile-before/`, `mobile-after/`) that are useful for the PR but don't belong in the runtime checkout.
-  - Either delete with `git rm -r pr-screenshots/` in a follow-up PR or add `pr-screenshots/` to `.gitignore` and remove from history.
+- [x] ~~**Remove `pr-screenshots/` from the repo**~~ — **Reclassified as intentional.** The 32 PNGs (desktop + iPhone 14 Pro Max before/after) are kept as a permanent visual record of the redesign. See `pr-screenshots/README.md`.
 
 ## 2. First-week monitoring
 
