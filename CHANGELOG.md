@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Full App Redesign (PR #150 — 2026-06)
+
+- **New design system** keyed off CSS custom properties on `[data-theme="dark"|"light"]`
+  - Indigo accent + accent-soft/text/glow ramp
+  - Surface ramp (`--surface-1/2/3/hover/inset`) and fg ramp (`--fg-muted/subtle/faint`)
+  - Status colors (`--success/warning/danger/info` + soft variants)
+  - Onest (sans) + Geist Mono linked in `root.tsx`; shadcn HSL aliases preserved for back-compat
+  - Lives in `app/globals.css` + `tailwind.config.ts`
+- **Theme toggle** (light + dark) persisted server-side
+  - `User.theme` column written via `POST /api/preferences/theme`
+  - Client applies `data-theme` instantly via `ThemeToggle`
+- **New primitive library** at `app/components/ps/*`: `Button` (6 variants × 5 sizes), `Badge`, `PageHeader`, `Segmented`, `Select`, `Avatar`, `EmptyState`, `ArtTile`, `AdminStatCard`, `NavProgressBar`, `ThemeToggle`
+- **New app shell**: `Sidebar` (252px, grouped + active rail), `TopBar` (sticky 58px, blur), `MobileNav` (top + bottom-tab + slide-up sheet), `AppShell`
+- **Redesigned screens**: Landing, Explore, Create image, Create video, Feed, Liked, Profile, What's New, Image-detail modal, Admin overview, Admin Users / Credits / Models / Engagement / Tokens / External Services / Deletion Logs
+
 #### Kafka Integration & Async Processing
 
 - **Kafka-based async image generation pipeline** - Major architecture improvement
@@ -54,6 +69,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added comprehensive status tracking for async operations
 
 ### Changed
+
+#### OpenAI Image Provider (PR #150)
+
+- **Switched primary OpenAI generation from `dall-e-3` to `gpt-image-1`**
+  - OpenAI sequentially deprecated `response_format`, then `style`/`quality`, then `dall-e-3` itself
+  - `app/server/createNewDallEImages.ts` now uses a layered fallback chain: `dall-e-3` w/ params → `dall-e-3` w/o params → `gpt-image-1` (with `mapSizeToGptImage1()` for the `1024x1792` → `1024x1536` mapping)
+  - `dall-e-2` removed from `app/config/models.ts` (option no longer exposed)
+  - Display name shows "OpenAI Image" via `MODEL_DISPLAY_NAMES` in `app/components/ModelBadge.tsx`
+
+### Fixed
+
+#### Credit refunds on failed generations (PR #150)
+
+- `app/services/qstash.server.ts` flipped `refundCredits: false → true` so a failed QStash job properly refunds the user. Previously, generation failures silently consumed credits without a `CreditTransaction` of `type=refund`.
+
+#### Hydration mismatches from PostHog autocapture (PR #150)
+
+- `app/entry.client.tsx` now defers `initPostHog` past `window.load` (+ `setTimeout(0)`). PostHog's autocapture injects `<script>` tags during the React `hydrateRoot` window; deferring eliminates the resulting `Hydration failed` warnings.
+
+#### Suspense stalls under `v3_singleFetch` (PR #150)
+
+- `ExplorePage` and `UserProfilePage` switched from `defer()` + `<Await>` + `Promise.all` to eager `await` + `json()`. The composed pattern never settled under the v3 single-fetch flag.
 
 #### Processing Flow Improvements
 

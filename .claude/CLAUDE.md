@@ -19,7 +19,7 @@ This file provides context for Claude Code to work effectively with the Pixel St
 | Cache       | Upstash Redis                                                                              |
 | Storage     | AWS S3                                                                                     |
 | Real-time   | Native WebSocket                                                                           |
-| AI (Images) | OpenAI (DALL-E), Hugging Face (SD, Flux), FAL, Ideogram, Replicate, Together, Black Forest |
+| AI (Images) | OpenAI (gpt-image-1, with dall-e-3 fallback), Hugging Face (SD, Flux), FAL, Ideogram, Replicate, Together, Black Forest |
 | AI (Video)  | Runway ML, Luma AI, Stability AI                                                           |
 | Payments    | Stripe                                                                                     |
 | Logging     | Winston + OpenTelemetry (OTLP HTTP exporter)                                               |
@@ -281,7 +281,7 @@ npm run queue:websocket            # Start WebSocket server (alias)
 
 ### Image Providers (8)
 
-- `createNewDallEImages.ts` - DALL-E 2/3 generation
+- `createNewDallEImages.ts` - OpenAI image generation. Layered fallback: `dall-e-3` w/ params → `dall-e-3` w/o params → `gpt-image-1` (with `mapSizeToGptImage1()`). `dall-e-2` is no longer exposed.
 - `createNewStableDiffusionImages.ts` - Stable Diffusion
 - `createHuggingFaceImages.ts` - Hugging Face models
 - `createBlackForestImages.ts` - Black Forest AI
@@ -804,6 +804,8 @@ npm run kafka:websocket
 - Blog/tutorial system with SEO metadata
 - Supabase v2 auth migration
 - Short URL image sharing (`/p/$imageId`)
+- **Full app redesign** (PR #150, 2026-06): new design tokens (`app/globals.css` + `tailwind.config.ts`), primitive library (`app/components/ps/*`), app shell (`Sidebar` / `TopBar` / `MobileNav` / `AppShell`), light + dark theme toggle persisted to `User.theme`, redesigned versions of every core screen (consumer + admin).
+- **OpenAI provider switch** (PR #150, 2026-06): `dall-e-3` → `gpt-image-1` with layered fallback. See `app/server/createNewDallEImages.ts`.
 - Dynamic sitemap generation
 - Credit history and generation history settings pages
 - What's new page for feature announcements

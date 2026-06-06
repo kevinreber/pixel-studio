@@ -13,6 +13,20 @@ export interface BuildLogEntry {
  */
 export const buildLogs: BuildLogEntry[] = [
   {
+    id: "2026-06-redesign",
+    date: "2026-06-06",
+    title: "Fresh look — full app redesign",
+    description:
+      "Pixel Studio has a brand-new look. We rebuilt the visual system from the ground up — new typography, refined surfaces, a consistent indigo accent, and proper light + dark themes. The mobile experience is now first-class with a dedicated bottom nav and quick-create button.",
+    category: "announcement",
+    highlights: [
+      "Light and dark themes — your preference saves across devices",
+      "Redesigned every core screen: Create, Explore, Feed, Profile, and more",
+      "New mobile bottom nav with a one-tap create button",
+      "Faster, cleaner admin dashboard with grouped navigation",
+    ],
+  },
+  {
     id: "2026-02-video-stability",
     date: "2026-02-10",
     title: "Stability AI Video Generation",
