@@ -29,7 +29,11 @@ import {
   Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AdminStatCard } from "~/components/ps";
 import { getS3BucketThumbnailURL } from "~/utils/s3Utils";
+import { getCachedDataWithRevalidate } from "~/utils/cache.server";
+
+const ADMIN_CACHE_TTL = 60;
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
@@ -46,11 +50,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
     mostLikedContentRaw,
     followTrends,
   ] = await Promise.all([
-    getTopUsersByFollowers(10),
-    getTopCreatorsByEngagement(10),
-    getPlatformSocialStats(),
-    getMostLikedContent(10),
-    getFollowTrends(14),
+    getCachedDataWithRevalidate("admin:top-followers:10", () => getTopUsersByFollowers(10), ADMIN_CACHE_TTL),
+    getCachedDataWithRevalidate("admin:top-engagement:10", () => getTopCreatorsByEngagement(10), ADMIN_CACHE_TTL),
+    getCachedDataWithRevalidate("admin:social-stats", () => getPlatformSocialStats(), ADMIN_CACHE_TTL),
+    getCachedDataWithRevalidate("admin:most-liked:10", () => getMostLikedContent(10), ADMIN_CACHE_TTL),
+    getCachedDataWithRevalidate("admin:follow-trends:14", () => getFollowTrends(14), ADMIN_CACHE_TTL),
   ]);
 
   // Add image URLs (constructed from S3 bucket)
@@ -183,71 +187,34 @@ export default function AdminEngagementPage() {
 
       {/* Social Stats Overview */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Follows
-            </CardTitle>
-            <UserPlus className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {socialStats.totalFollowRelationships.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {socialStats.avgFollowersPerUser} avg per user
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Likes</CardTitle>
-            <Heart className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {socialStats.totalLikes.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {socialStats.avgLikesPerImage} avg per image
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Comments
-            </CardTitle>
-            <MessageCircle className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {socialStats.totalComments.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {socialStats.avgCommentsPerImage} avg per image
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Users with Followers
-            </CardTitle>
-            <Users className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {socialStats.usersWithFollowers.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {socialStats.usersWithNoFollowers} without
-            </p>
-          </CardContent>
-        </Card>
+        <AdminStatCard
+          label="Total Follows"
+          value={socialStats.totalFollowRelationships.toLocaleString()}
+          sub={`${socialStats.avgFollowersPerUser} avg per user`}
+          icon={<UserPlus className="h-4 w-4" />}
+          tone="info"
+        />
+        <AdminStatCard
+          label="Total Likes"
+          value={socialStats.totalLikes.toLocaleString()}
+          sub={`${socialStats.avgLikesPerImage} avg per image`}
+          icon={<Heart className="h-4 w-4" />}
+          tone="danger"
+        />
+        <AdminStatCard
+          label="Total Comments"
+          value={socialStats.totalComments.toLocaleString()}
+          sub={`${socialStats.avgCommentsPerImage} avg per image`}
+          icon={<MessageCircle className="h-4 w-4" />}
+          tone="accent"
+        />
+        <AdminStatCard
+          label="Users with Followers"
+          value={socialStats.usersWithFollowers.toLocaleString()}
+          sub={`${socialStats.usersWithNoFollowers} without`}
+          icon={<Users className="h-4 w-4" />}
+          tone="success"
+        />
       </div>
 
       {/* Most Followed User Highlight */}

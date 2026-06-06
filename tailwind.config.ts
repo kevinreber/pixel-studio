@@ -1,24 +1,56 @@
 import type { Config } from "tailwindcss";
 
 const config = {
-  darkMode: ["class"],
+  darkMode: ["class", '[data-theme="dark"]'],
   content: [
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
     "./app/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
+    "./@/**/*.{ts,tsx}",
   ],
   prefix: "",
   theme: {
     container: {
       center: true,
       padding: "2rem",
-      screens: {
-        "2xl": "1400px",
-      },
+      screens: { "2xl": "1400px" },
     },
     extend: {
       colors: {
+        // --- redesign tokens (raw vars; supports rgba alphas) ---
+        bg: "var(--bg)",
+        fg: {
+          DEFAULT: "var(--fg)",
+          muted: "var(--fg-muted)",
+          subtle: "var(--fg-subtle)",
+          faint: "var(--fg-faint)",
+        },
+        surface: {
+          1: "var(--surface-1)",
+          2: "var(--surface-2)",
+          3: "var(--surface-3)",
+          hover: "var(--surface-hover)",
+          inset: "var(--surface-inset)",
+        },
+        success: {
+          DEFAULT: "var(--success)",
+          soft: "var(--success-soft)",
+        },
+        warning: {
+          DEFAULT: "var(--warning)",
+          soft: "var(--warning-soft)",
+        },
+        danger: {
+          DEFAULT: "var(--danger)",
+          soft: "var(--danger-soft)",
+        },
+        info: {
+          DEFAULT: "var(--info)",
+          soft: "var(--info-soft)",
+        },
+
+        // --- shadcn compat (kept so existing components keep rendering) ---
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -40,8 +72,17 @@ const config = {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
         },
+        // Redesign accent uses raw rgba vars (for accent-soft alphas).
+        // The shadcn `accent.foreground` is still exposed for legacy components.
         accent: {
-          DEFAULT: "hsl(var(--accent))",
+          DEFAULT: "var(--accent)",
+          hover: "var(--accent-hover)",
+          press: "var(--accent-press)",
+          fg: "var(--accent-fg)",
+          soft: "var(--accent-soft)",
+          "soft-2": "var(--accent-soft-2)",
+          text: "var(--accent-text)",
+          glow: "var(--accent-glow)",
           foreground: "hsl(var(--accent-foreground))",
         },
         popover: {
@@ -52,11 +93,39 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+
+        // explicit borders/strong/accent for redesign
+        "border-strong": "var(--border-strong)",
+        "border-accent": "var(--border-accent)",
+      },
+      borderColor: {
+        // make `border-border-strong` etc. work
+        strong: "var(--border-strong)",
+        "accent-soft": "var(--border-accent)",
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        xs: "var(--r-xs)",
+        sm: "var(--r-sm)",
+        md: "var(--r-md)",
+        lg: "var(--r-lg)",
+        xl: "var(--r-xl)",
+        "2xl": "var(--r-2xl)",
+        full: "var(--r-full)",
+      },
+      boxShadow: {
+        sm: "var(--shadow-sm)",
+        md: "var(--shadow-md)",
+        lg: "var(--shadow-lg)",
+        pop: "var(--shadow-pop)",
+        glow: "0 6px 20px -8px var(--accent-glow)",
+      },
+      fontFamily: {
+        sans: ["Onest", "system-ui", "-apple-system", "sans-serif"],
+        mono: ["Geist Mono", "ui-monospace", "SF Mono", "monospace"],
+      },
+      transitionTimingFunction: {
+        ps: "cubic-bezier(0.22,0.61,0.36,1)",
+        "ps-out": "cubic-bezier(0.16,1,0.3,1)",
       },
       keyframes: {
         "accordion-down": {
@@ -88,19 +157,29 @@ const config = {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
-        "gradient-shift": {
-          "0%, 100%": { backgroundPosition: "0% 50%" },
-          "50%": { backgroundPosition: "100% 50%" },
+        "ps-rise": {
+          from: { transform: "translateY(13px)" },
+          to: { transform: "translateY(0)" },
         },
-        "text-reveal": {
-          "0%": { opacity: "0", transform: "translateY(10px)" },
-          "15%": { opacity: "1", transform: "translateY(0)" },
-          "85%": { opacity: "1", transform: "translateY(0)" },
-          "100%": { opacity: "0", transform: "translateY(-10px)" },
+        "ps-fade-up": {
+          from: { opacity: "0", transform: "translateY(10px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
         },
-        "grid-scroll": {
-          "0%": { transform: "translate(0, 0)" },
-          "100%": { transform: "translate(200px, 200px)" },
+        "ps-pop": {
+          "0%": { opacity: "0", transform: "scale(0.96) translateY(6px)" },
+          "100%": { opacity: "1", transform: "scale(1) translateY(0)" },
+        },
+        "ps-float": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-12px)" },
+        },
+        "ps-sheet-up": {
+          from: { transform: "translateY(100%)" },
+          to: { transform: "translateY(0)" },
+        },
+        "ps-caret": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0" },
         },
       },
       animation: {
@@ -113,9 +192,12 @@ const config = {
         "float-slow": "float 8s ease-in-out infinite",
         "float-slower": "float 10s ease-in-out infinite",
         shimmer: "shimmer 2s linear infinite",
-        "gradient-shift": "gradient-shift 8s ease infinite",
-        "text-reveal": "text-reveal 3s ease-in-out infinite",
-        "grid-scroll": "grid-scroll 20s linear infinite",
+        "ps-rise": "ps-rise 0.5s var(--ease-out) both",
+        "ps-fade-up": "ps-fade-up 0.5s var(--ease-out) both",
+        "ps-pop": "ps-pop 0.28s var(--ease-out) both",
+        "ps-float": "ps-float 7s ease-in-out infinite",
+        "ps-sheet-up": "ps-sheet-up 0.28s var(--ease-out) both",
+        "ps-caret": "ps-caret 1s steps(1) infinite",
       },
     },
   },

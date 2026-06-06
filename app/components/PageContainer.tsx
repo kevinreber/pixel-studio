@@ -1,5 +1,4 @@
 import React from "react";
-import { useLocation } from "@remix-run/react";
 
 type PageContainerTypes = {
   children: React.ReactNode;
@@ -8,21 +7,18 @@ type PageContainerTypes = {
 };
 
 /**
- * @description
- * General Page Container for content that is displayed in the main content area to the right side of the left sidebar.
+ * Page container — the redesign's AppShell already supplies the sidebar
+ * offset, top bar, and max-width gutter, so this is now a thin
+ * vertical-rhythm wrapper used by individual pages.
  */
 const PageContainer = ({
   children,
   styles = {},
   className = "",
 }: PageContainerTypes) => {
-  const location = useLocation();
-  const isHome = location.pathname === "/";
-  const navigationSidebarPadding = isHome ? "" : "md:pl-64";
-
   return (
     <div
-      className={`flex flex-col mx-auto w-11/12 mt-24 pt-4 pb-20 md:mt-6 ${className} ${navigationSidebarPadding}`}
+      className={`flex flex-col py-6 md:py-10 ${className}`.trim()}
       style={styles}
     >
       {children}

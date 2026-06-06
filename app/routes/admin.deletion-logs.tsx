@@ -4,6 +4,9 @@ import { requireUserLogin } from "~/services/auth.server";
 import { getUserWithRoles, isAdmin } from "~/server/isAdmin.server";
 import { getImageDeletionLogs } from "~/services/imageDeletionLog.server";
 import { prisma } from "~/services/prisma.server";
+import { getCachedDataWithRevalidate } from "~/utils/cache.server";
+
+const ADMIN_CACHE_TTL = 60;
 import {
   Card,
   CardContent,
@@ -38,16 +41,30 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const offset = (page - 1) * PAGE_SIZE;
 
   const [logs, totalCount] = await Promise.all([
-    getImageDeletionLogs({ limit: PAGE_SIZE, offset }),
-    prisma.imageDeletionLog.count(),
+    getCachedDataWithRevalidate(
+      `admin:deletion-logs:${page}`,
+      () => getImageDeletionLogs({ limit: PAGE_SIZE, offset }),
+      ADMIN_CACHE_TTL,
+    ),
+    getCachedDataWithRevalidate(
+      "admin:deletion-logs:count",
+      () => prisma.imageDeletionLog.count(),
+      ADMIN_CACHE_TTL,
+    ),
   ]);
 
-  // Fetch usernames for image owners
+  // Fetch usernames for image owners (60s cache — same page tends to be hit
+  // repeatedly while admins audit, and owner usernames rarely change).
   const ownerIds = [...new Set(logs.map((log) => log.imageUserId))];
-  const owners = await prisma.user.findMany({
-    where: { id: { in: ownerIds } },
-    select: { id: true, username: true },
-  });
+  const owners = await getCachedDataWithRevalidate(
+    `admin:deletion-log-owners:${ownerIds.sort().join(",")}`,
+    () =>
+      prisma.user.findMany({
+        where: { id: { in: ownerIds } },
+        select: { id: true, username: true },
+      }),
+    ADMIN_CACHE_TTL,
+  );
   const ownerMap = new Map(owners.map((o) => [o.id, o.username]));
 
   const logsWithOwners = logs.map((log) => ({

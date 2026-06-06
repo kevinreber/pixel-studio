@@ -58,6 +58,23 @@ interface ImagePickerProps {
   disabled?: boolean;
 }
 
+/**
+ * Only http(s) URLs are safe to render as <img src>. Block
+ * javascript:, data:text/html, vbscript:, etc.
+ */
+function isSafeImageUrl(url: string): boolean {
+  const trimmed = url.trim();
+  if (!trimmed) return false;
+  // Protocol-relative or same-origin paths.
+  if (trimmed.startsWith("/") || trimmed.startsWith("//")) return true;
+  try {
+    const u = new URL(trimmed);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export function ImagePicker({
   onSelect,
   selectedImageUrl,
@@ -239,8 +256,10 @@ export function ImagePicker({
         )}
       </div>
 
-      {/* Selected Image Preview */}
-      {selectedImageUrl && (
+      {/* Selected Image Preview — guard against arbitrary URL schemes
+          (javascript:, data:text/html, etc.). The URL flows from a user
+          input upstream, so only render http(s) or http(s)-relative URLs. */}
+      {selectedImageUrl && isSafeImageUrl(selectedImageUrl) && (
         <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-zinc-700 bg-zinc-800">
           <img
             src={selectedImageUrl}

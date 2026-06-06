@@ -1,35 +1,31 @@
-import { Badge } from "components/ui/badge";
+import { Sparkles, TrendingUp, Bug, Megaphone } from "lucide-react";
 import {
   buildLogs,
   getCategoryLabel,
   type BuildLogEntry,
 } from "~/config/buildLogs";
-import { Sparkles, TrendingUp, Bug, Megaphone } from "lucide-react";
+import { PageHeader, Badge } from "~/components/ps";
 
-function getCategoryStyles(category: BuildLogEntry["category"]): string {
+type Category = BuildLogEntry["category"];
+
+const TONE_BY_CATEGORY: Record<Category, "success" | "info" | "warning" | "accent"> = {
+  feature: "success",
+  improvement: "info",
+  fix: "warning",
+  announcement: "accent",
+};
+
+function getCategoryIcon(category: Category) {
+  const cls = "h-3 w-3";
   switch (category) {
     case "feature":
-      return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
+      return <Sparkles className={cls} strokeWidth={2.4} />;
     case "improvement":
-      return "bg-blue-500/15 text-blue-400 border-blue-500/30";
+      return <TrendingUp className={cls} strokeWidth={2.4} />;
     case "fix":
-      return "bg-amber-500/15 text-amber-400 border-amber-500/30";
+      return <Bug className={cls} strokeWidth={2.4} />;
     case "announcement":
-      return "bg-purple-500/15 text-purple-400 border-purple-500/30";
-  }
-}
-
-function getCategoryIcon(category: BuildLogEntry["category"]) {
-  const className = "h-4 w-4";
-  switch (category) {
-    case "feature":
-      return <Sparkles className={className} />;
-    case "improvement":
-      return <TrendingUp className={className} />;
-    case "fix":
-      return <Bug className={className} />;
-    case "announcement":
-      return <Megaphone className={className} />;
+      return <Megaphone className={cls} strokeWidth={2.4} />;
   }
 }
 
@@ -42,63 +38,75 @@ function formatDate(dateStr: string): string {
   });
 }
 
-function BuildLogCard({ entry }: { entry: BuildLogEntry }) {
+function TimelineEntry({
+  entry,
+  isFirst,
+}: {
+  entry: BuildLogEntry;
+  isFirst: boolean;
+}) {
+  const tone = TONE_BY_CATEGORY[entry.category];
   return (
-    <div className="relative pl-8 pb-8 last:pb-0">
+    <div className="relative pb-10 pl-10 last:pb-0">
       {/* Timeline dot */}
-      <div className="absolute left-0 top-1 h-3 w-3 rounded-full bg-zinc-600 ring-4 ring-zinc-900" />
-
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-5">
-        <div className="flex flex-wrap items-center gap-3 mb-3">
-          <Badge className={getCategoryStyles(entry.category)}>
-            <span className="mr-1.5 flex items-center">
-              {getCategoryIcon(entry.category)}
-            </span>
+      <div
+        className="absolute left-[14px] top-2 grid h-3 w-3 -translate-x-1/2 place-items-center rounded-full bg-[var(--accent)]"
+        aria-hidden
+      />
+      <article
+        className={
+          "rounded-lg border bg-surface-1 p-5 transition-colors " +
+          (isFirst
+            ? "border-border-accent shadow-md"
+            : "border-[var(--border)]")
+        }
+      >
+        <div className="mb-3 flex flex-wrap items-center gap-3">
+          <Badge tone={tone} icon={getCategoryIcon(entry.category)}>
             {getCategoryLabel(entry.category)}
           </Badge>
-          <span className="text-sm text-zinc-500">{formatDate(entry.date)}</span>
+          <span className="text-[12.5px] text-fg-subtle">
+            {formatDate(entry.date)}
+          </span>
+          <span className="mono ml-auto rounded-sm bg-surface-3 px-2 py-0.5 text-[11px] text-fg-muted">
+            {entry.id}
+          </span>
         </div>
-
-        <h3 className="text-lg font-semibold text-zinc-100 mb-2">
+        <h3 className="mb-2 text-[17px] font-semibold tracking-[-0.01em] text-fg">
           {entry.title}
         </h3>
-
-        <p className="text-zinc-400 mb-4 leading-relaxed">
+        <p className="mb-3 text-[14px] leading-[1.6] text-fg-muted">
           {entry.description}
         </p>
-
         {entry.highlights && entry.highlights.length > 0 && (
           <ul className="space-y-1.5">
             {entry.highlights.map((highlight) => (
               <li
                 key={highlight}
-                className="flex items-start gap-2 text-sm text-zinc-300"
+                className="flex items-start gap-2 text-[13.5px] text-fg"
               >
-                <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-zinc-500" />
-                {highlight}
+                <span className="mt-[7px] h-1 w-1 flex-shrink-0 rounded-full bg-[var(--accent)]" />
+                <span>{highlight}</span>
               </li>
             ))}
           </ul>
         )}
-      </div>
+      </article>
     </div>
   );
 }
 
 export default function WhatsNewPage() {
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">What&apos;s New</h1>
-        <p className="text-zinc-400">
-          The latest features and updates on Pixel Studio
-        </p>
-      </div>
-
-      {/* Timeline */}
-      <div className="relative border-l border-zinc-800 ml-1.5">
-        {buildLogs.map((entry) => (
-          <BuildLogCard key={entry.id} entry={entry} />
+    <div className="mx-auto max-w-3xl py-8">
+      <PageHeader
+        icon={<Sparkles className="h-[20px] w-[20px]" strokeWidth={2} />}
+        title="What's new"
+        subtitle="The latest features and updates on Pixel Studio"
+      />
+      <div className="relative ml-3.5 border-l border-[var(--border)]">
+        {buildLogs.map((entry, idx) => (
+          <TimelineEntry key={entry.id} entry={entry} isFirst={idx === 0} />
         ))}
       </div>
     </div>

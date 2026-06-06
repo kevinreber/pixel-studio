@@ -191,61 +191,66 @@ export const NotificationDropdown = ({
         <button
           className={
             showLabel
-              ? "w-full flex items-center px-3 py-2 rounded-md text-gray-300 hover:bg-gray-800 hover:text-white transition-colors font-medium"
-              : "relative p-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-md transition-colors"
+              ? "w-full flex items-center gap-2 px-3 py-2 rounded-sm text-fg-muted hover:bg-surface-2 hover:text-fg transition-colors font-medium"
+              : "relative grid h-9 w-9 place-items-center rounded-full text-fg-muted hover:bg-surface-2 hover:text-fg transition-colors"
           }
           aria-label="Notifications"
         >
           <span className="relative">
-            <Bell className={showLabel ? "md:h-4 md:w-4" : "h-5 w-5"} />
+            <Bell className={showLabel ? "h-[18px] w-[18px]" : "h-[18px] w-[18px]"} strokeWidth={2} />
             {isMounted && unreadCount > 0 && (
               <span
-                className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center"
+                className="absolute -right-1.5 -top-1.5 grid h-4 min-w-[16px] place-items-center rounded-full bg-[var(--accent)] px-1 text-[10px] font-semibold text-[var(--accent-fg)] ring-2 ring-[var(--bg)]"
                 aria-label={`${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`}
               >
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
           </span>
-          {showLabel && <span className="ml-2">Notifications</span>}
+          {showLabel && <span>Notifications</span>}
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-80 p-0 bg-zinc-900 border-zinc-700"
+        className="w-[360px] rounded-md border border-border-strong bg-surface-2 p-0 shadow-pop"
         align="end"
-        sideOffset={8}
+        sideOffset={10}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-3 border-b border-zinc-700">
-          <h3 className="font-semibold text-gray-100">Notifications</h3>
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+          <h3 className="text-[14px] font-semibold text-fg">Notifications</h3>
           {unreadCount > 0 && (
             <Button
               ref={markAllReadButtonRef}
               variant="ghost"
               size="sm"
-              className="text-xs text-blue-400 hover:text-blue-300 h-auto p-1"
+              className="h-auto p-1 text-[12px] font-semibold text-[var(--accent-text)] hover:bg-accent-soft"
               onClick={handleMarkAllRead}
               aria-label={`Mark all ${unreadCount} notifications as read`}
             >
-              <Check className="h-3 w-3 mr-1" aria-hidden="true" />
+              <Check className="mr-1 h-3 w-3" aria-hidden="true" />
               Mark all read
             </Button>
           )}
         </div>
 
         {/* Content */}
-        <ScrollArea className="h-[400px]">
+        <ScrollArea className="h-[420px]">
           {isInitialLoading ? (
-            <div className="flex items-center justify-center h-32">
-              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            <div className="flex h-32 items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-fg-subtle" />
             </div>
           ) : notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-32 text-gray-400">
-              <Bell className="h-8 w-8 mb-2 opacity-50" />
-              <p className="text-sm">No notifications yet</p>
+            <div className="flex h-40 flex-col items-center justify-center text-fg-subtle">
+              <span className="mb-3 grid h-12 w-12 place-items-center rounded-full bg-accent-soft text-[var(--accent-text)]">
+                <Bell className="h-5 w-5" strokeWidth={2} />
+              </span>
+              <p className="text-[13.5px] text-fg">You&apos;re all caught up</p>
+              <p className="mt-0.5 text-[12px] text-fg-subtle">
+                No new notifications
+              </p>
             </div>
           ) : (
-            <div className="divide-y divide-zinc-800">
+            <div className="divide-y divide-[var(--border)]">
               {notifications.map((notification) => (
                 <NotificationItem
                   key={notification.id}

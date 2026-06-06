@@ -9,6 +9,7 @@ import {
   getCreditFlowSummary,
   getGenerationStats,
 } from "~/services/adminAnalytics.server";
+import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 import {
   Card,
   CardContent,
@@ -30,7 +31,7 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { AdminStatCard } from "~/components/ps";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await requireUserLogin(request);
@@ -40,7 +41,61 @@ export async function loader({ request }: LoaderFunctionArgs) {
     throw new Response("Forbidden", { status: 403 });
   }
 
-  // Get various stats and admin users
+  // Wrap each independent query so a single Prisma pool timeout doesn't
+  // tank the whole dashboard. Same pattern as admin.credits.tsx.
+  const failed: string[] = [];
+  const safe = <T,>(label: string, p: Promise<T>, fallback: T): Promise<T> =>
+    p.catch((err) => {
+      failed.push(label);
+      console.warn(
+        `[admin._index] ${label} failed:`,
+        err instanceof Error ? err.message : err,
+      );
+      return fallback;
+    });
+
+  const emptyDashboardStats = {
+    totalUsers: 0,
+    activeUsersToday: 0,
+    totalImages: 0,
+    totalGenerations: 0,
+    creditsInCirculation: 0,
+    zeroCreditUsers: 0,
+  } as Awaited<ReturnType<typeof getAdminDashboardStats>>;
+  const emptyFlow = {
+    totalPurchased: 0,
+    totalSpent: 0,
+    totalRefunded: 0,
+    totalBonuses: 0,
+    netFlow: 0,
+    transactionCount: 0,
+  } as Awaited<ReturnType<typeof getCreditFlowSummary>>;
+  const emptyGenStats = {
+    total: 0,
+    successful: 0,
+    failed: 0,
+    successRate: 0,
+  } as Awaited<ReturnType<typeof getGenerationStats>>;
+
+  type AdminUserRow = {
+    id: string;
+    username: string;
+    email: string;
+    image: string | null;
+    createdAt: Date;
+    roles: { name: string }[];
+  };
+  const emptyDeletionStats = {
+    totalDeletions: 0,
+    deletionsByAdmin: [] as Awaited<
+      ReturnType<typeof getImageDeletionStats>
+    >["deletionsByAdmin"],
+  } as Awaited<ReturnType<typeof getImageDeletionStats>>;
+
+  // Cache each aggregate for 60s so admin nav within a session is instant.
+  // Dev DB has connection_limit=1 which means all of these run serially —
+  // the first cold visit pays the full cost; refreshes within 60s are free.
+  const TTL = 60;
   const [
     deletionStats,
     dashboardStats,
@@ -48,37 +103,67 @@ export async function loader({ request }: LoaderFunctionArgs) {
     generationStatsToday,
     adminUsers,
   ] = await Promise.all([
-    getImageDeletionStats(),
-    getAdminDashboardStats(),
-    getCreditFlowSummary("today"),
-    getGenerationStats("today"),
-    prisma.user.findMany({
-      where: {
-        roles: {
-          some: {
-            name: {
-              equals: "admin",
-              mode: "insensitive",
+    safe(
+      "deletionStats",
+      getCachedDataWithRevalidate(
+        "admin:deletion-stats",
+        () => getImageDeletionStats(),
+        TTL,
+      ),
+      emptyDeletionStats,
+    ),
+    safe(
+      "dashboardStats",
+      getCachedDataWithRevalidate(
+        "admin:dashboard-stats",
+        () => getAdminDashboardStats(),
+        TTL,
+      ),
+      emptyDashboardStats,
+    ),
+    safe(
+      "creditFlowToday",
+      getCachedDataWithRevalidate(
+        "admin:credit-flow:today",
+        () => getCreditFlowSummary("today"),
+        TTL,
+      ),
+      emptyFlow,
+    ),
+    safe(
+      "generationStatsToday",
+      getCachedDataWithRevalidate(
+        "admin:generation-stats:today",
+        () => getGenerationStats("today"),
+        TTL,
+      ),
+      emptyGenStats,
+    ),
+    safe(
+      "adminUsers",
+      getCachedDataWithRevalidate(
+        "admin:admin-users",
+        () =>
+          prisma.user.findMany({
+            where: {
+              roles: {
+                some: { name: { equals: "admin", mode: "insensitive" } },
+              },
             },
-          },
-        },
-      },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        image: true,
-        createdAt: true,
-        roles: {
-          select: {
-            name: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "asc",
-      },
-    }),
+            select: {
+              id: true,
+              username: true,
+              email: true,
+              image: true,
+              createdAt: true,
+              roles: { select: { name: true } },
+            },
+            orderBy: { createdAt: "asc" },
+          }) as Promise<AdminUserRow[]>,
+        TTL,
+      ),
+      [] as AdminUserRow[],
+    ),
   ]);
 
   return json({
@@ -87,6 +172,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     creditFlowToday,
     generationStatsToday,
     adminUsers,
+    dataFailures: failed,
   });
 }
 
@@ -97,84 +183,72 @@ export default function AdminDashboard() {
     creditFlowToday,
     generationStatsToday,
     adminUsers,
+    dataFailures,
   } = useLoaderData<typeof loader>();
 
   return (
     <div className="space-y-8">
-      {/* Platform Stats Overview */}
+      {dataFailures && dataFailures.length > 0 && (
+        <div className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning-soft p-3 text-[13px] text-warning">
+          <span className="mono mt-px text-[11px]">⚠</span>
+          <div>
+            <div className="font-semibold">
+              Some metrics couldn&apos;t be loaded
+            </div>
+            <div className="text-[12px] text-warning/80">
+              {dataFailures.length} of 5 queries timed out
+              {dataFailures.length === 5
+                ? ". Check the DB connection pool."
+                : ` (${dataFailures.join(", ")}). Refresh to retry.`}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Platform Stats Overview — redesigned stat cards */}
       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-        <Card>
+        <AdminStatCard
+          label="Total Users"
+          value={dashboardStats.totalUsers}
+          sub="Registered accounts"
+          icon={<Users className="h-4 w-4" />}
+          tone="info"
+        />
+        <AdminStatCard
+          label="Active Today"
+          value={dashboardStats.activeUsersToday}
+          sub="Users generating"
+          icon={<Activity className="h-4 w-4" />}
+          tone="success"
+        />
+        <AdminStatCard
+          label="Total Images"
+          value={dashboardStats.totalImages}
+          sub="Generated content"
+          icon={<Image className="h-4 w-4" />}
+          tone="accent"
+        />
+        <AdminStatCard
+          label="Generations"
+          value={dashboardStats.totalGenerations}
+          sub="All time"
+          icon={<Zap className="h-4 w-4" />}
+          tone="warning"
+        />
+        <AdminStatCard
+          label="Credits Active"
+          value={dashboardStats.creditsInCirculation}
+          sub="In circulation"
+          icon={<Coins className="h-4 w-4" />}
+          tone="warning"
+        />
+        <Card className="border-warning/30 bg-warning-soft">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-blue-500" />
+            <CardTitle className="u-label">Zero Credits</CardTitle>
+            <AlertCircle className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {dashboardStats.totalUsers.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">Registered accounts</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Today</CardTitle>
-            <Activity className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {dashboardStats.activeUsersToday.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">Users generating</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Images</CardTitle>
-            <Image className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {dashboardStats.totalImages.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">Generated content</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Generations</CardTitle>
-            <Zap className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {dashboardStats.totalGenerations.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">All time</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Credits Active</CardTitle>
-            <Coins className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {dashboardStats.creditsInCirculation.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">In circulation</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Zero Credits</CardTitle>
-            <AlertCircle className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="mono text-3xl font-bold text-warning">
               {dashboardStats.zeroCreditUsers.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">Users at risk</p>
@@ -182,64 +256,42 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Today's Activity Cards */}
+      {/* Today's Activity */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-green-500/5 border-green-500/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Credits Purchased Today</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              +{creditFlowToday.totalPurchased.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-red-500/5 border-red-500/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Credits Spent Today</CardTitle>
-            <Coins className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              -{creditFlowToday.totalSpent.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-blue-500/5 border-blue-500/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Generations Today</CardTitle>
-            <Zap className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {generationStatsToday.total.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-purple-500/5 border-purple-500/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Success Rate Today</CardTitle>
-            <Activity className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div
-              className={cn(
-                "text-2xl font-bold",
-                generationStatsToday.successRate >= 90
-                  ? "text-green-600"
-                  : generationStatsToday.successRate >= 70
-                    ? "text-yellow-600"
-                    : "text-red-600"
-              )}
-            >
-              {generationStatsToday.successRate}%
-            </div>
-          </CardContent>
-        </Card>
+        <AdminStatCard
+          label="Credits Purchased"
+          value={`+${creditFlowToday.totalPurchased.toLocaleString()}`}
+          sub="today"
+          icon={<TrendingUp className="h-4 w-4" />}
+          tone="success"
+        />
+        <AdminStatCard
+          label="Credits Spent"
+          value={`-${creditFlowToday.totalSpent.toLocaleString()}`}
+          sub="today"
+          icon={<Coins className="h-4 w-4" />}
+          tone="danger"
+        />
+        <AdminStatCard
+          label="Generations"
+          value={generationStatsToday.total.toLocaleString()}
+          sub="today"
+          icon={<Zap className="h-4 w-4" />}
+          tone="info"
+        />
+        <AdminStatCard
+          label="Success Rate"
+          value={`${generationStatsToday.successRate}%`}
+          sub="today"
+          icon={<Activity className="h-4 w-4" />}
+          tone={
+            generationStatsToday.successRate >= 90
+              ? "success"
+              : generationStatsToday.successRate >= 70
+                ? "warning"
+                : "danger"
+          }
+        />
       </div>
 
       {/* Quick Links */}

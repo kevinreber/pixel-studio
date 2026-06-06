@@ -1,0 +1,182 @@
+/* ============================================================
+   PIXEL STUDIO — REDESIGN DESIGN SYSTEM
+   One indigo accent, a real elevation ramp, dark + light.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* radius */
+  --r-xs: 6px;
+  --r-sm: 9px;
+  --r-md: 13px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+  --r-2xl: 30px;
+  --r-full: 999px;
+
+  /* type */
+  --font-sans: 'Onest', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* fixed accent (same in both themes) */
+  --accent: #6d5efc;
+  --accent-hover: #8175ff;
+  --accent-press: #5a4cf0;
+  --accent-fg: #ffffff;
+
+  /* easing */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ---------- DARK (primary) ---------- */
+[data-theme='dark'] {
+  --bg: #09090b;
+  --bg-grad-1: #0d0b16;
+  --bg-grad-2: #09090b;
+  --surface-1: #111114;
+  --surface-2: #18181d;
+  --surface-3: #212029;
+  --surface-hover: #26252f;
+  --surface-inset: #0c0c0f;
+
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.13);
+  --border-accent: rgba(124, 112, 255, 0.45);
+
+  --fg: #fafafa;
+  --fg-muted: #a2a2ad;
+  --fg-subtle: #6e6e79;
+  --fg-faint: #46464f;
+
+  --accent-soft: rgba(109, 94, 252, 0.16);
+  --accent-soft-2: rgba(109, 94, 252, 0.09);
+  --accent-text: #b7adff;
+  --accent-glow: rgba(109, 94, 252, 0.5);
+
+  --success: #2fcf8e;
+  --success-soft: rgba(47, 207, 142, 0.14);
+  --warning: #f6b03c;
+  --warning-soft: rgba(246, 176, 60, 0.14);
+  --danger: #f4594a;
+  --danger-soft: rgba(244, 89, 74, 0.14);
+  --info: #56a4ff;
+  --info-soft: rgba(86, 164, 255, 0.14);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 20px -6px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 24px 60px -16px rgba(0, 0, 0, 0.72);
+  --shadow-pop: 0 16px 48px -12px rgba(0, 0, 0, 0.7);
+}
+
+/* ---------- LIGHT ---------- */
+[data-theme='light'] {
+  --bg: #f6f6f8;
+  --bg-grad-1: #efeefb;
+  --bg-grad-2: #f6f6f8;
+  --surface-1: #ffffff;
+  --surface-2: #ffffff;
+  --surface-3: #f1f1f4;
+  --surface-hover: #f3f2f7;
+  --surface-inset: #f1f1f4;
+
+  --border: rgba(9, 9, 11, 0.09);
+  --border-strong: rgba(9, 9, 11, 0.16);
+  --border-accent: rgba(109, 94, 252, 0.4);
+
+  --fg: #16161a;
+  --fg-muted: #56565f;
+  --fg-subtle: #8a8a94;
+  --fg-faint: #b6b6bd;
+
+  --accent-soft: rgba(109, 94, 252, 0.1);
+  --accent-soft-2: rgba(109, 94, 252, 0.06);
+  --accent-text: #5a4cf0;
+  --accent-glow: rgba(109, 94, 252, 0.3);
+
+  --success: #11a06a;
+  --success-soft: rgba(17, 160, 106, 0.12);
+  --warning: #cf8a12;
+  --warning-soft: rgba(207, 138, 18, 0.13);
+  --danger: #dd3b2c;
+  --danger-soft: rgba(221, 59, 44, 0.1);
+  --info: #2f7fe0;
+  --info-soft: rgba(47, 127, 224, 0.1);
+
+  --shadow-sm: 0 1px 2px rgba(16, 16, 30, 0.06);
+  --shadow-md: 0 8px 24px -10px rgba(16, 16, 30, 0.14);
+  --shadow-lg: 0 28px 64px -20px rgba(16, 16, 30, 0.2);
+  --shadow-pop: 0 18px 50px -12px rgba(16, 16, 30, 0.22);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection { background: var(--accent-soft); color: var(--fg); }
+
+/* scrollbar */
+*::-webkit-scrollbar { width: 11px; height: 11px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 99px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--fg-faint); background-clip: padding-box; }
+
+/* utility text */
+.mono { font-family: var(--font-mono); font-feature-settings: 'tnum' 1; }
+.u-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--fg-subtle);
+}
+
+/* focus ring */
+.focusable:focus-visible,
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* keyframes */
+@keyframes ps-fade-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ps-rise { from { transform: translateY(13px); } to { transform: translateY(0); } }
+@keyframes ps-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ps-pop { 0% { opacity: 0; transform: scale(0.96) translateY(6px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes ps-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+@keyframes ps-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes ps-spin { to { transform: rotate(360deg); } }
+@keyframes ps-pulse-glow { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.9; } }
+@keyframes ps-sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes ps-marquee-up { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+@keyframes ps-marquee-down { from { transform: translateY(-50%); } to { transform: translateY(0); } }
+@keyframes ps-caret { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes ps-reveal { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
+
+/* transform-only: stays visible even if the animation clock is paused (hidden iframe / refresh) */
+.anim-fade-up { animation: ps-rise 0.5s var(--ease-out) both; }
+.anim-fade-op { animation: ps-fade-up 0.5s var(--ease-out) both; }
+.anim-fade { animation: ps-fade 0.4s var(--ease-out) both; }
+.anim-pop { animation: ps-pop 0.28s var(--ease-out) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}

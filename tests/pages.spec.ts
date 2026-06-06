@@ -3,8 +3,10 @@ import { test, expect } from "@playwright/test";
 test.describe("Public Pages", () => {
   test("Landing page loads", async ({ page }) => {
     await page.goto("/");
+    // Landing H1 is the gradient hero: "Create stunning art & video from a sentence."
+    // Match the gradient-span span text via a stable substring.
     await expect(
-      page.getByRole("heading", { name: /pixel studio/i }).first()
+      page.getByRole("heading", { name: /create stunning/i }).first()
     ).toBeVisible();
   });
 

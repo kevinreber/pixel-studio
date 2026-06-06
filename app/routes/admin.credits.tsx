@@ -34,6 +34,12 @@ import {
   Gift,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AdminStatCard } from "~/components/ps";
+import { getCachedDataWithRevalidate } from "~/utils/cache.server";
+
+const ADMIN_CACHE_TTL = 60;
+const cached = <T,>(key: string, fn: () => Promise<T>): Promise<T> =>
+  getCachedDataWithRevalidate(key, fn, ADMIN_CACHE_TTL);
 
 type Period = "today" | "week" | "month" | "all";
 
@@ -48,6 +54,36 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const period = (url.searchParams.get("period") as Period) || "month";
 
+  /**
+   * Wrap each independent fetch so one timeout doesn't bring down the whole page.
+   * The redesigned shell still renders with zeroed cards + a `dataFailures` count
+   * the page can use to surface a soft banner. Production has a proper pool;
+   * this matters most for dev where the pgbouncer connection limit is 1.
+   */
+  const failed: string[] = [];
+  const safe = <T,>(label: string, p: Promise<T>, fallback: T): Promise<T> =>
+    p.catch((err) => {
+      failed.push(label);
+      console.warn(`[admin.credits] ${label} failed:`, err instanceof Error ? err.message : err);
+      return fallback;
+    });
+
+  const emptyFlow = {
+    totalPurchased: 0,
+    totalSpent: 0,
+    totalRefunded: 0,
+    totalBonus: 0,
+    totalBonuses: 0,
+    netFlow: 0,
+    transactionCount: 0,
+  } as Awaited<ReturnType<typeof getCreditFlowSummary>>;
+  const emptyGenStats = {
+    total: 0,
+    successful: 0,
+    failed: 0,
+    successRate: 0,
+  } as Awaited<ReturnType<typeof getGenerationStats>>;
+
   const [
     creditFlowToday,
     creditFlowWeek,
@@ -60,16 +96,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
     generationTrends,
     modelSuccessRates,
   ] = await Promise.all([
-    getCreditFlowSummary("today"),
-    getCreditFlowSummary("week"),
-    getCreditFlowSummary("month"),
-    getCreditFlowSummary("all"),
-    getCreditTrends(14),
-    getRecentCreditTransactions(20),
-    getGenerationStats(period),
-    getModelUsageBreakdown(period),
-    getGenerationTrends(14),
-    getModelSuccessRates(period),
+    safe("creditFlow.today", cached("admin:credit-flow:today", () => getCreditFlowSummary("today")), emptyFlow),
+    safe("creditFlow.week", cached("admin:credit-flow:week", () => getCreditFlowSummary("week")), emptyFlow),
+    safe("creditFlow.month", cached("admin:credit-flow:month", () => getCreditFlowSummary("month")), emptyFlow),
+    safe("creditFlow.all", cached("admin:credit-flow:all", () => getCreditFlowSummary("all")), emptyFlow),
+    safe("creditTrends", cached("admin:credit-trends:14", () => getCreditTrends(14)), [] as Awaited<ReturnType<typeof getCreditTrends>>),
+    safe("recentTransactions", cached("admin:recent-tx:20", () => getRecentCreditTransactions(20)), [] as Awaited<ReturnType<typeof getRecentCreditTransactions>>),
+    safe("generationStats", cached(`admin:gen-stats:${period}`, () => getGenerationStats(period)), emptyGenStats),
+    safe("modelUsage", cached(`admin:model-usage:${period}`, () => getModelUsageBreakdown(period)), [] as Awaited<ReturnType<typeof getModelUsageBreakdown>>),
+    safe("generationTrends", cached("admin:gen-trends:14", () => getGenerationTrends(14)), [] as Awaited<ReturnType<typeof getGenerationTrends>>),
+    safe("modelSuccessRates", cached(`admin:model-success:${period}`, () => getModelSuccessRates(period)), [] as Awaited<ReturnType<typeof getModelSuccessRates>>),
   ]);
 
   return json({
@@ -86,6 +122,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     generationTrends,
     modelSuccessRates,
     currentPeriod: period,
+    dataFailures: failed,
   });
 }
 
@@ -138,6 +175,7 @@ export default function AdminCreditsPage() {
     generationTrends,
     modelSuccessRates,
     currentPeriod,
+    dataFailures,
   } = useLoaderData<typeof loader>();
 
   const maxCreditTrend = Math.max(
@@ -159,151 +197,89 @@ export default function AdminCreditsPage() {
         <PeriodSelector currentPeriod={currentPeriod} />
       </div>
 
-      {/* Credit Flow Summary Cards */}
+      {dataFailures && dataFailures.length > 0 && (
+        <div className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning-soft p-3 text-[13px] text-warning">
+          <span className="mono mt-px text-[11px]">⚠</span>
+          <div>
+            <div className="font-semibold">
+              Some metrics couldn&apos;t be loaded
+            </div>
+            <div className="text-[12px] text-warning/80">
+              {dataFailures.length} of 10 queries timed out. Refresh to retry,
+              or check the dev DB connection pool.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Credit Flow Summary */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Credits Purchased</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              +{creditFlow.month.totalPurchased.toLocaleString()}
-            </div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-muted-foreground">Today:</span>
-              <span className="text-xs font-medium">
-                +{creditFlow.today.totalPurchased.toLocaleString()}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Credits Spent</CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              -{creditFlow.month.totalSpent.toLocaleString()}
-            </div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-muted-foreground">Today:</span>
-              <span className="text-xs font-medium">
-                -{creditFlow.today.totalSpent.toLocaleString()}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Credits Refunded</CardTitle>
-            <RefreshCw className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {creditFlow.month.totalRefunded.toLocaleString()}
-            </div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-muted-foreground">Today:</span>
-              <span className="text-xs font-medium">
-                {creditFlow.today.totalRefunded.toLocaleString()}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Net Credit Flow</CardTitle>
-            <Coins className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div
-              className={cn(
-                "text-2xl font-bold",
-                creditFlow.month.netFlow >= 0 ? "text-green-600" : "text-red-600"
-              )}
-            >
-              {creditFlow.month.netFlow >= 0 ? "+" : ""}
-              {creditFlow.month.netFlow.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {creditFlow.month.transactionCount.toLocaleString()} transactions this
-              month
-            </p>
-          </CardContent>
-        </Card>
+        <AdminStatCard
+          label="Credits Purchased"
+          value={`+${creditFlow.month.totalPurchased.toLocaleString()}`}
+          sub={`Today: +${creditFlow.today.totalPurchased.toLocaleString()}`}
+          icon={<TrendingUp className="h-4 w-4" />}
+          tone="success"
+        />
+        <AdminStatCard
+          label="Credits Spent"
+          value={`-${creditFlow.month.totalSpent.toLocaleString()}`}
+          sub={`Today: -${creditFlow.today.totalSpent.toLocaleString()}`}
+          icon={<TrendingDown className="h-4 w-4" />}
+          tone="danger"
+        />
+        <AdminStatCard
+          label="Credits Refunded"
+          value={creditFlow.month.totalRefunded.toLocaleString()}
+          sub={`Today: ${creditFlow.today.totalRefunded.toLocaleString()}`}
+          icon={<RefreshCw className="h-4 w-4" />}
+          tone="info"
+        />
+        <AdminStatCard
+          label="Net Credit Flow"
+          value={`${creditFlow.month.netFlow >= 0 ? "+" : ""}${creditFlow.month.netFlow.toLocaleString()}`}
+          sub={`${creditFlow.month.transactionCount.toLocaleString()} transactions this month`}
+          icon={<Coins className="h-4 w-4" />}
+          tone={creditFlow.month.netFlow >= 0 ? "success" : "danger"}
+        />
       </div>
 
-      {/* Generation Stats Cards */}
+      {/* Generation Stats */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Generations</CardTitle>
-            <Zap className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {generationStats.total.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {currentPeriod === "all" ? "All time" : `This ${currentPeriod}`}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Successful</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {generationStats.successful.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">Completed generations</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Failed</CardTitle>
-            <XCircle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {generationStats.failed.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">Failed generations</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
-            <BarChart3 className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div
-              className={cn(
-                "text-2xl font-bold",
-                generationStats.successRate >= 90
-                  ? "text-green-600"
-                  : generationStats.successRate >= 70
-                    ? "text-yellow-600"
-                    : "text-red-600"
-              )}
-            >
-              {generationStats.successRate}%
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Target: 95%+
-            </p>
-          </CardContent>
-        </Card>
+        <AdminStatCard
+          label="Total Generations"
+          value={generationStats.total.toLocaleString()}
+          sub={currentPeriod === "all" ? "All time" : `This ${currentPeriod}`}
+          icon={<Zap className="h-4 w-4" />}
+          tone="warning"
+        />
+        <AdminStatCard
+          label="Successful"
+          value={generationStats.successful.toLocaleString()}
+          sub="Completed generations"
+          icon={<CheckCircle className="h-4 w-4" />}
+          tone="success"
+        />
+        <AdminStatCard
+          label="Failed"
+          value={generationStats.failed.toLocaleString()}
+          sub="Failed generations"
+          icon={<XCircle className="h-4 w-4" />}
+          tone="danger"
+        />
+        <AdminStatCard
+          label="Success Rate"
+          value={`${generationStats.successRate}%`}
+          sub="Target: 95%+"
+          icon={<BarChart3 className="h-4 w-4" />}
+          tone={
+            generationStats.successRate >= 90
+              ? "success"
+              : generationStats.successRate >= 70
+                ? "warning"
+                : "danger"
+          }
+        />
       </div>
 
       {/* Charts Row */}
