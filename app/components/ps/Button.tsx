@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 /**
- * Redesign Button — variants/sizes per design_handoff README.
+ * Redesign Button — variants/sizes:
  * - primary fills with accent + glow
  * - soft uses accent-soft tint
  * - ghost has no background (raised on hover)

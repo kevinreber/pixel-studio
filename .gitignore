@@ -14,3 +14,9 @@ node_modules
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# PR screenshots — captured ad-hoc for review purposes; should never
+# be committed to the runtime repo (binary diffs bloat history).
+/pr-screenshots/
+/tests/.auth.json
+/tests/.auth-chunks/
