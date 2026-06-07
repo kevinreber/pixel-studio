@@ -257,15 +257,15 @@ npm run video:backfill-thumbnails  # Backfill thumbnails for existing videos
 
 ```mermaid
 graph TD
-    A[Create form] --> B[Remix action]
-    B --> C[QStash publish]
-    C --> D[/api/queue/process-image]
-    D --> E[Provider SDK call]
-    E --> F[S3 upload]
-    F --> G[Postgres update]
-    G --> H[WebSocket broadcast]
-    H --> I[Live UI progress]
-    I --> J[Redirect to results]
+    A["Create form"] --> B["Remix action"]
+    B --> C["QStash publish"]
+    C --> D["/api/queue/process-image"]
+    D --> E["Provider SDK call"]
+    E --> F["S3 upload"]
+    F --> G["Postgres update"]
+    G --> H["WebSocket broadcast"]
+    H --> I["Live UI progress"]
+    I --> J["Redirect to results"]
 ```
 
 ### Project structure
