@@ -1,6 +1,6 @@
 import {
   type LoaderFunctionArgs,
-  defer,
+  json,
   type SerializeFrom,
   MetaFunction,
 } from "@remix-run/node";
@@ -10,14 +10,12 @@ import CollectionDetailsPage from "~/pages/CollectionDetailsPage";
 import { getS3BucketThumbnailURL, getS3BucketURL } from "~/utils/s3Utils";
 import { Link } from "@remix-run/react";
 
-export const meta: MetaFunction<typeof loader> = () => {
-  // Note: With defer, collection is a Promise that hasn't resolved yet
-  // so we use a generic title that will be updated by the page
+export const meta: MetaFunction<typeof loader> = ({ data }) => {
   return [
-    { title: "Collection | AI Image Gallery" },
+    { title: data?.collection.title ? `${data.collection.title} | Pixel Studio` : "Collection | Pixel Studio" },
     {
       name: "description",
-      content: "View images in this collection",
+      content: data?.collection.description || "View images in this collection",
     },
   ];
 };
@@ -26,8 +24,7 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
   const collectionId = params.collectionId;
   invariantResponse(collectionId, "Collection ID is required");
 
-  // We wrap the database query in a Promise to use with defer
-  const collectionPromise = prisma.collection
+  const collection = await prisma.collection
     .findUnique({
       where: { id: collectionId },
       select: {
@@ -96,8 +93,8 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
       };
     });
 
-  return defer({
-    collection: collectionPromise,
+  return json({
+    collection,
   });
 };
 

@@ -1,8 +1,6 @@
 import React, { memo, useCallback, useMemo } from "react";
-import { defer, type LoaderFunctionArgs } from "@remix-run/node";
+import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import {
-  Await,
-  useAsyncValue,
   useLoaderData,
   useNavigation,
   Link,
@@ -10,8 +8,6 @@ import {
 import {
   PageContainer,
   GeneralErrorBoundary,
-  ErrorList,
-  ImageGridSkeleton,
 } from "~/components";
 import { fallbackImageSource } from "~/client";
 import { requireUserLogin } from "~/services/auth.server";
@@ -42,24 +38,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const pageSize = Number(searchParams.get("page_size")) || 20;
 
   const cacheKey = `following-feed:${user.id}:${currentPage}:${pageSize}`;
-  const feedData = getCachedDataWithRevalidate(
+  const feedData = await getCachedDataWithRevalidate(
     cacheKey,
     () => getFollowingFeed(user.id, currentPage, pageSize),
     FEED_CACHE_TTL
   );
 
-  return defer({ feedData, currentPage });
+  return json({ feedData, currentPage });
 }
 
 export type FeedLoaderData = typeof loader;
-
-const LoadingSkeleton = () => {
-  return (
-    <div className="w-full space-y-6 animate-pulse">
-      <ImageGridSkeleton />
-    </div>
-  );
-};
 
 const FeedImageCard = memo(function FeedImageCard({
   imageData,
@@ -235,9 +223,8 @@ const EmptyFeed = () => {
   );
 };
 
-const FeedAccessor = () => {
-  const asyncData = useAsyncValue() as FeedData;
-  const items = asyncData.items;
+const FeedAccessor = ({ feedData }: { feedData: FeedData }) => {
+  const items = feedData.items;
 
   const [selectedItem, setSelectedItem] = React.useState<FeedItem | null>(null);
 
@@ -330,7 +317,7 @@ const FeedAccessor = () => {
 };
 
 export default function FeedPage() {
-  const loaderData = useLoaderData<typeof loader>();
+  const { feedData } = useLoaderData<typeof loader>();
   const navigation = useNavigation();
   const isLoading = navigation.state !== "idle";
 
@@ -352,35 +339,26 @@ export default function FeedPage() {
             />
           }
         />
-        <React.Suspense fallback={<LoadingSkeleton />}>
-          <Await
-            resolve={loaderData.feedData}
-            errorElement={
-              <ErrorList errors={["There was an error loading your feed"]} />
-            }
-          >
-            <div className="relative">
-              {isLoading ? (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-bg/50 backdrop-blur-sm">
-                  <Loader2 className="h-8 w-8 animate-spin text-fg-muted" />
-                </div>
-              ) : (
-                <FeedAccessor />
-              )}
+        <div className="relative">
+          {isLoading ? (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-bg/50 backdrop-blur-sm">
+              <Loader2 className="h-8 w-8 animate-spin text-fg-muted" />
             </div>
-            <div className="mt-12 flex flex-col items-center gap-2 border-t border-[var(--border)] py-10 text-center">
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-success-soft text-success">
-                <Check className="h-5 w-5" strokeWidth={2.4} />
-              </span>
-              <p className="text-[15px] font-semibold text-fg">
-                You&apos;re all caught up
-              </p>
-              <Link to="/explore" prefetch="intent" className="text-[13px] font-semibold text-[var(--accent-text)] hover:underline">
-                Discover more creations
-              </Link>
-            </div>
-          </Await>
-        </React.Suspense>
+          ) : (
+            <FeedAccessor feedData={feedData as unknown as FeedData} />
+          )}
+        </div>
+        <div className="mt-12 flex flex-col items-center gap-2 border-t border-[var(--border)] py-10 text-center">
+          <span className="grid h-10 w-10 place-items-center rounded-full bg-success-soft text-success">
+            <Check className="h-5 w-5" strokeWidth={2.4} />
+          </span>
+          <p className="text-[15px] font-semibold text-fg">
+            You&apos;re all caught up
+          </p>
+          <Link to="/explore" prefetch="intent" className="text-[13px] font-semibold text-[var(--accent-text)] hover:underline">
+            Discover more creations
+          </Link>
+        </div>
       </div>
     </PageContainer>
   );

@@ -1,6 +1,6 @@
 import React from "react";
 import { useLoggedInUser } from "~/hooks";
-import { Await, Link, useAsyncValue, useLoaderData, useNavigate } from "@remix-run/react";
+import { Link, useLoaderData, useNavigate } from "@remix-run/react";
 import type { ExplorePageImageLoader } from "~/routes/explore.$imageId";
 import { convertUtcDateToLocalDateString } from "~/client";
 import {
@@ -14,7 +14,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   MessageCircle,
   Info,
-  Loader2,
   X,
   Cpu,
   Images,
@@ -106,15 +105,13 @@ interface ExploreImageDetailsPageProps {
 //   );
 // };
 
-export type AsyncImageData = Awaited<
-  Awaited<ReturnType<ExplorePageImageLoader>>["data"]
->;
+export type AsyncImageData = Awaited<ReturnType<ExplorePageImageLoader>>["data"];
 export type ImageUserData = NonNullable<AsyncImageData["user"]>;
 
 const ExploreImageDetailsPageAccessor = ({
   onClose,
-}: ExploreImageDetailsPageProps) => {
-  const imageData = useAsyncValue() as AsyncImageData;
+  imageData,
+}: ExploreImageDetailsPageProps & { imageData: AsyncImageData }) => {
   const imageUserData = imageData.user as ImageUserData;
   const userData = useLoggedInUser();
   const navigate = useNavigate();
@@ -695,6 +692,7 @@ const ExploreImageDetailsPageAccessor = ({
 
 const ExploreImageDetailsPage = ({ onClose }: ExploreImageDetailsPageProps) => {
   const loaderData = useLoaderData<ExplorePageImageLoader>();
+  const imageData = loaderData.data as AsyncImageData;
   const [isMobile, setIsMobile] = React.useState(false);
 
   React.useEffect(() => {
@@ -709,73 +707,29 @@ const ExploreImageDetailsPage = ({ onClose }: ExploreImageDetailsPageProps) => {
 
   if (isMobile) {
     return (
-      <React.Suspense
-        fallback={
-          <div className="fixed inset-0 z-[100] flex items-center justify-center">
-            <Loader2 className="h-12 w-12 animate-spin text-zinc-500" />
-          </div>
-        }
-      >
-        <Await
-          resolve={loaderData.data}
-          errorElement={
-            <div className="p-4">
-              <p className="text-red-500">Error loading image details</p>
-            </div>
-          }
-        >
-          <div className="min-h-screen z-[500] relative dark:bg-zinc-900">
-            <ExploreImageDetailsPageAccessor onClose={onClose} />
-          </div>
-        </Await>
-      </React.Suspense>
+      <div className="min-h-screen z-[500] relative dark:bg-zinc-900">
+        <ExploreImageDetailsPageAccessor onClose={onClose} imageData={imageData} />
+      </div>
     );
   }
 
   return (
     <>
       <div className="fixed inset-0 bg-black/80 z-[99]" />
-      <React.Suspense
-        fallback={
-          <div className="fixed inset-0 z-[100] flex items-center justify-center">
-            <Loader2 className="h-12 w-12 animate-spin text-zinc-500" />
-          </div>
-        }
-      >
-        <Await
-          resolve={loaderData.data}
-          errorElement={
-            <Dialog open={true} onOpenChange={onClose}>
-              <DialogContent>
-                <VisuallyHidden asChild>
-                  <DialogTitle>Error</DialogTitle>
-                </VisuallyHidden>
-                <VisuallyHidden asChild>
-                  <DialogDescription>Error loading image details</DialogDescription>
-                </VisuallyHidden>
-                <div className="p-4">
-                  <p className="text-red-500">Error loading image details</p>
-                </div>
-              </DialogContent>
-            </Dialog>
-          }
+      <Dialog open={true} onOpenChange={onClose}>
+        <DialogContent
+          className="w-full md:max-w-[90%] md:h-[90vh] p-0 gap-0 dark:bg-zinc-900 overflow-hidden z-[100] [&>button]:absolute [&>button]:right-4 [&>button]:top-4 [&>button]:z-10 [&>button_span]:hidden"
+          onInteractOutside={(e) => e.preventDefault()}
         >
-          <Dialog open={true} onOpenChange={onClose}>
-            <DialogContent
-              className="w-full md:max-w-[90%] md:h-[90vh] p-0 gap-0 dark:bg-zinc-900 overflow-hidden z-[100] [&>button]:absolute [&>button]:right-4 [&>button]:top-4 [&>button]:z-10 [&>button_span]:hidden"
-              onInteractOutside={(e) => e.preventDefault()}
-            >
-              <VisuallyHidden asChild>
-                <DialogTitle>Image Details</DialogTitle>
-              </VisuallyHidden>
-              <VisuallyHidden asChild>
-                <DialogDescription>View and interact with image details, comments, and generation parameters</DialogDescription>
-              </VisuallyHidden>
-              <ExploreImageDetailsPageAccessor onClose={onClose} />
-            </DialogContent>
-          </Dialog>
-        </Await>
-      </React.Suspense>
+          <VisuallyHidden asChild>
+            <DialogTitle>Image Details</DialogTitle>
+          </VisuallyHidden>
+          <VisuallyHidden asChild>
+            <DialogDescription>View and interact with image details, comments, and generation parameters</DialogDescription>
+          </VisuallyHidden>
+          <ExploreImageDetailsPageAccessor onClose={onClose} imageData={imageData} />
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
