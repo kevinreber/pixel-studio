@@ -44,8 +44,7 @@ PR: https://github.com/kevinreber/pixel-studio/pull/150
   - The flag is enabled in `vite.config.ts`. `ExplorePage` and `UserProfilePage` had Suspense stalls because of it.
   - Run `grep -rn "defer(" app/routes app/pages` and `grep -rn "<Await" app/routes app/pages`. Any composed `Promise.all` inside a `defer()` is a probable stall.
 
-- [ ] **Remove `design_handoff_pixel_studio_redesign/` from the working tree**
-  - It's currently untracked (shows up in `git status`). Useful as reference during implementation; should be archived elsewhere (vault, drive) and removed from the repo root.
+- [x] ~~**Remove `design_handoff_pixel_studio_redesign/` from the working tree**~~ — **Partially closed.** PR #151 curated the bundle: kept `README.md` (design brief), `redesign/tokens.css` (source-of-truth tokens), and `screenshots/{desktop,mobile}/*.png` (intended-state mockups) as a historical record. Removed the standalone HTML previews, prototype JSX shells, and ~30 decorative placeholder JPGs (all process-only scaffolding).
 
 - [ ] **Verify CodeQL `js/xss-through-dom` alert stays dismissed**
   - `app/components/ImagePicker.tsx` validates URLs via `isSafeImageUrl()` before assigning to `<img src>`. Alert was dismissed as a false positive with that justification.
