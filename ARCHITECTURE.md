@@ -28,8 +28,8 @@ High-level system design for Pixel Studio.
 ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────────┐
 │     PostgreSQL      │  │      Redis          │  │      Queue System       │
 │  ┌───────────────┐  │  │  ┌───────────────┐  │  │  ┌─────────────────────┐│
-│  │    Prisma     │  │  │  │    Upstash    │  │  │  │  QStash / Kafka     ││
-│  │     ORM       │  │  │  │     Cache     │  │  │  │  (Async Processing) ││
+│  │    Prisma     │  │  │  │    Upstash    │  │  │  │ QStash (default)    ││
+│  │     ORM       │  │  │  │     Cache     │  │  │  │ Kafka (optional)    ││
 │  └───────────────┘  │  │  └───────────────┘  │  │  └─────────────────────┘│
 └─────────────────────┘  └─────────────────────┘  └─────────────────────────┘
                                                               │
@@ -37,10 +37,11 @@ High-level system design for Pixel Studio.
               ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           External Services                                  │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
-│  │   OpenAI    │  │ Hugging Face│  │    AWS S3   │  │      Stripe         │ │
-│  │  (DALL-E)   │  │ (SD, Flux)  │  │  (Storage)  │  │    (Payments)       │ │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────────────┘ │
+│                                                                              │
+│  Image providers:  OpenAI (gpt-image-1) · Hugging Face · FAL · Ideogram     │
+│                    Replicate · Together · Black Forest · Stability          │
+│  Video providers:  Runway ML · Luma AI · Stability AI                       │
+│  Other:            AWS S3 (storage) · Stripe (payments) · Sentry · PostHog  │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -100,16 +101,23 @@ prisma/
 └── schema.prisma        # Database schema
 ```
 
-**Key Models:**
+**Key Models** (43 total — abridged; see `prisma/schema.prisma` for the full list):
 
-| Model      | Purpose          | Key Relations                                        |
-| ---------- | ---------------- | ---------------------------------------------------- |
-| User       | User accounts    | has many Images, Collections, Follows                |
-| Image      | Generated images | belongs to User, Set; has many Comments, Likes       |
-| Collection | User collections | belongs to User; has many Images                     |
-| Set        | Batch of images  | belongs to User; has many Images                     |
-| Comment    | Image comments   | belongs to User, Image; self-referential for threads |
-| Follow     | User follows     | connects Users                                       |
+| Model                         | Purpose                           | Key Relations                                                    |
+| ----------------------------- | --------------------------------- | ---------------------------------------------------------------- |
+| User                          | User accounts, credits, theme     | has many Images, Videos, Collections, Follows                    |
+| Image                         | Generated images                  | belongs to User, Set; has many Comments, Likes; remix `parentId` |
+| Video                         | Generated videos                  | belongs to User, Set; has VideoComments, VideoLikes              |
+| Set                           | Batch of generation results       | belongs to User; has many Images / Videos                        |
+| ComparisonRequest             | Multi-model comparison parent     | has many ComparisonGenerations                                   |
+| Collection                    | User-organized image groups       | belongs to User; has many Images; supports paid                  |
+| Comment / VideoComment        | Nested comments                   | belongs to User + Image/Video; self-referential                  |
+| Follow                        | User-to-user follow               | connects Users                                                   |
+| Notification                  | Activity notifications (12 types) | belongs to User                                                  |
+| CreditTransaction             | Credit ledger                     | belongs to User                                                  |
+| MarketplacePrompt             | Prompt marketplace listing        | has Reviews, Purchases                                           |
+| BlogPost                      | Blog / tutorial content           | belongs to admin User                                            |
+| Achievement / UserAchievement | Gamification                      | belongs to User                                                  |
 
 ### 4. Caching (Redis)
 
@@ -129,40 +137,51 @@ cache:liked-images:{userId}  // User's liked images
 
 ### 5. Queue System
 
-Two options supported:
+Selected at runtime via `QUEUE_BACKEND`:
 
-**QStash (Recommended for most cases)**
-
-```
-User Request → QStash Queue → Webhook Endpoint → Process → Update DB
-```
-
-**Kafka (High throughput)**
+**QStash — default**
 
 ```
-User Request → Kafka Producer → Topic → Consumer Worker → Process → Update DB
-                                                              ↓
-                                                    WebSocket Server → Client
+User Request → QStash publish → /api/queue/process-image (signed webhook)
+             → Provider SDK call → S3 upload → DB update → WebSocket broadcast
 ```
+
+QStash handles retries, scheduling, and signature verification. Works on any host (including Vercel serverless) without long-running workers. Local dev simulates QStash when keys are absent.
+
+**Kafka — optional / on hold**
+
+```
+User Request → Kafka Producer → Topic → Consumer Worker → Provider SDK call
+             → S3 upload → DB update → Redis pub/sub → WebSocket Server → Client
+```
+
+Fully wired but parked to save the ~$220/mo AWS MSK bill. Re-enable by setting `QUEUE_BACKEND=kafka` plus `KAFKA_*` env vars and running `npm run kafka:consumer` + `npm run kafka:websocket`.
+
+**Synchronous — legacy / debug only**
+
+`ENABLE_KAFKA_IMAGE_GENERATION=false` with no QStash config falls back to blocking calls inside the Remix action. Only useful for debugging the provider integrations.
 
 ## Request Flows
 
-### Image Generation (Async)
+### Image / Video Generation (Async)
 
 ```
-1. User submits prompt
-2. Server validates request
-3. Server publishes to queue (QStash/Kafka)
-4. Server returns requestId immediately
+1. User submits prompt + selects model (image or video)
+2. Server validates with Zod, deducts credits, creates Image/Video row in `pending`
+3. Server publishes to queue (QStash by default, optionally Kafka)
+4. Server redirects to /processing/$requestId immediately
 5. Client connects to WebSocket for updates
-6. Worker picks up job from queue
-7. Worker calls AI API (OpenAI/HuggingFace)
-8. Worker uploads result to S3
-9. Worker saves to database
-10. Worker publishes status update
-11. WebSocket server notifies client
-12. Client displays result
+6. Worker picks up job:
+   - Image:  one of 8 providers (OpenAI, FAL, Ideogram, Replicate, Together, BFL, HF, Stability)
+   - Video:  Runway / Luma / Stability; FFmpeg extracts a thumbnail
+7. Worker uploads result to S3
+8. Worker updates the row (`status = completed`, urls, metadata)
+9. Worker publishes status update (Redis pub/sub)
+10. WebSocket server notifies subscribed clients
+11. Client navigates to the set / detail page
 ```
+
+For multi-model comparison, steps 2–9 fan out per model under a single `ComparisonRequest`; the UI shows a grid of children as they finish.
 
 ### Data Fetching (Remix Loader)
 
@@ -207,12 +226,12 @@ User Request → Kafka Producer → Topic → Consumer Worker → Process → Up
 - Migration management
 - Visual database browser
 
-### Why QStash/Kafka?
+### Why QStash (and Kafka as an optional escape hatch)?
 
-- Long-running AI generation (30s+)
-- User doesn't have to wait
-- Retry handling
-- Rate limiting
+- Long-running generation (30s–5min) without blocking the request
+- QStash gives us at-least-once delivery + signed webhooks + scheduling with zero ops
+- Kafka stays available for high-throughput scale-out, but the cost (~$220/mo for MSK) isn't justified at current volume — `QUEUE_BACKEND` flips between them
+- Both modes share the same WebSocket progress channel, so the UI doesn't care which back-end is active
 
 ### Why Redis?
 
@@ -223,17 +242,20 @@ User Request → Kafka Producer → Topic → Consumer Worker → Process → Up
 
 ## Deployment Architecture
 
-### Simple (Vercel)
+### Default (Vercel + QStash)
 
 ```
-Vercel (Remix App)
+Vercel (Remix App, serverless)
        │
-       ├── Supabase (PostgreSQL)
+       ├── Supabase / Neon (PostgreSQL)
        ├── Upstash (Redis + QStash)
-       └── AWS S3 (Images)
+       ├── AWS S3 (images + videos)
+       └── Provider APIs (OpenAI / FAL / Runway / …)
 ```
 
-### Production (AWS)
+This is what's running in production today. No separate worker fleet needed — QStash invokes `/api/queue/process-image` as a signed webhook.
+
+### Scale-out (Kafka — when re-enabled)
 
 ```
 Route 53 (DNS)
@@ -248,10 +270,10 @@ ECS     ECS (Remix App Containers)
 │       │
 └───┬───┘
     │
-    ├── RDS (PostgreSQL)
-    ├── ElastiCache (Redis)
-    ├── MSK (Kafka)
-    └── S3 (Images)
+    ├── RDS / Supabase (PostgreSQL)
+    ├── ElastiCache / Upstash (Redis)
+    ├── MSK (Kafka) ─── ECS (consumer workers + WebSocket server)
+    └── S3 (Images + Videos)
 ```
 
 ## Security Considerations
