@@ -1,12 +1,15 @@
 # Handoff: Pixel Studio — Web & Mobile Redesign
 
-> **Archive note (2026-06)** — This bundle was curated post-implementation in PR #151. The original handoff contained interactive HTML prototypes, ~7 JSX shells, and ~30 placeholder art JPGs; those were process-only scaffolding and have been removed. What's kept here:
+> **Archive note (2026-06)** — This bundle was curated post-implementation in PR #151. What's kept:
 >
 > - This `README.md` (the design brief / rationale — the *why*)
 > - `redesign/tokens.css` (source-of-truth design tokens, translated into `app/globals.css`)
+> - `redesign/img/art-*.jpg` (the AI-art tiles the prototype displayed in Explore / Feed / Profile grids — same images visible in the mockup screenshots)
 > - `screenshots/{desktop,mobile}/` (intended-state mockups, useful for "did we build what was designed?" comparisons)
 >
-> For the live implementation, see `app/globals.css`, `tailwind.config.ts`, and `app/components/ps/*`. For shipped before/after screenshots, see `pr-screenshots/`.
+> Removed: the standalone `Pixel Studio Mobile.html` + `Pixel Studio Redesign.html` previews and the prototype JSX shells (`app.jsx`, `data.jsx`, `desktop-shell.jsx`, `mobile-shell.jsx`, `ios-frame.jsx`, etc.) — those were build-process scaffolding for opening the prototype in a browser. The live app (`app/components/ps/*`) is the canonical implementation; the screenshots capture how the prototype looked when running.
+>
+> For shipped before/after screenshots of the real app, see `pr-screenshots/`.
 
 ---
 
