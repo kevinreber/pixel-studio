@@ -14,3 +14,7 @@ node_modules
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Local auth state from ad-hoc Playwright capture runs — never commit.
+/tests/.auth.json
+/tests/.auth-chunks/

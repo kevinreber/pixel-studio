@@ -3,9 +3,8 @@
 @tailwind utilities;
 
 /* ============================================================
-   PIXEL STUDIO — REDESIGN DESIGN SYSTEM
+   PIXEL STUDIO — DESIGN SYSTEM
    One indigo accent, a real elevation ramp, dark + light.
-   Tokens follow design_handoff_pixel_studio_redesign/redesign/tokens.css
    ============================================================ */
 
 @layer base {

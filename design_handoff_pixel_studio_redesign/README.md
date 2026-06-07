@@ -1,5 +1,18 @@
 # Handoff: Pixel Studio — Web & Mobile Redesign
 
+> **Archive note (2026-06)** — This bundle was curated post-implementation in PR #151. What's kept:
+>
+> - This `README.md` (the design brief / rationale — the *why*)
+> - `redesign/tokens.css` (source-of-truth design tokens, translated into `app/globals.css`)
+> - `redesign/img/art-*.jpg` (the AI-art tiles the prototype displayed in Explore / Feed / Profile grids — same images visible in the mockup screenshots)
+> - `screenshots/{desktop,mobile}/` (intended-state mockups, useful for "did we build what was designed?" comparisons)
+>
+> Removed: the standalone `Pixel Studio Mobile.html` + `Pixel Studio Redesign.html` previews and the prototype JSX shells (`app.jsx`, `data.jsx`, `desktop-shell.jsx`, `mobile-shell.jsx`, `ios-frame.jsx`, etc.) — those were build-process scaffolding for opening the prototype in a browser. The live app (`app/components/ps/*`) is the canonical implementation; the screenshots capture how the prototype looked when running.
+>
+> For shipped before/after screenshots of the real app, see `pr-screenshots/`.
+
+---
+
 ## Overview
 A full visual + UX redesign of **Pixel Studio**, an AI image/video generation platform. The redesign replaces an ad-hoc, multi-accent dark UI with a single coherent design system (one indigo accent, a real elevation ramp, dark + light themes) and rebuilds every core surface: marketing landing, Explore, Create (image + video), Feed, Profile, Liked, What's New, the image-detail modal, an 8-tab Admin dashboard, plus global navigation, notifications, and account/role management.
 
