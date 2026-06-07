@@ -29,6 +29,15 @@ interface ArtTileProps {
    * placeholder hides the real image for an uncomfortably long moment.
    */
   priority?: boolean;
+  /**
+   * Container-driven sizing. By default the tile is content-driven: the
+   * wrapper grows to the image's natural aspect (right for masonry layouts).
+   * When the parent has its own width AND height — e.g. the hero floating
+   * tiles — set `fill` so the wrapper stretches to fill the parent and the
+   * image crops via object-cover instead of locking to a 1:1 square that
+   * leaves a dark band below.
+   */
+  fill?: boolean;
   className?: string;
   children?: React.ReactNode;
 }
@@ -53,6 +62,7 @@ export function ArtTile({
   aspectRatio = 1,
   radius = "rounded-md",
   priority = false,
+  fill = false,
   className,
   children,
 }: ArtTileProps) {
@@ -86,12 +96,19 @@ export function ArtTile({
     }
   };
 
+  // `fill` opts out of the aspect-ratio fallback entirely: the wrapper
+  // stretches to the parent's dimensions and the image crops to match.
   const useAspect =
-    aspectRatio > 0 && (status !== "loaded" || !currentSrc);
+    !fill && aspectRatio > 0 && (status !== "loaded" || !currentSrc);
 
   return (
     <div
-      className={cn("relative overflow-hidden", radius, className)}
+      className={cn(
+        "relative overflow-hidden",
+        fill && "h-full w-full",
+        radius,
+        className,
+      )}
       style={useAspect ? { aspectRatio: `1 / ${aspectRatio}` } : undefined}
     >
       {/* mesh-gradient placeholder — always behind the image so there is no flash */}
@@ -113,7 +130,11 @@ export function ArtTile({
           onLoad={() => setStatus("loaded")}
           onError={handleError}
           className={cn(
-            useAspect
+            // When the wrapper has known dimensions (aspect lock OR fill),
+            // absolutely position the image so it crops to the box exactly.
+            // Otherwise let it sit in flow so the wrapper grows to its
+            // natural height.
+            useAspect || fill
               ? "absolute inset-0 h-full w-full object-cover"
               : "relative h-full w-full object-cover",
             "transition-opacity duration-200",

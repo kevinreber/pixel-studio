@@ -623,7 +623,7 @@ function FloatTile({
         animation: `ps-float 7s ease-in-out ${delay}s infinite`,
       }}
     >
-      <ArtTile src={image.src} radius="" alt={image.alt} priority />
+      <ArtTile src={image.src} radius="" alt={image.alt} priority fill />
     </div>
   );
 }
