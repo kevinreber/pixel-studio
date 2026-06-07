@@ -38,6 +38,41 @@ const HERO_IMAGES: { src: string; alt: string }[] = [
   },
 ];
 
+// Visually distinct samples drawn from the style-preset library so the gallery
+// section below the hero doesn't have to repeat the 5 hero tiles to fill 8
+// slots. Chosen for cross-style variety (sketch, painterly, anime, cubist,
+// cinematic, abstract) — pulled from public/assets/preset-text-styles/.
+const GALLERY_EXTRAS: { src: string; alt: string }[] = [
+  {
+    src: "/assets/preset-text-styles/cinematic.jpg",
+    alt: "Cinematic gothic interior with sun rays through arched windows",
+  },
+  {
+    src: "/assets/preset-text-styles/anime.jpg",
+    alt: "Anime figure with a parasol in a kimono garden",
+  },
+  {
+    src: "/assets/preset-text-styles/charcoal.jpg",
+    alt: "Charcoal sketch of a forest cabin",
+  },
+  {
+    src: "/assets/preset-text-styles/cubist.jpg",
+    alt: "Cubist painting of a wood cabin among trees",
+  },
+  {
+    src: "/assets/preset-text-styles/candy.jpg",
+    alt: "Vibrant candy-style oil painting of a small cottage",
+  },
+  {
+    src: "/assets/preset-text-styles/cosmic.jpg",
+    alt: "Cosmic fantasy cabin glowing in a magical forest",
+  },
+  {
+    src: "/assets/preset-text-styles/abstract-curves.jpg",
+    alt: "Abstract swirling portrait of a unicorn",
+  },
+];
+
 const EXAMPLE_PROMPTS = [
   "An astronaut playing guitar on Mars",
   "Cyberpunk Tokyo in the rain",
@@ -102,49 +137,53 @@ const PROVIDERS = [
   "Hugging Face",
 ];
 
+// One-time credit packs. Source of truth is `CREDIT_PACKAGES` in
+// `app/config/pricing.ts` — keep prices and credit counts in sync with that
+// file (the checkout flow reads from the same constant). The landing page used
+// to advertise monthly Pro / Studio subscriptions with features like API
+// access and team workspaces that the product doesn't actually offer; we sell
+// one type of thing (credits) and these are the three packs.
 const PRICING = [
   {
-    name: "Free",
-    price: "$0",
-    cadence: "/mo",
-    description: "Try it out and share with the community.",
+    name: "Starter",
+    price: "$2.99",
+    cadence: "one-time",
+    description: "Try every model without committing.",
     features: [
-      "50 credits/mo",
-      "Standard models",
-      "Public gallery",
+      "50 credits",
+      "Any image or video model",
+      "Credits never expire",
       "Community support",
     ],
-    cta: "Get started",
+    cta: "Buy starter",
     featured: false,
   },
   {
-    name: "Pro",
-    price: "$18",
-    cadence: "/mo",
-    description: "For serious makers and small teams.",
+    name: "Standard",
+    price: "$6.99",
+    cadence: "one-time",
+    description: "Best balance for regular makers.",
     features: [
-      "2,500 credits/mo",
-      "All 12 models + video",
-      "Private creations & sets",
-      "Priority generation",
-      "Commercial license",
+      "150 credits",
+      "Any image or video model",
+      "~$0.047 per credit",
+      "Credits never expire",
     ],
-    cta: "Start Pro",
+    cta: "Buy standard",
     featured: true,
   },
   {
-    name: "Studio",
-    price: "$49",
-    cadence: "/mo",
-    description: "Higher volume, API access, team workspaces.",
+    name: "Pro",
+    price: "$14.99",
+    cadence: "one-time",
+    description: "Best value per credit.",
     features: [
-      "8,000 credits/mo",
-      "Everything in Pro",
-      "API access",
-      "Team workspaces",
-      "Dedicated support",
+      "400 credits",
+      "Any image or video model",
+      "~$0.037 per credit",
+      "Credits never expire",
     ],
-    cta: "Start Studio",
+    cta: "Buy pro",
     featured: false,
   },
 ] as const;
@@ -452,10 +491,11 @@ export default function LandingPage() {
         <div className="mb-8 flex items-end justify-between gap-6">
           <div>
             <h2 className="text-[32px] font-bold tracking-[-0.025em] md:text-[40px]">
-              Made by the community
+              Made with Pixel Studio
             </h2>
             <p className="mt-2 max-w-[520px] text-[14px] text-fg-muted">
-              A few recent creations from people on Pixel Studio.
+              A taste of the styles you can reach for — anime, cinematic,
+              charcoal, cubist, and everything in between.
             </p>
           </div>
           <Link
@@ -466,20 +506,30 @@ export default function LandingPage() {
           </Link>
         </div>
         <div className="columns-2 gap-4 [column-fill:_balance] md:columns-4">
-          {/* Show each unique sample twice in a staggered order so neighbours
-              never share an image and the grid feels populated without
-              looking like an obvious 2× duplicate of the same row. */}
-          {[0, 2, 4, 1, 3, 0, 2, 4].map((idx, i) => {
-            const img = HERO_IMAGES[idx];
-            return (
-              <div
-                key={i}
-                className="mb-4 break-inside-avoid overflow-hidden rounded-md border border-[var(--border)]"
-              >
-                <ArtTile src={img.src} radius="" alt={img.alt} />
-              </div>
-            );
-          })}
+          {/* Mix the 5 hero showcase images with 7 style-preset samples so
+              every visible tile is unique and the grid spans a wide variety
+              of styles. Ordered to avoid neighbour-matching tones. */}
+          {[
+            HERO_IMAGES[0],
+            GALLERY_EXTRAS[0], // cinematic
+            HERO_IMAGES[2], // stargate
+            GALLERY_EXTRAS[1], // anime
+            GALLERY_EXTRAS[2], // charcoal
+            HERO_IMAGES[3], // pirate ship
+            GALLERY_EXTRAS[3], // cubist
+            HERO_IMAGES[1], // brooklyn bridge
+            GALLERY_EXTRAS[4], // candy
+            HERO_IMAGES[4], // space station
+            GALLERY_EXTRAS[5], // cosmic
+            GALLERY_EXTRAS[6], // abstract-curves
+          ].map((img, i) => (
+            <div
+              key={`${img.src}-${i}`}
+              className="mb-4 break-inside-avoid overflow-hidden rounded-md border border-[var(--border)]"
+            >
+              <ArtTile src={img.src} radius="" alt={img.alt} />
+            </div>
+          ))}
         </div>
       </section>
 
@@ -488,10 +538,11 @@ export default function LandingPage() {
         <div className="mx-auto w-full max-w-[1280px] px-4 md:px-8">
           <div className="mb-12 text-center">
             <h2 className="text-[36px] font-bold tracking-[-0.025em] md:text-[44px]">
-              Pricing that scales with you
+              Pay once, generate anything
             </h2>
             <p className="mx-auto mt-3 max-w-[520px] text-[15px] text-fg-muted">
-              Buy credits, use any model, cancel any time.
+              Buy a credit pack, use any model. No subscription — credits never
+              expire.
             </p>
           </div>
           <div className="grid gap-5 md:grid-cols-3">
