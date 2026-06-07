@@ -29,6 +29,9 @@ module.exports = {
     // repo root via /playwright-report/, but the eslint glob still catches
     // it on some CI checkouts.
     "playwright-report/**",
+    // Design handoff bundles — reference prototype code (Babel-in-browser
+    // JSX) shipped from design, not part of the production app.
+    "design_handoff_*/**",
   ],
 
   // Base config

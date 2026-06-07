@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pixel Studio — Sign in</title>
+  <link rel="stylesheet" href="redesign/tokens.css" />
+  <style>
+    html, body, #root { height: 100%; margin: 0; }
+    #boot { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); color: var(--fg-subtle); font-family: system-ui, sans-serif; font-size: 14px; }
+
+    /* theme toggle */
+    .theme-toggle {
+      position: fixed; top: 22px; right: 24px; z-index: 60;
+      width: 38px; height: 38px; display: grid; place-items: center;
+      border-radius: var(--r-sm); background: var(--surface-2); border: 1px solid var(--border-strong);
+      cursor: pointer; color: var(--fg-muted); transition: background .15s, color .15s;
+    }
+    .theme-toggle:hover { background: var(--surface-hover); color: var(--fg); }
+
+    /* responsive: collapse showcase on narrow viewports */
+    @media (max-width: 880px) {
+      .login-showcase { display: none !important; }
+      #root > div > div { grid-template-columns: 1fr !important; }
+      .login-compact-brand { display: flex !important; }
+    }
+  </style>
+  <template id="__bundler_thumbnail">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="#09090b"/>
+      <rect x="30" y="30" width="40" height="40" rx="9" fill="#6d5efc"/>
+      <path d="M50 38l3.2 9 9 .8-6.8 6 2 8.8L50 67l-7.4 4.6 2-8.8-6.8-6 9-.8z" fill="#fff"/>
+    </svg>
+  </template>
+</head>
+<body>
+  <div id="root"><div id="boot">Loading Pixel Studio…</div></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="redesign/primitives.jsx"></script>
+  <script type="text/babel" src="redesign/screen-login.jsx"></script>
+  <script type="text/babel">
+    const { useState } = React;
+    function Root() {
+      const [theme, setTheme] = useState('dark');
+      React.useEffect(() => { document.documentElement.setAttribute('data-theme', theme); }, [theme]);
+      return (
+        <React.Fragment>
+          <button className="theme-toggle" title="Toggle theme"
+            onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}>
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={16} stroke={2} />
+          </button>
+          <window.LoginScreen />
+        </React.Fragment>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
+  </script>
+</body>
+</html>

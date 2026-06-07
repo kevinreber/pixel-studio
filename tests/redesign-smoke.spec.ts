@@ -132,7 +132,7 @@ test.describe("Public pages still load", () => {
   test("Login page loads", async ({ page }) => {
     await page.goto("/login");
     await expect(
-      page.getByRole("heading", { name: /sign in to your account/i })
+      page.getByRole("heading", { name: /welcome to pixel studio/i })
     ).toBeVisible();
   });
 
