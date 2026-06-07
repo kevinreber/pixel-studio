@@ -22,6 +22,29 @@ interface ArtTileProps {
   aspectRatio?: number;
   /** Tailwind rounded-* override; default `rounded-md`. Pass empty string to disable. */
   radius?: string;
+  /**
+   * Above-the-fold tiles should set this. Switches to eager loading so the
+   * browser starts the request immediately instead of waiting for an
+   * IntersectionObserver tick — otherwise the opacity-0 placeholder hides
+   * the real image for an uncomfortably long moment.
+   *
+   * Intentionally does NOT also set `fetchPriority`: React 18.3.1 serializes
+   * that prop to HTML in camelCase but the browser parses attribute names
+   * case-insensitively as lowercase, so hydration fires a mismatch error on
+   * every above-the-fold tile. `loading="eager"` already covers the eager
+   * request behavior we need; the priority hint is a minor extra optimization
+   * that isn't worth the hydration noise on React 18.
+   */
+  priority?: boolean;
+  /**
+   * Container-driven sizing. By default the tile is content-driven: the
+   * wrapper grows to the image's natural aspect (right for masonry layouts).
+   * When the parent has its own width AND height — e.g. the hero floating
+   * tiles — set `fill` so the wrapper stretches to fill the parent and the
+   * image crops via object-cover instead of locking to a 1:1 square that
+   * leaves a dark band below.
+   */
+  fill?: boolean;
   className?: string;
   children?: React.ReactNode;
 }
@@ -45,6 +68,8 @@ export function ArtTile({
   isVideo,
   aspectRatio = 1,
   radius = "rounded-md",
+  priority = false,
+  fill = false,
   className,
   children,
 }: ArtTileProps) {
@@ -78,12 +103,19 @@ export function ArtTile({
     }
   };
 
+  // `fill` opts out of the aspect-ratio fallback entirely: the wrapper
+  // stretches to the parent's dimensions and the image crops to match.
   const useAspect =
-    aspectRatio > 0 && (status !== "loaded" || !currentSrc);
+    !fill && aspectRatio > 0 && (status !== "loaded" || !currentSrc);
 
   return (
     <div
-      className={cn("relative overflow-hidden", radius, className)}
+      className={cn(
+        "relative overflow-hidden",
+        fill && "h-full w-full",
+        radius,
+        className,
+      )}
       style={useAspect ? { aspectRatio: `1 / ${aspectRatio}` } : undefined}
     >
       {/* mesh-gradient placeholder — always behind the image so there is no flash */}
@@ -99,12 +131,16 @@ export function ArtTile({
         <img
           src={currentSrc}
           alt={alt}
-          loading="lazy"
+          loading={priority ? "eager" : "lazy"}
           decoding="async"
           onLoad={() => setStatus("loaded")}
           onError={handleError}
           className={cn(
-            useAspect
+            // When the wrapper has known dimensions (aspect lock OR fill),
+            // absolutely position the image so it crops to the box exactly.
+            // Otherwise let it sit in flow so the wrapper grows to its
+            // natural height.
+            useAspect || fill
               ? "absolute inset-0 h-full w-full object-cover"
               : "relative h-full w-full object-cover",
             "transition-opacity duration-200",

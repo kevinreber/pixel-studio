@@ -259,14 +259,15 @@ const FeedAccessor = ({ feedData }: { feedData: FeedData }) => {
       {selectedItem !== null && selectedItem.type === "image" && (
         <Dialog open={true} onOpenChange={handleClose}>
           <DialogContent
-            className="w-full md:max-w-[90%] md:h-[90vh] h-[100vh] p-0 gap-0 dark:bg-zinc-900 overflow-hidden z-[100] [&>button]:absolute [&>button]:right-4 [&>button]:top-4 [&>button]:z-10 [&>button_span]:hidden"
+            hideClose
+            className="w-full md:max-w-[90%] md:h-[90vh] h-[100vh] p-0 gap-0 dark:bg-zinc-900 overflow-hidden z-[100]"
             onInteractOutside={(e) => e.preventDefault()}
             aria-describedby={undefined}
           >
             <VisuallyHidden>
               <DialogTitle>Image Details</DialogTitle>
             </VisuallyHidden>
-            <ImageModal imageData={selectedItem} />
+            <ImageModal imageData={selectedItem} onClose={handleClose} />
           </DialogContent>
         </Dialog>
       )}

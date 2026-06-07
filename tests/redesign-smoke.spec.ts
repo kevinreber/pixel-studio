@@ -36,9 +36,9 @@ test.describe("Landing (redesign)", () => {
     // Providers section anchor
     await expect(page.getByText(/powered by the world/i)).toBeVisible();
 
-    // Pricing — three tiers + Pro Popular badge
+    // Pricing — three credit packs + Popular badge on the featured one
     await expect(
-      page.getByRole("heading", { name: /pricing that scales with you/i })
+      page.getByRole("heading", { name: /pay once, generate anything/i })
     ).toBeVisible();
     await expect(page.getByText("Pro", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Popular", { exact: true })).toBeVisible();
