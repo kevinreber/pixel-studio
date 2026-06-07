@@ -1,5 +1,13 @@
 # Kafka Environment Configuration
 
+> ## ℹ️ Status: Optional / on hold
+>
+> **Kafka is not the default queue back-end.** Production currently runs on **Upstash QStash** (`QUEUE_BACKEND=qstash`), which handles async generation with no long-running workers and works natively on Vercel.
+>
+> The Kafka pipeline described here is fully implemented (see `app/services/kafka.server.ts`, `imageGenerationProducer.server.ts`, `imageGenerationWorker.server.ts`, and the `infrastructure/kafka/` deployment configs) but parked to avoid the ~$220/mo AWS MSK bill. This document exists so we can turn it back on when scale justifies the cost — without re-learning the setup.
+>
+> **To re-enable Kafka:** set `QUEUE_BACKEND=kafka` + the `KAFKA_*` env vars below, then run the consumer and WebSocket processes. For the default (QStash) flow, see [`README.md`](./README.md) and [`env.example`](./env.example) instead.
+
 This document outlines the required environment variables for the Kafka-based async image generation pipeline.
 
 ## Required Environment Variables
@@ -97,38 +105,35 @@ npm run kafka:health
 
 ## Production Setup
 
-### Current Status: ✅ Development Ready, 🚧 Production Pending
+### Current Status: ⏸️ Implemented but parked
 
-**What's Working:**
+**What's working:**
 
-- ✅ Local Kafka development environment
-- ✅ WebSocket real-time updates
-- ✅ Async image generation pipeline
-- ✅ Fixed redirect loop issues
+- ✅ Local Kafka dev environment (Docker Compose)
+- ✅ Producer / consumer / WebSocket code (`app/services/`)
+- ✅ AWS MSK deployment scripts (`infrastructure/kafka/deploy.sh`, `msk-cluster.yml`)
+- ✅ Topic creation, health check, monitor scripts (`npm run kafka:*`)
 
-**What's Missing for Production:**
+**Why it's parked:**
 
-- 🚧 AWS MSK cluster deployment
-- 🚧 Background worker deployment to production
-- 🚧 Production WebSocket server
-- 🚧 Production monitoring and alerting
+- Production currently uses **QStash**, which is sufficient for current volume and costs effectively $0 in idle.
+- AWS MSK runs ~$220–250/mo even at our scale (3 × `kafka.t3.small` brokers + storage + monitoring), which isn't justified yet.
+- The code paths are kept up-to-date so re-enabling is a config toggle + deploy, not a rewrite.
 
-### Next Steps for Production (Priority Order)
-
-#### **IMMEDIATE** (Next 1-2 weeks)
+### To re-enable in production
 
 1. **Deploy AWS MSK Cluster**
 
    ```bash
-   # Use the deployment script
    cd infrastructure/kafka
    chmod +x deploy.sh
    ./deploy.sh
    ```
 
-2. **Update Production Environment Variables**
+2. **Set production env vars**
 
    ```env
+   QUEUE_BACKEND=kafka
    KAFKA_BROKERS=your-msk-brokers-here
    KAFKA_SSL=true
    KAFKA_SASL_USERNAME=your-username
@@ -136,29 +141,16 @@ npm run kafka:health
    ENABLE_KAFKA_IMAGE_GENERATION=true
    ```
 
-3. **Deploy Background Workers**
-   - Use `scripts/startConsumers.ts` for production workers
-   - Configure PM2 or container orchestration
-   - Set up auto-scaling for consumer instances
+3. **Deploy worker processes**
+   - `scripts/startConsumers.ts` — background workers (run under PM2 / ECS service / Fly machine)
+   - `scripts/startWebSocketServer.ts` — real-time progress stream
 
-#### **SHORT TERM** (2-4 weeks)
+4. **Stand up monitoring**
+   - Topic depth / consumer lag (CloudWatch or any Kafka monitor UI)
+   - Failed-generation alerts (Sentry already wired)
+   - `/health` endpoint already includes Kafka cluster reachability
 
-4. **WebSocket Server Production Deployment**
-
-   - Deploy using `scripts/startWebSocketServer.ts`
-   - Configure load balancing and CORS
-   - Test real-time updates in production
-
-5. **Monitoring Setup**
-   - Kafka topic monitoring (queue depth, consumer lag)
-   - Failed generation alerting
-   - Health check endpoints
-
-**📋 Detailed Implementation Plan:**
-See `IMPROVEMENT_STRATEGY.md` → "KAFKA PRODUCTION NEXT STEPS" for complete checklist and timelines.
-
-**📊 Cost Estimates:**
-~$220-250/month for AWS MSK infrastructure (3 kafka.t3.small brokers)
+**📊 Cost reminder:** ~$220–250/month for AWS MSK infrastructure (3 × `kafka.t3.small` brokers).
 
 ## Monitoring
 

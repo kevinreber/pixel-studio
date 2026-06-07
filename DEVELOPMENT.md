@@ -54,8 +54,20 @@ GOOGLE_CLIENT_SECRET="your-google-client-secret"
 SESSION_SECRET="random-string-at-least-32-characters"
 
 # AI Services (at least one required for image generation)
-OPENAI_API_KEY="sk-..."           # For DALL-E models
-HUGGINGFACE_API_KEY="hf_..."      # For Stable Diffusion, Flux
+OPENAI_API_KEY="sk-..."           # OpenAI (gpt-image-1 with dall-e-3 fallback)
+HUGGINGFACE_API_KEY="hf_..."      # Stable Diffusion + Flux via Hugging Face
+
+# Other image providers (optional — drop in as needed)
+# FAL_KEY="..."                     # FAL AI
+# REPLICATE_API_TOKEN="..."         # Replicate
+# IDEOGRAM_API_KEY="..."            # Ideogram
+# TOGETHER_API_KEY="..."            # Together AI
+# BFL_API_KEY="..."                 # Black Forest Labs
+# STABILITY_API_KEY="..."           # Stability AI (also used for video)
+
+# Video providers
+# RUNWAY_API_KEY="..."              # Runway ML
+# LUMAAI_API_KEY="..."              # Luma AI
 ```
 
 ### Optional Services
@@ -215,27 +227,22 @@ The project works with:
 
 ## Processing Modes
 
-### Synchronous (Simple)
+### Asynchronous with QStash — **default**
 
-Default mode - images are generated during the request.
-
-```bash
-ENABLE_ASYNC_QUEUE="false"
-```
-
-### Asynchronous with QStash (Recommended)
-
-Uses Upstash QStash for background processing.
+Both production and local dev use QStash. No Docker, no extra processes — `npm run dev` is enough.
 
 ```bash
 QUEUE_BACKEND="qstash"
-ENABLE_ASYNC_QUEUE="true"
 QSTASH_TOKEN="..."
+QSTASH_CURRENT_SIGNING_KEY="..."
+QSTASH_NEXT_SIGNING_KEY="..."
 ```
 
-### Asynchronous with Kafka (High Scale)
+When the QStash keys are missing, local dev simulates queue dispatch in-process so you can still hit `/create` end-to-end without an Upstash account.
 
-For high-throughput scenarios.
+### Asynchronous with Kafka (optional, on hold)
+
+The Kafka pipeline is fully wired but parked to save the ~$220/mo MSK bill. Re-enable for high-throughput experiments:
 
 ```bash
 # Start Kafka locally
@@ -246,9 +253,20 @@ QUEUE_BACKEND="kafka"
 ENABLE_KAFKA_IMAGE_GENERATION="true"
 KAFKA_BROKERS="localhost:9092"
 
-# Start workers
+# Start workers (in separate terminals)
 npm run kafka:consumer
 npm run kafka:websocket
+```
+
+See [`KAFKA_ENVIRONMENT_SETUP.md`](./KAFKA_ENVIRONMENT_SETUP.md) for full setup details.
+
+### Synchronous (debug only)
+
+Falls back to blocking provider calls in the Remix action. Useful only for debugging a single provider.
+
+```bash
+ENABLE_KAFKA_IMAGE_GENERATION="false"
+# and leave QSTASH_TOKEN unset
 ```
 
 ## IDE Setup

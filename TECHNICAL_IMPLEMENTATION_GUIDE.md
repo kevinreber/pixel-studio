@@ -1,5 +1,37 @@
 # Technical Implementation Guide
 
+> ## ⚠️ Status: Historical planning document
+>
+> This file was the long-form planning doc that drove the Kafka migration and several feature explorations through 2025. Most of it has either **shipped** (sometimes differently than originally specced) or been **deprioritized**. Use the table below to know what's still actionable vs. archived.
+>
+> For the **current** architecture, read [`ARCHITECTURE.md`](./ARCHITECTURE.md) and [`README.md`](./README.md). For the current API surface, read [`API.md`](./API.md).
+>
+> ### Section status (as of 2026-06)
+>
+> | §                    | Topic                                               | Status                     | Notes                                                                                                                                                                                                                         |
+> | -------------------- | --------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+> | 1                    | Home page pagination & discovery                    | ✅ Shipped                 | `explore._index.tsx` uses the cached + paginated query described here                                                                                                                                                         |
+> | 2                    | Google Gemini 2.5 Flash integration                 | ❌ Not shipped             | `@google/genai` is not a dep; image generation expanded to FAL / Ideogram / Together / Black Forest / Stability instead                                                                                                       |
+> | 3                    | Video animation from static images                  | ✅ Shipped differently     | Implemented via **Runway / Luma / Stability** providers (not the AWS Lambda/SQS/ElasticTranscoder stack described). See `app/server/createRunwayVideo.ts`, `createLumaVideo.ts`, `createStabilityVideo.ts`                    |
+> | 4                    | Cross-feature infrastructure (Prometheus / Grafana) | ⏸️ Partial                 | OpenTelemetry + Winston in place; Sentry + Vercel Analytics + PostHog used instead of Prometheus/Grafana                                                                                                                      |
+> | 5                    | Cost estimation                                     | ⚠️ Outdated                | Numbers reflect 2025 planning assumptions, not current spend                                                                                                                                                                  |
+> | 6                    | Implementation timeline                             | 📦 Archived                | Original 12-week schedule; ignore — work happened on a different cadence                                                                                                                                                      |
+> | 7 / 7.5              | Apache Kafka integration                            | ✅ Shipped, ⏸️ now on hold | The pipeline described here was fully built, ran in dev, then **parked** in favor of QStash to save the ~$220/mo MSK bill. Toggle via `QUEUE_BACKEND=kafka`. See [`KAFKA_ENVIRONMENT_SETUP.md`](./KAFKA_ENVIRONMENT_SETUP.md) |
+> | 8 (risks)            | Risk assessment                                     | ⚠️ Outdated                | Reflects 2025 risk landscape                                                                                                                                                                                                  |
+> | 8 (Prisma → raw SQL) | Migration to raw PostgreSQL                         | ❌ Not shipped             | Still on Prisma; no migration planned                                                                                                                                                                                         |
+>
+> What we actually use today instead of the more speculative parts of this doc:
+>
+> - **Queue**: **Upstash QStash** (default) is the real production back-end. Kafka pipeline exists but is parked.
+> - **Image providers**: OpenAI (`gpt-image-1` with `dall-e-3` fallback), Stable Diffusion 3.5, Flux Pro 1.1 / Dev / Schnell, Ideogram, FAL, Together, Black Forest, Replicate.
+> - **Video providers**: Runway ML, Luma AI, Stability AI.
+> - **Real-time**: Native WebSocket server (`scripts/startWebSocketServer.ts`) — same design described in §7.5.
+> - **Observability**: Sentry + OpenTelemetry (OTLP HTTP) + Winston + PostHog. No Prometheus/Grafana.
+>
+> The body of this document is preserved below as historical context for design decisions and trade-off discussions, but **do not treat code snippets or env-var lists in the body as authoritative** — defer to the live code and `env.example`.
+
+---
+
 ## Feature-Specific Infrastructure & Development Requirements
 
 ---
@@ -578,7 +610,7 @@ class ActivityTracker {
   async trackImageGeneration(
     userId: string,
     imageId: string,
-    model: string
+    model: string,
   ): Promise<void> {
     await kafka.producer().send({
       topic: ACTIVITY_TOPICS.USER_ACTIVITIES,
@@ -1019,7 +1051,7 @@ interface ProcessingUpdate {
 
 export async function publishProcessingUpdate(
   requestId: string,
-  update: Omit<ProcessingUpdate, "requestId">
+  update: Omit<ProcessingUpdate, "requestId">,
 ): Promise<void> {
   const fullUpdate: ProcessingUpdate = { requestId, ...update };
 
@@ -1027,7 +1059,7 @@ export async function publishProcessingUpdate(
   await redis.setex(
     `processing:${requestId}`,
     3600,
-    JSON.stringify(fullUpdate)
+    JSON.stringify(fullUpdate),
   );
 
   // Broadcast to WebSocket clients
@@ -1035,7 +1067,7 @@ export async function publishProcessingUpdate(
 }
 
 export async function getProcessingStatus(
-  requestId: string
+  requestId: string,
 ): Promise<ProcessingUpdate | null> {
   const data = await redis.get(`processing:${requestId}`);
   return data ? JSON.parse(data) : null;
@@ -1268,7 +1300,7 @@ export class DatabaseConnection {
   }
 
   async transaction<T>(
-    callback: (client: PoolClient) => Promise<T>
+    callback: (client: PoolClient) => Promise<T>,
   ): Promise<T> {
     const client = await this.getClient();
     try {
