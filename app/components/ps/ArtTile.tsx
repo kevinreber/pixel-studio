@@ -22,6 +22,13 @@ interface ArtTileProps {
   aspectRatio?: number;
   /** Tailwind rounded-* override; default `rounded-md`. Pass empty string to disable. */
   radius?: string;
+  /**
+   * Above-the-fold tiles should set this. Switches to eager loading with high
+   * fetch priority so the browser starts the request immediately instead of
+   * waiting for an IntersectionObserver tick — otherwise the opacity-0
+   * placeholder hides the real image for an uncomfortably long moment.
+   */
+  priority?: boolean;
   className?: string;
   children?: React.ReactNode;
 }
@@ -45,6 +52,7 @@ export function ArtTile({
   isVideo,
   aspectRatio = 1,
   radius = "rounded-md",
+  priority = false,
   className,
   children,
 }: ArtTileProps) {
@@ -99,7 +107,8 @@ export function ArtTile({
         <img
           src={currentSrc}
           alt={alt}
-          loading="lazy"
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "auto"}
           decoding="async"
           onLoad={() => setStatus("loaded")}
           onError={handleError}

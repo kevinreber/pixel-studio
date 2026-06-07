@@ -15,12 +15,27 @@ import PixelStudioIcon from "components/PixelStudioIcon";
 import { Button, Badge, ArtTile, ThemeToggle } from "~/components/ps";
 import { cn } from "@/lib/utils";
 
-const HERO_IMAGES = [
-  "/assets/hero/resized-clov1aotv003pr2ygixlp9pmi.jpg",
-  "/assets/hero/resized-clov3hb17001gr2qvnx15mvf7.jpg",
-  "/assets/hero/resized-cllfyj6la0001r2otvu0ms49w.jpg",
-  "/assets/hero/resized-clkp3riui0001r2wj7q3t8tav.jpg",
-  "/assets/hero/resized-clov0tnth001hr2ygj2wec2wn.jpg",
+const HERO_IMAGES: { src: string; alt: string }[] = [
+  {
+    src: "/assets/hero/resized-clov1aotv003pr2ygixlp9pmi.jpg",
+    alt: "Treehouse with cherry blossoms",
+  },
+  {
+    src: "/assets/hero/resized-clov3hb17001gr2qvnx15mvf7.jpg",
+    alt: "View of the Brooklyn Bridge from a subway car",
+  },
+  {
+    src: "/assets/hero/resized-cllfyj6la0001r2otvu0ms49w.jpg",
+    alt: "Figure standing before a stargate above a city",
+  },
+  {
+    src: "/assets/hero/resized-clkp3riui0001r2wj7q3t8tav.jpg",
+    alt: "Pirate ship sailing through space",
+  },
+  {
+    src: "/assets/hero/resized-clov0tnth001hr2ygj2wec2wn.jpg",
+    alt: "Isometric neon space station",
+  },
 ];
 
 const EXAMPLE_PROMPTS = [
@@ -319,7 +334,7 @@ export default function LandingPage() {
                     className="grid h-8 w-8 place-items-center overflow-hidden rounded-full border-2 border-bg bg-surface-3"
                   >
                     <img
-                      src={HERO_IMAGES[i]}
+                      src={HERO_IMAGES[i].src}
                       alt=""
                       className="h-full w-full object-cover"
                     />
@@ -335,27 +350,27 @@ export default function LandingPage() {
           {/* Floating gallery */}
           <div className="relative hidden h-[520px] md:block">
             <FloatTile
-              src={HERO_IMAGES[0]}
+              image={HERO_IMAGES[0]}
               style={{ top: 0, right: "44%", width: 180, height: 240 }}
               delay={0}
             />
             <FloatTile
-              src={HERO_IMAGES[1]}
+              image={HERO_IMAGES[1]}
               style={{ top: 30, right: 0, width: 200, height: 260 }}
               delay={1.4}
             />
             <FloatTile
-              src={HERO_IMAGES[2]}
+              image={HERO_IMAGES[2]}
               style={{ top: 230, right: "30%", width: 170, height: 220 }}
               delay={0.6}
             />
             <FloatTile
-              src={HERO_IMAGES[3]}
+              image={HERO_IMAGES[3]}
               style={{ top: 270, right: 0, width: 200, height: 200 }}
               delay={2.1}
             />
             <FloatTile
-              src={HERO_IMAGES[4]}
+              image={HERO_IMAGES[4]}
               style={{ top: 80, right: "60%", width: 150, height: 180 }}
               delay={1}
             />
@@ -451,16 +466,20 @@ export default function LandingPage() {
           </Link>
         </div>
         <div className="columns-2 gap-4 [column-fill:_balance] md:columns-4">
-          {HERO_IMAGES.concat(HERO_IMAGES)
-            .slice(0, 8)
-            .map((src, i) => (
+          {/* Show each unique sample twice in a staggered order so neighbours
+              never share an image and the grid feels populated without
+              looking like an obvious 2× duplicate of the same row. */}
+          {[0, 2, 4, 1, 3, 0, 2, 4].map((idx, i) => {
+            const img = HERO_IMAGES[idx];
+            return (
               <div
                 key={i}
                 className="mb-4 break-inside-avoid overflow-hidden rounded-md border border-[var(--border)]"
               >
-                <ArtTile src={src} radius="" alt="" />
+                <ArtTile src={img.src} radius="" alt={img.alt} />
               </div>
-            ))}
+            );
+          })}
         </div>
       </section>
 
@@ -588,11 +607,11 @@ export default function LandingPage() {
 }
 
 function FloatTile({
-  src,
+  image,
   style,
   delay,
 }: {
-  src: string;
+  image: { src: string; alt: string };
   style: React.CSSProperties;
   delay: number;
 }) {
@@ -604,7 +623,7 @@ function FloatTile({
         animation: `ps-float 7s ease-in-out ${delay}s infinite`,
       }}
     >
-      <ArtTile src={src} radius="" alt="" />
+      <ArtTile src={image.src} radius="" alt={image.alt} priority />
     </div>
   );
 }
