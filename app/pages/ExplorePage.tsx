@@ -137,7 +137,15 @@ function toMasonry(items: MediaItem[]): MasonryItem[] {
       src: thumbnail || original,
       fallbackSrc: thumbnail && original && thumbnail !== original ? original : undefined,
       isVideo: Boolean(isVideo),
-      user: (it.user as MasonryItem["user"]) ?? null,
+      user:
+        (it.user as MasonryItem["user"]) ??
+        // Some upstream code paths still hand us a hydrated `creator` field
+        // instead of `user`. Accept either so the hover overlay never falls
+        // through to "Anonymous" for content that does have an author.
+        ((it as { creator?: MasonryItem["user"] }).creator as
+          | MasonryItem["user"]
+          | undefined) ??
+        null,
       likeCount:
         ((it._count as { likes?: number } | undefined)?.likes as number) ??
         (it.likeCount as number | undefined),

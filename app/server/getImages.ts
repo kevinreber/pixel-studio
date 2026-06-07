@@ -37,6 +37,13 @@ export const VideosSearchResultSchema = z.object({
 
 export const VideosSearchResultsSchema = z.array(VideosSearchResultSchema);
 
+export type MediaUser = {
+  id: string;
+  name: string | null;
+  username: string;
+  image: string | null;
+};
+
 type Image = {
   id: string;
   title?: string | undefined | null;
@@ -64,12 +71,14 @@ export type ImageTagType = Image & {
   url: string;
   thumbnailURL: string;
   blurURL: string;
+  user: MediaUser | null;
 };
 
 export type VideoTagType = Video & {
   type: "video";
   url: string;
   thumbnailURL: string;
+  user: MediaUser | null;
 };
 
 export type MediaItem = ImageTagType | VideoTagType;
@@ -231,6 +240,25 @@ export const getImages = async (
       } as const;
     }
 
+    // Fetch creators in one go so the hover overlay can show a real name
+    // instead of "Anonymous". The raw SQL queries above only project userId
+    // — without this hydration step, ExplorePage's `it.user` is undefined
+    // and falls through to the placeholder label.
+    const distinctUserIds = Array.from(
+      new Set<string>([
+        ...imagesResult.data.map((i) => i.userId),
+        ...(videosResult.success ? videosResult.data.map((v) => v.userId) : []),
+      ]),
+    );
+
+    const users: MediaUser[] = distinctUserIds.length
+      ? await prisma.user.findMany({
+          where: { id: { in: distinctUserIds } },
+          select: { id: true, name: true, username: true, image: true },
+        })
+      : [];
+    const usersById = new Map(users.map((u) => [u.id, u]));
+
     // Format images with URLs
     const formattedImages: ImageTagType[] = imagesResult.data.map((image) => ({
       ...image,
@@ -238,6 +266,7 @@ export const getImages = async (
       url: getS3BucketURL(image.id),
       thumbnailURL: getS3BucketThumbnailURL(image.id),
       blurURL: getS3BucketBlurURL(image.id),
+      user: usersById.get(image.userId) ?? null,
     }));
 
     // Format videos with URLs
@@ -247,6 +276,7 @@ export const getImages = async (
           type: "video" as const,
           url: getS3VideoURL(video.id),
           thumbnailURL: getS3VideoThumbnailURL(video.id),
+          user: usersById.get(video.userId) ?? null,
         }))
       : [];
 

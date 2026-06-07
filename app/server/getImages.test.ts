@@ -5,6 +5,9 @@ import { getImages } from "./getImages";
 vi.mock("services/prisma.server", () => ({
   prisma: {
     $queryRaw: vi.fn(),
+    user: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
   },
 }));
 
@@ -28,6 +31,9 @@ import { prisma } from "services/prisma.server";
 describe("getImages", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: no users hydrated. Individual tests that exercise the
+    // hover-overlay name flow override this with mockResolvedValueOnce.
+    vi.mocked(prisma.user.findMany).mockResolvedValue([]);
   });
 
   it("should return empty arrays when no content found", async () => {
@@ -217,6 +223,96 @@ describe("getImages", () => {
     expect(result.images).toHaveLength(0);
     expect(result.videos).toHaveLength(0);
     expect(result.items).toHaveLength(0);
+  });
+
+  it("should hydrate creator info onto each item", async () => {
+    const mockImages = [
+      {
+        id: "img-1",
+        title: "Image",
+        prompt: "Test",
+        model: "dall-e-3",
+        stylePreset: "none",
+        userId: "user-1",
+        createdAt: new Date("2024-01-10"),
+      },
+    ];
+
+    const mockVideos = [
+      {
+        id: "vid-1",
+        title: "Video",
+        prompt: "Test",
+        model: "runway-gen3",
+        userId: "user-2",
+        duration: 5,
+        aspectRatio: "16:9",
+        status: "complete",
+        createdAt: new Date("2024-01-15"),
+      },
+    ];
+
+    vi.mocked(prisma.$queryRaw)
+      .mockResolvedValueOnce([{ count: 1 }])
+      .mockResolvedValueOnce([{ count: 1 }])
+      .mockResolvedValueOnce(mockImages)
+      .mockResolvedValueOnce(mockVideos);
+
+    // The production code only requests {id, name, username, image} via
+    // Prisma's `select`, so the runtime shape is a strict subset of User.
+    // Cast away the inferred full-User return type so the mock matches what
+    // the call site actually receives.
+    vi.mocked(prisma.user.findMany).mockResolvedValueOnce([
+      { id: "user-1", name: "Ada", username: "ada", image: null },
+      { id: "user-2", name: null, username: "bee", image: null },
+    ] as unknown as Awaited<ReturnType<typeof prisma.user.findMany>>);
+
+    const result = await getImages();
+
+    expect(result.images[0].user).toEqual({
+      id: "user-1",
+      name: "Ada",
+      username: "ada",
+      image: null,
+    });
+    expect(result.videos[0].user).toEqual({
+      id: "user-2",
+      name: null,
+      username: "bee",
+      image: null,
+    });
+    // Both items in the unified list should carry the same hydrated user.
+    expect(result.items.map((i) => i.user?.username).sort()).toEqual([
+      "ada",
+      "bee",
+    ]);
+  });
+
+  it("should leave user as null when the creator no longer exists", async () => {
+    const mockImages = [
+      {
+        id: "img-orphan",
+        title: "Image",
+        prompt: "Test",
+        model: "dall-e-3",
+        stylePreset: "none",
+        userId: "ghost-user",
+        createdAt: new Date("2024-01-10"),
+      },
+    ];
+
+    vi.mocked(prisma.$queryRaw)
+      .mockResolvedValueOnce([{ count: 1 }])
+      .mockResolvedValueOnce([{ count: 0 }])
+      .mockResolvedValueOnce(mockImages)
+      .mockResolvedValueOnce([]);
+
+    // findMany returns nothing — simulating a deleted account.
+    vi.mocked(prisma.user.findMany).mockResolvedValueOnce([]);
+
+    const result = await getImages();
+
+    expect(result.images[0].user).toBeNull();
   });
 
   it("should include items array for unified access", async () => {
