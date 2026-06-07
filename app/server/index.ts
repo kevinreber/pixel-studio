@@ -7,7 +7,7 @@ export * from "./addBase64EncodedImageToAWS";
 export * from "./createNewSet";
 export * from "./createNewImage";
 export * from "./createNewImages";
-export * from "./createNewDallEImages";
+export * from "./createNewOpenAIImages";
 export * from "./createNewStableDiffusionImages";
 export * from "./deleteSet";
 export * from "./deleteImage";

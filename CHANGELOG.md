@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+#### OpenAI image provider simplification
+
+- **Dropped the layered DALL-E fallback chain** — every request now calls `gpt-image-1` directly (the only layer succeeding in prod). Both the `"dall-e-3"` and `"dall-e-2"` model aliases now route through `gpt-image-1`; the `model` value is still stored on the `Image` record so historical data and pricing config stay aligned.
+- **Renamed** `app/server/createNewDallEImages.ts` → `app/server/createNewOpenAIImages.ts`. The exported function `createNewDallEImages` is now `createNewOpenAIImages`; `getDallEMockDataResponse` is now `getOpenAIImagesMockResponse`. Internal helper `mapSizeToGptImage1` and `urlToBase64` are lifted to module scope and exported for unit tests.
+- **Added 21 tests** at `app/server/createNewOpenAIImages.test.ts`:
+  - Unit: `mapSizeToGptImage1` size mapping (6 cases) and `urlToBase64` URL→base64 fallback (5 cases — success, 404, network throw, non-Error rejection, binary payload).
+  - Integration: 10 cases for `createNewOpenAIImages` itself with mocked OpenAI SDK / `~/server` barrel / S3 utils — `n=1`-per-loop for dall-e-3, batched `n` for dall-e-2, DB record preserves original model string, size-mapping reaches the SDK call, `url`-only response falls through `urlToBase64`, billing-limit error rethrows user-facing message, generic error swallow path, post-set-creation error triggers `deleteSet`, `USE_MOCK_DALLE` short-circuit.
+
 ### Added
 
 #### Full App Redesign (PR #150 — 2026-06)
@@ -74,7 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Switched primary OpenAI generation from `dall-e-3` to `gpt-image-1`**
   - OpenAI sequentially deprecated `response_format`, then `style`/`quality`, then `dall-e-3` itself
-  - `app/server/createNewDallEImages.ts` now uses a layered fallback chain: `dall-e-3` w/ params → `dall-e-3` w/o params → `gpt-image-1` (with `mapSizeToGptImage1()` for the `1024x1792` → `1024x1536` mapping)
+  - `app/server/createNewDallEImages.ts` (later renamed to `createNewOpenAIImages.ts`) used a layered fallback chain at the time of this release: `dall-e-3` w/ params → `dall-e-3` w/o params → `gpt-image-1` (with `mapSizeToGptImage1()` for the `1024x1792` → `1024x1536` mapping). The fallback layers were dropped in a follow-up — see Unreleased.
   - `dall-e-2` removed from `app/config/models.ts` (option no longer exposed)
   - Display name shows "OpenAI Image" via `MODEL_DISPLAY_NAMES` in `app/components/ModelBadge.tsx`
 

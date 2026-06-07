@@ -281,7 +281,7 @@ npm run queue:websocket            # Start WebSocket server (alias)
 
 ### Image Providers (8)
 
-- `createNewDallEImages.ts` - OpenAI image generation. Layered fallback: `dall-e-3` w/ params → `dall-e-3` w/o params → `gpt-image-1` (with `mapSizeToGptImage1()`). `dall-e-2` is no longer exposed.
+- `createNewOpenAIImages.ts` - OpenAI image generation. Calls `gpt-image-1` directly (with `mapSizeToGptImage1()` translating legacy DALL-E sizes). The `model` argument is still passed through as `"dall-e-3"` or `"dall-e-2"` for DB / pricing consistency, but the upstream call always targets `gpt-image-1`. `dall-e-2` is not exposed in the picker.
 - `createNewStableDiffusionImages.ts` - Stable Diffusion
 - `createHuggingFaceImages.ts` - Hugging Face models
 - `createBlackForestImages.ts` - Black Forest AI
@@ -805,7 +805,7 @@ npm run kafka:websocket
 - Supabase v2 auth migration
 - Short URL image sharing (`/p/$imageId`)
 - **Full app redesign** (PR #150, 2026-06): new design tokens (`app/globals.css` + `tailwind.config.ts`), primitive library (`app/components/ps/*`), app shell (`Sidebar` / `TopBar` / `MobileNav` / `AppShell`), light + dark theme toggle persisted to `User.theme`, redesigned versions of every core screen (consumer + admin).
-- **OpenAI provider switch** (PR #150, 2026-06): `dall-e-3` → `gpt-image-1` with layered fallback. See `app/server/createNewDallEImages.ts`.
+- **OpenAI provider switch** (PR #150, 2026-06): `dall-e-3` → `gpt-image-1`. Originally shipped with a layered fallback; the layers were dropped and the file was renamed in a follow-up (PR #157). See `app/server/createNewOpenAIImages.ts`.
 - Dynamic sitemap generation
 - Credit history and generation history settings pages
 - What's new page for feature announcements

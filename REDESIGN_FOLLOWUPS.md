@@ -45,14 +45,24 @@ Everything that could be done from local code is now landed. Remaining items all
 
 ## 3. Tech-debt cleanup (waiting on metrics / external scans)
 
-- [ ] **Drop the layered `dall-e-3` fallback** in `app/server/createNewDallEImages.ts`
-  - Currently: try `dall-e-3` w/ `style`+`quality` → retry w/o those params → fall back to `gpt-image-1` (with `mapSizeToGptImage1()`).
-  - Only the last layer is succeeding in prod (OpenAI deprecated all of `response_format`, then `style`/`quality`, then `dall-e-3` itself in sequence).
-  - Once metrics confirm 100% of OpenAI traffic hits the `gpt-image-1` branch, delete the first two layers and rename the function.
+- [~] **Drop the layered `dall-e-3` fallback** in `app/server/createNewOpenAIImages.ts` (PR #157, worktree `jolly-tinkering-flute`)
+  - Status: **simplified, renamed, and unit + integration tested** — both the dall-e-3 and dall-e-2 branches now call `gpt-image-1` directly. `isUnknownParamError` / `isModelMissingError` helpers and `response_format` removed; `mapSizeToGptImage1` and `urlToBase64` lifted to module scope and exported for tests.
+  - Preserved: per-model `n` behavior (dall-e-3 alias still loops one-at-a-time, dall-e-2 still batches) so prod behavior matches what's been running.
+  - Renamed (same PR): file → `createNewOpenAIImages.ts`, function `createNewDallEImages` → `createNewOpenAIImages`, mock helper `getDallEMockDataResponse` → `getOpenAIImagesMockResponse`. Callers in `app/server/index.ts`, `app/server/createNewImages.ts`, and the two `app/config/models.ts` comments updated.
+  - Tests in `app/server/createNewOpenAIImages.test.ts` — **21 cases**:
+    - `mapSizeToGptImage1` (6): all four return branches + empty + garbage input
+    - `urlToBase64` (5): success, 404, network throw, non-Error rejection, binary payload
+    - `createNewOpenAIImages` integration (10): missing userId / dall-e-3 loops with `n=1` / dall-e-2 batches with `n=3` / DB record preserves the original model string / size mapping `1024x1792 → 1024x1536` flows through to the SDK call / `url`-only response falls back through `urlToBase64` / billing-limit error rethrows the user-facing message / generic SDK error swallowed (set never created) / post-set-creation error deletes the set / `USE_MOCK_DALLE` short-circuit
+  - **Before merging:** confirm via prod metrics / OpenAI dashboard that 100% of recent OpenAI image traffic was hitting the `gpt-image-1` branch. If any dall-e-3 calls still succeed, the simplification regresses them.
 
 - [ ] **Verify CodeQL `js/xss-through-dom` alert stays dismissed**
   - `app/components/ImagePicker.tsx` validates URLs via `isSafeImageUrl()` before assigning to `<img src>`. Alert was dismissed as a false positive with that justification.
   - On the next weekly CodeQL run, confirm it does not reappear.
+
+## 4. Audits completed this session
+
+- [x] **Credit-refund audit script reviewed** — `scripts/auditCreditRefunds.ts` reads cleanly. Three checks: volume (7d/30d counts), double-fires (same userId+generationLogId producing >1 refund), orphans (refunds without a matching `spend` row). Minor inefficiency: orphan check does one `findFirst` per refund row (N+1). Fine for ad-hoc auditing; convert to a single `groupBy` only if it gets slow at higher refund volume.
+- [x] **PostHog init deferral verified** — `app/entry.client.tsx` defers `initPostHog` past `window.load` then `setTimeout(0)` to push past React's hydration commit. Comment block at the call site explains the failure mode (`<script>` injection shifting SSR DOM out from under hydration). No changes needed.
 
 ## Closed (no further action)
 
