@@ -805,7 +805,7 @@ npm run kafka:websocket
 - Supabase v2 auth migration
 - Short URL image sharing (`/p/$imageId`)
 - **Full app redesign** (PR #150, 2026-06): new design tokens (`app/globals.css` + `tailwind.config.ts`), primitive library (`app/components/ps/*`), app shell (`Sidebar` / `TopBar` / `MobileNav` / `AppShell`), light + dark theme toggle persisted to `User.theme`, redesigned versions of every core screen (consumer + admin).
-- **OpenAI provider switch** (PR #150, 2026-06): `dall-e-3` → `gpt-image-1` with layered fallback. See `app/server/createNewDallEImages.ts`.
+- **OpenAI provider switch** (PR #150, 2026-06): `dall-e-3` → `gpt-image-1`. Originally shipped with a layered fallback; the layers were dropped and the file was renamed in a follow-up (PR #157). See `app/server/createNewOpenAIImages.ts`.
 - Dynamic sitemap generation
 - Credit history and generation history settings pages
 - What's new page for feature announcements
