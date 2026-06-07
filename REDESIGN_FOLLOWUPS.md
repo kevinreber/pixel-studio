@@ -19,9 +19,7 @@ PR: https://github.com/kevinreber/pixel-studio/pull/150
   - Confirm pageviews + autocapture events are landing in PostHog.
   - Watch browser console + Sentry for any `Hydration failed` warnings.
 
-- [ ] **Remove `pr-screenshots/` from the repo**
-  - It carries 30+ PNGs (`before/`, `after/`, `mobile-before/`, `mobile-after/`) that are useful for the PR but don't belong in the runtime checkout.
-  - Either delete with `git rm -r pr-screenshots/` in a follow-up PR or add `pr-screenshots/` to `.gitignore` and remove from history.
+- [x] ~~**Remove `pr-screenshots/` from the repo**~~ — **Reclassified as intentional.** The 32 PNGs (desktop + iPhone 14 Pro Max before/after) are kept as a permanent visual record of the redesign. See `pr-screenshots/README.md`.
 
 ## 2. First-week monitoring
 
@@ -46,8 +44,7 @@ PR: https://github.com/kevinreber/pixel-studio/pull/150
   - The flag is enabled in `vite.config.ts`. `ExplorePage` and `UserProfilePage` had Suspense stalls because of it.
   - Run `grep -rn "defer(" app/routes app/pages` and `grep -rn "<Await" app/routes app/pages`. Any composed `Promise.all` inside a `defer()` is a probable stall.
 
-- [ ] **Remove `design_handoff_pixel_studio_redesign/` from the working tree**
-  - It's currently untracked (shows up in `git status`). Useful as reference during implementation; should be archived elsewhere (vault, drive) and removed from the repo root.
+- [x] ~~**Remove `design_handoff_pixel_studio_redesign/` from the working tree**~~ — **Partially closed.** PR #151 curated the bundle: kept `README.md` (design brief), `redesign/tokens.css` (source-of-truth tokens), and `screenshots/{desktop,mobile}/*.png` (intended-state mockups) as a historical record. Removed the standalone HTML previews, prototype JSX shells, and ~30 decorative placeholder JPGs (all process-only scaffolding).
 
 - [ ] **Verify CodeQL `js/xss-through-dom` alert stays dismissed**
   - `app/components/ImagePicker.tsx` validates URLs via `isSafeImageUrl()` before assigning to `<img src>`. Alert was dismissed as a false positive with that justification.
