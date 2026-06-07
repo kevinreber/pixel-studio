@@ -10,19 +10,23 @@ import OpenAI from "openai";
 import { CreateImagesFormData } from "~/routes/create";
 import { Logger } from "~/utils/logger.server";
 
+// These string values double as the on-disk identifier in the `Image.model`
+// column. They must keep their `"dall-e-2"` / `"dall-e-3"` form so historical
+// records, pricing config, and the model picker all continue to align. Only
+// the upstream OpenAI call is migrated to `gpt-image-1`.
 const DALL_E_2_MODEL = "dall-e-2";
 const DALL_E_3_MODEL = "dall-e-3";
 const MOCK_IMAGE_ID = "cliid9qad0001r2q9pscacuj0";
 const MOCK_SET_ID = "cm32igx0l0011gbosfbtw33ai";
 
-export const getDallEMockDataResponse = (numberOfImages = 1) => {
+export const getOpenAIImagesMockResponse = (numberOfImages = 1) => {
   Logger.warn({
-    message: "⚠️ Warning – Using DALL-E Mock Data *************************",
+    message: "⚠️ Warning – Using OpenAI Mock Data *************************",
   });
   const imageURL = getS3BucketURL(MOCK_IMAGE_ID);
   const thumbnailURL = getS3BucketThumbnailURL(MOCK_IMAGE_ID);
 
-  const mockDallEImage = {
+  const mockOpenAIImage = {
     id: MOCK_IMAGE_ID,
     prompt: "using mock data",
     userId: "testUser123",
@@ -35,7 +39,7 @@ export const getDallEMockDataResponse = (numberOfImages = 1) => {
     thumbnailURL,
     comments: [],
   };
-  const mockData = new Array(numberOfImages).fill(mockDallEImage);
+  const mockData = new Array(numberOfImages).fill(mockOpenAIImage);
 
   return mockData;
 };
@@ -74,10 +78,64 @@ const VALID_SIZES = {
 };
 
 /**
- * @description
- * This function makes a request to Open AI's Dall-E API to fetch images generated using the prompt
+ * Map a legacy DALL-E size string to a size supported by `gpt-image-1`.
+ *
+ * gpt-image-1 supports: 1024x1024 / 1024x1536 / 1536x1024 / auto.
+ * dall-e-3 portrait/landscape sizes map to the closest gpt-image-1 equivalents.
+ * Anything else (e.g. dall-e-2's 256x256 / 512x512) falls through to `"auto"`.
+ *
+ * Exported for unit testing.
  */
-const createDallEImages = async (
+export function mapSizeToGptImage1(
+  size: string,
+): "1024x1024" | "1024x1536" | "1536x1024" | "auto" {
+  if (size === "1024x1792") return "1024x1536";
+  if (size === "1792x1024") return "1536x1024";
+  if (size === "1024x1024") return "1024x1024";
+  return "auto";
+}
+
+/**
+ * Fetch an image URL and re-encode the bytes as base64.
+ *
+ * gpt-image-1 returns `b64_json` directly today, but the SDK type still
+ * allows a `url`-only response. Callers normalize either shape to base64
+ * via this helper so the rest of the pipeline (S3 upload) doesn't care
+ * which one came back.
+ *
+ * Exported for unit testing.
+ */
+export async function urlToBase64(url: string): Promise<string | undefined> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      Logger.error({
+        message: `Failed to fetch image url: ${res.status}`,
+        metadata: { url },
+      });
+      return undefined;
+    }
+    const buf = Buffer.from(await res.arrayBuffer());
+    return buf.toString("base64");
+  } catch (err) {
+    Logger.error({
+      message: "Failed to download image url",
+      error: err instanceof Error ? err : new Error(String(err)),
+      metadata: { url },
+    });
+    return undefined;
+  }
+}
+
+/**
+ * Generate one or more images via OpenAI's `gpt-image-1` endpoint.
+ *
+ * The `model` argument is the user-facing model alias (`"dall-e-3"`,
+ * `"dall-e-2"`, etc.) — it controls the per-model `n` behavior and is
+ * preserved on the DB record. The actual upstream call always targets
+ * `gpt-image-1`.
+ */
+const generateImagesViaOpenAI = async (
   prompt: string,
   numberOfImages = DEFAULT_NUMBER_OF_IMAGES_CREATED,
   model: string,
@@ -89,7 +147,7 @@ const createDallEImages = async (
   }
 ) => {
   Logger.info({
-    message: "Creating DALL-E images...",
+    message: "Creating OpenAI images...",
     metadata: {
       prompt,
       numberOfImages,
@@ -116,44 +174,8 @@ const createDallEImages = async (
   // DB records and pricing config stay consistent, but every request is now
   // routed to `gpt-image-1`. The earlier layered fallback (try dall-e → retry
   // without optional params → fall through to gpt-image-1) is removed because
-  // only the final layer was succeeding in prod.
-
-  // gpt-image-1 supports 1024x1024 / 1024x1536 / 1536x1024 / auto. We map the
-  // dall-e-3 portrait/landscape sizes to their closest equivalents and let
-  // anything else (e.g. dall-e-2's 256/512) fall through to "auto".
-  function mapSizeToGptImage1(
-    size: string,
-  ): "1024x1024" | "1024x1536" | "1536x1024" | "auto" {
-    if (size === "1024x1792") return "1024x1536";
-    if (size === "1792x1024") return "1536x1024";
-    if (size === "1024x1024") return "1024x1024";
-    return "auto";
-  }
-
-  // gpt-image-1 returns `b64_json` directly today, but the SDK type still
-  // allows a `url`-only response. Normalize either shape to base64 so the
-  // rest of the pipeline (S3 upload) doesn't care which one came back.
-  async function urlToBase64(url: string): Promise<string | undefined> {
-    try {
-      const res = await fetch(url);
-      if (!res.ok) {
-        Logger.error({
-          message: `Failed to fetch image url: ${res.status}`,
-          metadata: { url },
-        });
-        return undefined;
-      }
-      const buf = Buffer.from(await res.arrayBuffer());
-      return buf.toString("base64");
-    } catch (err) {
-      Logger.error({
-        message: "Failed to download image url",
-        error: err instanceof Error ? err : new Error(String(err)),
-        metadata: { url },
-      });
-      return undefined;
-    }
-  }
+  // only the final layer was succeeding in prod. See module-scope helpers
+  // `mapSizeToGptImage1` and `urlToBase64` above.
 
   try {
     const openai = getOpenAIClient();
@@ -219,17 +241,18 @@ const createDallEImages = async (
 };
 
 /**
- * @description
- * This function does the following in the listed order:
- *   1. Gets an image from OpenAI's Dall-E API
- *   2. Creates a new Image in our DB using the data returned from "Step 1"
- *   3. Stores the image Blob from "Step 1" into our AWS S3 bucket
+ * Generate images via OpenAI's `gpt-image-1` endpoint, persist the image
+ * records in the database, and upload the blobs to S3.
+ *
+ * The function name preserves the "OpenAI" framing — `model` is still passed
+ * through as `"dall-e-3"` (or legacy `"dall-e-2"`) so downstream config and
+ * historical records stay consistent.
  */
-export const createNewDallEImages = async (
+export const createNewOpenAIImages = async (
   formData: CreateImagesFormData = DEFAULT_PAYLOAD,
   userId: string
 ) => {
-  console.log("Creating new DALL-E images...");
+  console.log("Creating new OpenAI images...");
   const { prompt, numberOfImages, private: isImagePrivate = false } = formData;
   const model = formData.model;
 
@@ -239,14 +262,14 @@ export const createNewDallEImages = async (
   let setId = "";
   try {
     if (process.env.USE_MOCK_DALLE === "tru") {
-      const mockData = getDallEMockDataResponse(numberOfImages);
+      const mockData = getOpenAIImagesMockResponse(numberOfImages);
       await setTimeout(THREE_SECONDS_IN_MS);
 
       return { images: mockData, setId: MOCK_SET_ID };
     }
 
     // Generate Images with new options
-    const imagesImages = await createDallEImages(prompt, numberOfImages, model, {
+    const imagesImages = await generateImagesViaOpenAI(prompt, numberOfImages, model, {
       width: formData.width,
       height: formData.height,
       quality: formData.quality,
@@ -304,7 +327,7 @@ export const createNewDallEImages = async (
     return { images: formattedImagesData, setId };
   } catch (error) {
     Logger.error({
-      message: "Error creating new DALL-E images",
+      message: "Error creating new OpenAI images",
       error: error as Error,
     });
 

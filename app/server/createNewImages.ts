@@ -1,7 +1,7 @@
 import { CreateImagesFormData } from "~/routes/create";
 import {
   createNewStableDiffusionImages,
-  createNewDallEImages,
+  createNewOpenAIImages,
   deleteSet,
   createHuggingFaceImages,
   createBlackForestImages,
@@ -76,7 +76,7 @@ export const createNewImages = async (
   try {
     // handle DALL-E models
     if (AILanguageModelToUse.includes("dall-e")) {
-      const data = await createNewDallEImages(formData, userId);
+      const data = await createNewOpenAIImages(formData, userId);
 
       setId = data.setId || "";
 

@@ -281,7 +281,7 @@ npm run queue:websocket            # Start WebSocket server (alias)
 
 ### Image Providers (8)
 
-- `createNewDallEImages.ts` - OpenAI image generation. Layered fallback: `dall-e-3` w/ params → `dall-e-3` w/o params → `gpt-image-1` (with `mapSizeToGptImage1()`). `dall-e-2` is no longer exposed.
+- `createNewOpenAIImages.ts` - OpenAI image generation. Calls `gpt-image-1` directly (with `mapSizeToGptImage1()` translating legacy DALL-E sizes). The `model` argument is still passed through as `"dall-e-3"` or `"dall-e-2"` for DB / pricing consistency, but the upstream call always targets `gpt-image-1`. `dall-e-2` is not exposed in the picker.
 - `createNewStableDiffusionImages.ts` - Stable Diffusion
 - `createHuggingFaceImages.ts` - Hugging Face models
 - `createBlackForestImages.ts` - Black Forest AI

@@ -80,7 +80,7 @@ export const MODEL_OPTIONS = [
     // OpenAI deprecated `dall-e-3` and migrated projects to `gpt-image-1`.
     // We keep the internal `value: "dall-e-3"` so existing DB records, pricing
     // config, and generation logs continue to work — the server-side call
-    // transparently routes to gpt-image-1 (see createNewDallEImages.ts).
+    // transparently routes to gpt-image-1 (see createNewOpenAIImages.ts).
     name: "OpenAI Image",
     value: "dall-e-3",
     image: "/assets/model-thumbs/dalle3.jpg",
@@ -91,7 +91,7 @@ export const MODEL_OPTIONS = [
     recommended: true,
   },
   // DALL-E 2 was removed from the picker — OpenAI deprecated it alongside
-  // dall-e-3. Server-side support remains in createNewDallEImages.ts so any
+  // dall-e-3. Server-side support remains in createNewOpenAIImages.ts so any
   // historical images with model="dall-e-2" still display correctly.
 
   // Replicate Models
