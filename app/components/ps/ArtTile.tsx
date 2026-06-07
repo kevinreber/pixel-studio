@@ -23,10 +23,17 @@ interface ArtTileProps {
   /** Tailwind rounded-* override; default `rounded-md`. Pass empty string to disable. */
   radius?: string;
   /**
-   * Above-the-fold tiles should set this. Switches to eager loading with high
-   * fetch priority so the browser starts the request immediately instead of
-   * waiting for an IntersectionObserver tick — otherwise the opacity-0
-   * placeholder hides the real image for an uncomfortably long moment.
+   * Above-the-fold tiles should set this. Switches to eager loading so the
+   * browser starts the request immediately instead of waiting for an
+   * IntersectionObserver tick — otherwise the opacity-0 placeholder hides
+   * the real image for an uncomfortably long moment.
+   *
+   * Intentionally does NOT also set `fetchPriority`: React 18.3.1 serializes
+   * that prop to HTML in camelCase but the browser parses attribute names
+   * case-insensitively as lowercase, so hydration fires a mismatch error on
+   * every above-the-fold tile. `loading="eager"` already covers the eager
+   * request behavior we need; the priority hint is a minor extra optimization
+   * that isn't worth the hydration noise on React 18.
    */
   priority?: boolean;
   /**
@@ -125,7 +132,6 @@ export function ArtTile({
           src={currentSrc}
           alt={alt}
           loading={priority ? "eager" : "lazy"}
-          fetchPriority={priority ? "high" : "auto"}
           decoding="async"
           onLoad={() => setStatus("loaded")}
           onError={handleError}
