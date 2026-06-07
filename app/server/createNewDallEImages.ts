@@ -59,7 +59,6 @@ const DEFAULT_AI_IMAGE_LANGUAGE_MODEL = DALL_E_2_MODEL;
 const DEFAULT_IS_IMAGE_PRIVATE = false;
 
 const THREE_SECONDS_IN_MS = 1000 * 3;
-const BASE_64_FORMAT = "b64_json";
 const DEFAULT_PAYLOAD = {
   prompt: "",
   numberOfImages: DEFAULT_NUMBER_OF_IMAGES_CREATED,
@@ -67,7 +66,8 @@ const DEFAULT_PAYLOAD = {
   private: DEFAULT_IS_IMAGE_PRIVATE,
 };
 
-// Valid size options per model
+// Valid size options per model. Kept for input validation only — generation
+// is now always routed through gpt-image-1 via mapSizeToGptImage1.
 const VALID_SIZES = {
   "dall-e-3": ["1024x1024", "1792x1024", "1024x1792"],
   "dall-e-2": ["256x256", "512x512", "1024x1024"],
@@ -110,18 +110,17 @@ const createDallEImages = async (
     }
   }
 
-  // DALL-E 3 no longer accepts response_format on OpenAI's current API
-  // (returns 400 "Unknown parameter: 'response_format'"). DALL-E 2 still does.
-  // Whichever path we take, we normalize to base64 below — either from
-  // `b64_json` directly or by fetching the returned `url` and encoding it.
-  const basePayload = {
-    prompt,
-    model,
-    size: sizeStr as "1024x1024" | "1792x1024" | "1024x1792" | "256x256" | "512x512",
-  } as const;
+  // OpenAI deprecated `dall-e-2` and `dall-e-3` and migrated projects to
+  // `gpt-image-1`. The picker still exposes the `dall-e-3` value (and legacy
+  // records reference `dall-e-2`) — we keep accepting those model strings so
+  // DB records and pricing config stay consistent, but every request is now
+  // routed to `gpt-image-1`. The earlier layered fallback (try dall-e → retry
+  // without optional params → fall through to gpt-image-1) is removed because
+  // only the final layer was succeeding in prod.
 
-  // dall-e-3 portrait/landscape sizes don't exist on gpt-image-1; closest
-  // equivalents are 1024x1536 / 1536x1024. Square is shared.
+  // gpt-image-1 supports 1024x1024 / 1024x1536 / 1536x1024 / auto. We map the
+  // dall-e-3 portrait/landscape sizes to their closest equivalents and let
+  // anything else (e.g. dall-e-2's 256/512) fall through to "auto".
   function mapSizeToGptImage1(
     size: string,
   ): "1024x1024" | "1024x1536" | "1536x1024" | "auto" {
@@ -131,15 +130,15 @@ const createDallEImages = async (
     return "auto";
   }
 
-  // Fetch a URL response back as base64 so the rest of the pipeline (S3
-  // upload etc.) sees the same shape regardless of which payload form
-  // OpenAI accepted.
+  // gpt-image-1 returns `b64_json` directly today, but the SDK type still
+  // allows a `url`-only response. Normalize either shape to base64 so the
+  // rest of the pipeline (S3 upload) doesn't care which one came back.
   async function urlToBase64(url: string): Promise<string | undefined> {
     try {
       const res = await fetch(url);
       if (!res.ok) {
         Logger.error({
-          message: `Failed to fetch DALL-E image url: ${res.status}`,
+          message: `Failed to fetch image url: ${res.status}`,
           metadata: { url },
         });
         return undefined;
@@ -148,7 +147,7 @@ const createDallEImages = async (
       return buf.toString("base64");
     } catch (err) {
       Logger.error({
-        message: "Failed to download DALL-E image url",
+        message: "Failed to download image url",
         error: err instanceof Error ? err : new Error(String(err)),
         metadata: { url },
       });
@@ -158,139 +157,42 @@ const createDallEImages = async (
 
   try {
     const openai = getOpenAIClient();
+    const gptImage1Size = mapSizeToGptImage1(sizeStr);
     Logger.info({
-      message: `Number of ${model} images to generate: ${numberOfImagesToGenerate}`,
+      message: `Generating ${numberOfImagesToGenerate} image(s) via gpt-image-1 (requested model: ${model})`,
       metadata: {
         numberOfImagesToGenerate,
-        size: sizeStr,
+        requestedModel: model,
+        requestedSize: sizeStr,
+        gptImage1Size,
       },
     });
-    if (model === DALL_E_3_MODEL) {
-      // OpenAI's API has been progressively narrowing what's available:
-      //   1. `response_format` was removed from DALL-E 3 first.
-      //   2. Optional `style` / `quality` are now also rejected on some
-      //      projects with "Unknown parameter: '…'".
-      //   3. The `dall-e-3` model itself returns "does not exist" for
-      //      projects that have been migrated to the newer `gpt-image-1`.
-      // We layer fallbacks: try the full DALL-E 3 call, retry without
-      // optional params, and finally fall back to `gpt-image-1`.
-      const isUnknownParamError = (err: unknown): boolean =>
-        err instanceof Error &&
-        /Unknown parameter:/.test(err.message);
-      const isModelMissingError = (err: unknown): boolean =>
-        err instanceof Error &&
-        /model .* does not exist|model_not_found/i.test(err.message);
 
-      // Dall-E 3 can only generate one image at a time
+    // dall-e-3 historically generated one image per request; preserve that
+    // serial loop for the dall-e-3 alias to keep behavior unchanged. dall-e-2
+    // (and anything else) batches via `n`.
+    if (model === DALL_E_3_MODEL) {
       for (let i = 0; i < numberOfImagesToGenerate; i++) {
-        let response;
-        try {
-          response = await openai.images.generate({
-            ...basePayload,
-            n: ONE_IMAGE_AT_A_TIME,
-            quality: (options?.quality as "standard" | "hd") || "standard",
-            style: (options?.generationStyle as "vivid" | "natural") || "vivid",
-          });
-        } catch (err) {
-          if (isUnknownParamError(err)) {
-            Logger.info({
-              message: `DALL-E 3 rejected optional params; retrying without quality/style. Original: ${(err as Error).message}`,
-            });
-            try {
-              response = await openai.images.generate({
-                ...basePayload,
-                n: ONE_IMAGE_AT_A_TIME,
-              });
-            } catch (innerErr) {
-              if (!isModelMissingError(innerErr)) throw innerErr;
-              Logger.info({
-                message: `dall-e-3 unavailable; falling back to gpt-image-1. Original: ${(innerErr as Error).message}`,
-              });
-              response = await openai.images.generate({
-                prompt,
-                model: "gpt-image-1",
-                size: mapSizeToGptImage1(basePayload.size),
-                n: ONE_IMAGE_AT_A_TIME,
-              });
-            }
-          } else if (isModelMissingError(err)) {
-            Logger.info({
-              message: `dall-e-3 unavailable; falling back to gpt-image-1. Original: ${(err as Error).message}`,
-            });
-            response = await openai.images.generate({
-              prompt,
-              model: "gpt-image-1",
-              size: mapSizeToGptImage1(basePayload.size),
-              n: ONE_IMAGE_AT_A_TIME,
-            });
-          } else {
-            throw err;
-          }
-        }
+        const response = await openai.images.generate({
+          prompt,
+          model: "gpt-image-1",
+          size: gptImage1Size,
+          n: ONE_IMAGE_AT_A_TIME,
+        });
         const item = response.data?.[0];
         const encodedImage =
           item?.b64_json ?? (item?.url ? await urlToBase64(item.url) : undefined);
         if (encodedImage) {
-          Logger.info({
-            message: `Successfully created ${model} image ${i + 1}`,
-          });
           base64EncodedImages.push(encodedImage);
         }
       }
-    } else if (model === DALL_E_2_MODEL) {
-      // DALL-E 2 was removed from the picker but still reachable via legacy
-      // pricing/regenerate flows. Apply the same defensive fallback chain
-      // (params → model) so old records keep working.
-      const isUnknownParamError = (err: unknown): boolean =>
-        err instanceof Error && /Unknown parameter:/.test(err.message);
-      const isModelMissingError = (err: unknown): boolean =>
-        err instanceof Error &&
-        /model .* does not exist|model_not_found/i.test(err.message);
-
-      let response;
-      try {
-        response = await openai.images.generate({
-          ...basePayload,
-          response_format: BASE_64_FORMAT,
-          n: numberOfImagesToGenerate,
-        });
-      } catch (err) {
-        if (isUnknownParamError(err)) {
-          Logger.info({
-            message: `DALL-E 2 rejected response_format; retrying without it.`,
-          });
-          try {
-            response = await openai.images.generate({
-              ...basePayload,
-              n: numberOfImagesToGenerate,
-            });
-          } catch (innerErr) {
-            if (!isModelMissingError(innerErr)) throw innerErr;
-            Logger.info({
-              message: `dall-e-2 unavailable; falling back to gpt-image-1.`,
-            });
-            response = await openai.images.generate({
-              prompt,
-              model: "gpt-image-1",
-              size: mapSizeToGptImage1(basePayload.size),
-              n: numberOfImagesToGenerate,
-            });
-          }
-        } else if (isModelMissingError(err)) {
-          Logger.info({
-            message: `dall-e-2 unavailable; falling back to gpt-image-1.`,
-          });
-          response = await openai.images.generate({
-            prompt,
-            model: "gpt-image-1",
-            size: mapSizeToGptImage1(basePayload.size),
-            n: numberOfImagesToGenerate,
-          });
-        } else {
-          throw err;
-        }
-      }
-
+    } else {
+      const response = await openai.images.generate({
+        prompt,
+        model: "gpt-image-1",
+        size: gptImage1Size,
+        n: numberOfImagesToGenerate,
+      });
       const allEncodedImages = await Promise.all(
         (response.data ?? []).map(async (result) =>
           result.b64_json ?? (result.url ? await urlToBase64(result.url) : undefined),
@@ -300,15 +202,16 @@ const createDallEImages = async (
     }
 
     Logger.info({
-      message: `Number of successfully created ${model} images: ${base64EncodedImages.length}`,
+      message: `Successfully created ${base64EncodedImages.length} image(s) via gpt-image-1`,
       metadata: {
         base64EncodedImagesLength: base64EncodedImages.length,
+        requestedModel: model,
       },
     });
     return base64EncodedImages;
   } catch (error) {
     Logger.error({
-      message: "Error creating DALL-E images",
+      message: "Error creating gpt-image-1 images",
       error: error as Error,
     });
     throw error;
