@@ -14,7 +14,9 @@ test.describe("Landing (redesign)", () => {
     await page.goto("/");
 
     // Hero badge — proves the new Badge primitive renders
-    await expect(page.getByText("1.9M creations and counting")).toBeVisible();
+    await expect(
+      page.getByText("12 leading AI models, one workspace")
+    ).toBeVisible();
 
     // Hero H1 split — "Create stunning" + gradient "art & video"
     await expect(
@@ -23,10 +25,6 @@ test.describe("Landing (redesign)", () => {
 
     // Auto-typing prompt input area (text shows up after typewriter tick)
     await expect(page.getByRole("link", { name: /generate/i }).first()).toBeVisible();
-
-    // Stats strip
-    await expect(page.getByText("1.9M", { exact: true })).toBeVisible();
-    await expect(page.getByText("creators", { exact: true })).toBeVisible();
 
     // Features grid — at least one feature title shows
     await expect(

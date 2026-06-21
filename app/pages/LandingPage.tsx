@@ -80,13 +80,6 @@ const EXAMPLE_PROMPTS = [
   "Bioluminescent forest at night",
 ];
 
-const STATS = [
-  { value: "1.9M", label: "creations" },
-  { value: "12,000+", label: "creators" },
-  { value: "12", label: "models" },
-  { value: "4.9★", label: "rating" },
-];
-
 const FEATURES = [
   {
     icon: <Cpu className="h-5 w-5" />,
@@ -314,7 +307,7 @@ export default function LandingPage() {
         <div className="mx-auto grid w-full max-w-[1280px] gap-12 px-4 py-16 md:grid-cols-[1.1fr_1fr] md:px-8 md:py-24">
           <div>
             <Badge tone="accent" icon={<Sparkles className="h-3 w-3" />}>
-              1.9M creations and counting
+              12 leading AI models, one workspace
             </Badge>
             <h1 className="mt-5 text-[44px] font-bold leading-[1.02] tracking-[-0.035em] md:text-[64px]">
               Create stunning{" "}
@@ -381,7 +374,7 @@ export default function LandingPage() {
                 ))}
               </div>
               <p className="text-[13px] text-fg-muted">
-                Joined by 12,000+ creators this month
+                Join a growing community of creators
               </p>
             </div>
           </div>
@@ -414,20 +407,6 @@ export default function LandingPage() {
               delay={1}
             />
           </div>
-        </div>
-      </section>
-
-      {/* Stats strip */}
-      <section className="border-y border-[var(--border)] bg-surface-1">
-        <div className="mx-auto grid w-full max-w-[1280px] grid-cols-2 gap-6 px-4 py-10 md:grid-cols-4 md:px-8">
-          {STATS.map((s) => (
-            <div key={s.label}>
-              <div className="mono text-[32px] font-bold leading-none tracking-[-0.02em] text-fg">
-                {s.value}
-              </div>
-              <div className="mt-1 text-[12.5px] text-fg-subtle">{s.label}</div>
-            </div>
-          ))}
         </div>
       </section>
 
