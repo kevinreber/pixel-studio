@@ -16,6 +16,15 @@ declare global {
   }
 }
 
+/**
+ * Canonical app origin, e.g. `https://www.pixelstudioai.com`.
+ *
+ * Trimmed because a stray leading/trailing space in the `ORIGIN` env var yields
+ * a malformed URL; downstream OAuth redirect and callback URLs built from it
+ * then fail to parse (a whitespace-prefixed value breaks `URL`/GoTrue parsing).
+ */
+export const ORIGIN = process.env.ORIGIN?.trim() || "http://localhost:5173";
+
 export function init() {
   const parsed = schema.safeParse(process.env);
 
