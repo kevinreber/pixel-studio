@@ -14,6 +14,7 @@ import {
   getSupabaseWithHeaders,
   signOutOfSupabase,
 } from "~/services/supabase.server";
+import { ORIGIN } from "~/utils/env.server";
 export const AUTH_KEY = "_auth";
 // ? Placeholder for GOOGLE_SESSION_KEY
 // export const GOOGLE_SESSION_KEY = "_google_auth";
@@ -29,7 +30,7 @@ export const authenticator = new Authenticator(sessionStorage, {
 
 // const getCallback = (provider: SocialsProvider) => {
 const getCallback = (provider: string) => {
-  return `${process.env.ORIGIN}/auth/${provider}/callback`;
+  return `${ORIGIN}/auth/${provider}/callback`;
 };
 
 authenticator.use(

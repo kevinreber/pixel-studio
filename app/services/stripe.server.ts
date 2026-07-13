@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import { json } from "@remix-run/node";
 import { Logger } from "~/utils/logger.server";
+import { ORIGIN } from "~/utils/env.server";
 
 const isTestEnvironment = process.env.CI === "true" || process.env.NODE_ENV === "test";
 const hasStripeCredentials = !!process.env.STRIPE_SECRET_KEY;
@@ -30,8 +31,8 @@ export const stripeCheckout = async ({ userId }: { userId: string }) => {
     });
 
     const session = await stripe.checkout.sessions.create({
-      success_url: `${process.env.ORIGIN}/create`,
-      cancel_url: `${process.env.ORIGIN}/create`,
+      success_url: `${ORIGIN}/create`,
+      cancel_url: `${ORIGIN}/create`,
       line_items: [{ price: process.env.STRIPE_CREDITS_PRICE_ID, quantity: 1 }],
       mode: "payment",
       metadata: {

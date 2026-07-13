@@ -7,6 +7,7 @@ import {
   getRateLimitIdentifier,
   rateLimitResponse,
 } from "~/services/rateLimit.server";
+import { ORIGIN } from "~/utils/env.server";
 
 export async function action({ request }: ActionFunctionArgs) {
   const rl = await checkRateLimit(
@@ -22,10 +23,9 @@ export async function action({ request }: ActionFunctionArgs) {
   });
 
   try {
-    const siteUrl = process.env.ORIGIN?.trim() || "http://localhost:5173";
-    const redirectUrl = new URL("/auth/v2/callback-google", siteUrl).toString();
+    const redirectUrl = new URL("/auth/v2/callback-google", ORIGIN).toString();
 
-    console.log("Site URL:", siteUrl);
+    console.log("Site URL:", ORIGIN);
     console.log("Using redirect URL:", redirectUrl);
 
     const { data, error } = await supabase.auth.signInWithOAuth({
