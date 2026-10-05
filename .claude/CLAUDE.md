@@ -772,6 +772,7 @@ npm run kafka:websocket
 | `CACHING_STRATEGY.md`               | Caching approach        |
 | `KAFKA_ENVIRONMENT_SETUP.md`        | Kafka configuration     |
 | `IMPROVEMENT_STRATEGY.md`           | Planned improvements    |
+| `IDEMPOTENCY_AUDIT.md`              | Duplicate-write audit   |
 
 ## CI/CD Workflows
 
