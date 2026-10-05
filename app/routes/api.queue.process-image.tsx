@@ -22,6 +22,12 @@ import {
   type QStashComparisonChildRequest,
 } from "~/services/qstash.server";
 import { createNotification } from "~/server/notifications";
+import {
+  logGenerationStart,
+  logGenerationComplete,
+  logGenerationFailed,
+} from "~/services/generationLog.server";
+import { getModelCreditCost } from "~/config/pricing";
 
 // Type guard for comparison child requests
 function isComparisonChildRequest(
@@ -159,6 +165,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return json({ status: "already_processing" });
     }
 
+    // Comparison runs are logged once against the parent at queue time, so
+    // logging each child here would double-count the credit spend.
+    if (!isComparisonChild) {
+      await logGenerationStart({
+        requestId,
+        userId,
+        type: "image",
+        prompt,
+        model,
+        creditCost: getModelCreditCost(model) * numberOfImages,
+        metadata: { numberOfImages, stylePreset },
+      });
+    }
+
     // Update status to processing
     await publishProcessingUpdate(requestId, {
       userId,
@@ -258,6 +278,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       `[QStash Worker] Completed request ${requestId}${isComparisonChild ? ` (child of ${parentRequestId})` : ""}, setId: ${result.setId}`
     );
 
+    if (!isComparisonChild) {
+      await logGenerationComplete({ requestId, setId: result.setId });
+    }
+
     return json({
       status: "complete",
       requestId,
@@ -310,6 +334,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         status: "failed",
         progress: 0,
         error: userFriendlyMessage,
+      });
+    }
+
+    // Credits are charged upfront in the route action, so this is the only
+    // place a production failure can give them back.
+    // TODO: a failed comparison child never refunds its share, because the
+    // whole multi-model cost is logged once against the parent at queue time.
+    // Fixing it needs cost attributed per child rather than per parent.
+    if (!isComparisonChild) {
+      await logGenerationFailed({
+        requestId,
+        errorMessage,
+        refundCredits: true,
       });
     }
 
