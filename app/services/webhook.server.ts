@@ -1,14 +1,18 @@
 import type Stripe from "stripe";
+import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma.server";
 import { Logger } from "~/utils/logger.server";
 import { invalidateCache } from "~/utils/cache.server";
-import { logCreditPurchase } from "./creditTransaction.server";
 import {
   trackPayment,
   AnalyticsEvents,
 } from "~/services/analytics.server";
 
 const CHECKOUT_SESSION_COMPLETED = "checkout.session.completed";
+
+// Stripe considers a session fulfillable in either of these states. "unpaid"
+// means the payment is still pending and must not grant credits.
+const FULFILLABLE_PAYMENT_STATUSES = ["paid", "no_payment_required"];
 
 export const handleStripeEvent = async (
   type: string,
@@ -24,7 +28,7 @@ export const handleStripeEvent = async (
     switch (type) {
       case CHECKOUT_SESSION_COMPLETED: {
         const session = data.object as Stripe.Checkout.Session;
-        return handleCheckoutSession(session);
+        return handleCheckoutSession(session, id);
       }
 
       default:
@@ -44,7 +48,10 @@ export const handleStripeEvent = async (
   }
 };
 
-const handleCheckoutSession = async (session: Stripe.Checkout.Session) => {
+const handleCheckoutSession = async (
+  session: Stripe.Checkout.Session,
+  stripeEventId: string
+) => {
   Logger.info({
     message: "[webhook.server]: Processing checkout session",
     metadata: {
@@ -59,10 +66,30 @@ const handleCheckoutSession = async (session: Stripe.Checkout.Session) => {
     throw new Error("No userId found in session metadata");
   }
 
-  return await updateUserCredits(session.metadata.userId, session.id);
+  if (!FULFILLABLE_PAYMENT_STATUSES.includes(session.payment_status)) {
+    Logger.warn({
+      message:
+        "[webhook.server]: Skipping checkout session that is not yet paid",
+      metadata: {
+        sessionId: session.id,
+        paymentStatus: session.payment_status,
+      },
+    });
+    return { status: "not_paid", paymentStatus: session.payment_status };
+  }
+
+  return await updateUserCredits(
+    session.metadata.userId,
+    session.id,
+    stripeEventId
+  );
 };
 
-const updateUserCredits = async (userId: string, stripeSessionId?: string) => {
+const updateUserCredits = async (
+  userId: string,
+  stripeSessionId: string,
+  stripeEventId: string
+) => {
   const creditsToAdd = 100;
 
   Logger.info({
@@ -70,43 +97,73 @@ const updateUserCredits = async (userId: string, stripeSessionId?: string) => {
     metadata: {
       userId,
       creditsToAdd,
+      stripeEventId,
     },
   });
 
-  const userData = await prisma.user.update({
-    where: {
-      id: userId,
-    },
-    data: {
-      credits: {
-        increment: creditsToAdd,
-      },
-    },
-  });
+  let userData;
+
+  try {
+    // Grant and record in one transaction. The ledger row carries the Stripe
+    // event id under a unique constraint, so a replayed delivery fails here and
+    // rolls the increment back rather than granting credits a second time.
+    userData = await prisma.$transaction(async (tx) => {
+      const updated = await tx.user.update({
+        where: { id: userId },
+        data: {
+          credits: {
+            increment: creditsToAdd,
+          },
+        },
+      });
+
+      await tx.creditTransaction.create({
+        data: {
+          userId,
+          type: "purchase",
+          amount: creditsToAdd,
+          balanceAfter: updated.credits,
+          description: `Purchased ${creditsToAdd} credits via Stripe`,
+          metadata: {
+            previousBalance: updated.credits - creditsToAdd,
+            newBalance: updated.credits,
+          },
+          stripeSessionId,
+          stripeEventId,
+        },
+      });
+
+      return updated;
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      // Already applied by an earlier delivery of this same event. Report
+      // success so Stripe stops retrying.
+      Logger.info({
+        message:
+          "[webhook.server]: Duplicate Stripe event ignored, credits already granted",
+        metadata: { userId, stripeEventId, stripeSessionId },
+      });
+      return { status: "duplicate_ignored", stripeEventId };
+    }
+    throw error;
+  }
+
   const cacheKey = `user-login:${userId}`;
   await invalidateCache(cacheKey);
-
-  // Log the credit purchase transaction
-  await logCreditPurchase({
-    userId,
-    amount: creditsToAdd,
-    stripeSessionId: stripeSessionId || "unknown",
-    description: `Purchased ${creditsToAdd} credits via Stripe`,
-    metadata: {
-      previousBalance: userData.credits - creditsToAdd,
-      newBalance: userData.credits,
-    },
-  });
 
   // Track payment completed and credits purchased
   trackPayment(userId, AnalyticsEvents.PAYMENT_COMPLETED, {
     credits: creditsToAdd,
-    stripeSessionId: stripeSessionId || "unknown",
+    stripeSessionId,
   });
 
   trackPayment(userId, AnalyticsEvents.CREDITS_PURCHASED, {
     credits: creditsToAdd,
-    stripeSessionId: stripeSessionId || "unknown",
+    stripeSessionId,
   });
 
   Logger.info({
