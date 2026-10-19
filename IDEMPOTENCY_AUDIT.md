@@ -182,3 +182,55 @@ RLS was enabled on every `public` table lacking it, with no policies attached, w
 ### Still open
 
 The Supabase advisor reports three unrelated WARN-level items that were not addressed: OTP expiry exceeds one hour, leaked-password protection against HaveIBeenPwned is disabled, and the Postgres version (`supabase-postgres-15.1.0.153`) has outstanding security patches.
+
+## Follow-ups (open as of 2026-10-19)
+
+Ordered by what I would do next. The first undermines a fix this document describes as shipped, so it is not optional.
+
+### 1. Refund users charged during the missing-video-route window
+
+Not a code change. While `api.queue.process-video.tsx` did not exist, every production video deducted credits and 404'd, and because `logGenerationStart` never ran for video in production, **no `GenerationLog` or `CreditTransaction` row records the loss**. Affected users show a reduced balance with nothing in credit history explaining it.
+
+The only surviving evidence is outside the database: QStash delivery logs for failed calls to `/api/queue/process-video`, whose payloads carry `userId`, `model` and `duration` — everything needed to recompute each refund with `getVideoModelCreditCost`. Vercel request logs showing 404s on that path are a secondary source. **Both have retention limits, so this is the only follow-up with a deadline.**
+
+### 2. Close the silent failure window in the refund path
+
+`logGenerationStart` swallows every error by design, so logging trouble cannot break a generation. `logGenerationFailed` then looks the row up by `requestId` and, finding none, warns and returns before reaching the refund.
+
+A transient database error during logging, followed by a generation failure, therefore leaves the user charged with nothing returned. This affects both the image and video workers, and it sits directly underneath the refund path P0-1 and P0-3 added. The fix belongs in `generationLog.server.ts`: either make the refund independent of the log row existing, or let `logGenerationStart` surface a failure the caller can act on.
+
+### 3. Fix or quarantine the Playwright suite
+
+Red on `main` since 2026-07-13, failing on `redesign-smoke.spec.ts:144` (sitemap) and `video-support.spec.ts:170` (profile). The failures are environmental, not product bugs — `/sitemap.xml` returns 200 in production while the CI test for it fails.
+
+A permanently red suite cannot warn anyone that the credit-handling code has regressed. Either fix the two tests or quarantine them so the signal returns.
+
+### 4. Make CI able to test schema changes
+
+`.github/workflows/playwright.yml` runs `npx prisma generate` against a real `DATABASE_URL` but never `prisma db push` or `migrate deploy`. The generated client always reflects the branch while the database stays wherever it was, so a schema change is structurally untestable in E2E. That is why the Stripe work in #163 got zero end-to-end coverage. Adding one step closes it.
+
+### 5. Make the pre-commit hook executable
+
+`.husky/pre-commit` is not set executable, so git skips it. No commit in this repo is being checked locally — git reported the skip on all five commits made on 2026-10-18. `chmod +x .husky/pre-commit` restores the guarantee `CLAUDE.md` documents.
+
+### 6. Three Supabase items
+
+Leaked-password protection against HaveIBeenPwned is disabled and the auth OTP expiry exceeds the recommended hour; both are toggles in the auth settings. Postgres `supabase-postgres-15.1.0.153` has outstanding security patches, which is a real upgrade to schedule.
+
+### Optional hardening
+
+`anon` and `authenticated` still hold full DML plus `TRUNCATE` on all 48 public tables. RLS now blocks them, so nothing is exposed, but revoking the grants would mean two independent controls must fail rather than one.
+
+### Deferred by decision
+
+Comparison-child refunds (TODO in the catch block of `api.queue.process-image.tsx`), regression tests for the three idempotency behaviours, and the two P1 items above — the username collision strategy, and whether the generation claim should fail closed.
+
+### Closed, recorded so nobody re-investigates
+
+- **The `prisma db push` drift risk** on `stripeEventId` ended when #163 merged and `schema.prisma` reached `main`.
+- **The credit ledger reconciles.** 809 of 2,252 users have balances that do not match their ledger, totalling 5,200 credits, but 804 of them predate the ledger's first row on 2026-01-18. Only 5 users created afterwards mismatch, netting −8 credits — the signature of the deduct-without-spend-row bug P0-3 fixed. There is no hidden credit inflation and no sign the Stripe purchase logging was failing silently.
+- **E2E tests do not write to production.** The destructive-looking admin deletion tests use `page.route()` with mocked fulfillment and never reach the server; the remaining real requests are unauthenticated authorization probes.
+
+### Unproven
+
+Neither a real video generation nor a real Stripe checkout has run since the 2026-10-19 deploy. The route is confirmed reachable (GET returns 405, not 404) and the column exists, but neither handler body has executed against live traffic. `GenerationLog` is where to confirm the first of each.
