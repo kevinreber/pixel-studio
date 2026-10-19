@@ -1,5 +1,5 @@
 import React from "react";
-import { useLoggedInUser } from "~/hooks";
+import { useOptionalUser } from "~/hooks";
 import { Link, useLoaderData, useNavigate } from "@remix-run/react";
 import type { ExplorePageImageLoader } from "~/routes/explore.$imageId";
 import { convertUtcDateToLocalDateString } from "~/client";
@@ -113,10 +113,11 @@ const ExploreImageDetailsPageAccessor = ({
   imageData,
 }: ExploreImageDetailsPageProps & { imageData: AsyncImageData }) => {
   const imageUserData = imageData.user as ImageUserData;
-  const userData = useLoggedInUser();
+  // Shared image links are public, so an absent user is expected here.
+  const userData = useOptionalUser();
   const navigate = useNavigate();
   const isUserLoggedIn = Boolean(userData);
-  const isAdmin = isUserAdmin(userData as UserWithRoles);
+  const isAdmin = isUserAdmin(userData as UserWithRoles | null);
 
   const handleImageDeleted = React.useCallback(() => {
     // Navigate away from the deleted image

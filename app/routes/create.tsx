@@ -1,5 +1,4 @@
 import {
-  type LoaderFunctionArgs,
   ActionFunctionArgs,
   json,
   MetaFunction,
@@ -151,9 +150,9 @@ const CreateImagesFormSchema = z.object({
   }
 );
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await requireUserLogin(request);
-
+// The page itself is public so search traffic lands on the generator rather
+// than a login wall; the action below still requires a signed-in user.
+export const loader = async () => {
   return json({ modelOptions: MODEL_OPTIONS, styleOptions: STYLE_OPTIONS });
 };
 
@@ -296,7 +295,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     await checkUserCredits(user.id, totalCreditCost);
   } catch (error: unknown) {
-    console.error(error);
+    // Expected user-facing validation, not a fault — log at warn so it does
+    // not surface as an application error.
+    Logger.warn({
+      message: "Image generation blocked by credit check",
+      metadata: {
+        userId: user.id,
+        totalCreditCost,
+        reason: error instanceof Error ? error.message : String(error),
+      },
+    });
 
     return json(
       {

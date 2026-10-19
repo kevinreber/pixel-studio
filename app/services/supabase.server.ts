@@ -140,7 +140,15 @@ export async function getAuthState({
       error: "No user session exists",
     };
   } catch (error) {
-    console.error("Auth state error:", error);
+    // A stale or missing session is the ordinary anonymous case, so it is
+    // reported back to the caller without being logged as a fault.
+    const isMissingSession =
+      error instanceof Error && error.name === "AuthSessionMissingError";
+
+    if (!isMissingSession) {
+      console.error("Auth state error:", error);
+    }
+
     return {
       session: null,
       user: null,

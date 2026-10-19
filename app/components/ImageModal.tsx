@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { useLoggedInUser } from "~/hooks";
 import { convertUtcDateToLocalDateString, fallbackImageSource } from "~/client";
 import { isUserAdmin, type UserWithRoles } from "~/utils/isAdmin";
+import { copyToClipboard } from "~/utils/clipboard";
 import type { ImageUserData } from "~/pages/ExploreImageDetailsPage";
 import type { ImageDetail } from "~/server/getImage";
 import { Avatar, Badge } from "./ps";
@@ -44,8 +45,8 @@ const ImageModal = ({ imageData, onClose }: ImageModalProps) => {
   if (!imageData) return null;
 
   const copyPrompt = () => {
-    if (typeof navigator !== "undefined" && imageData.prompt) {
-      navigator.clipboard.writeText(imageData.prompt).catch(() => undefined);
+    if (imageData.prompt) {
+      void copyToClipboard(imageData.prompt);
     }
   };
 
@@ -122,9 +123,7 @@ const ImageModal = ({ imageData, onClose }: ImageModalProps) => {
                 className="cursor-pointer rounded-sm px-2.5 py-2 text-[13.5px] text-fg hover:bg-surface-hover"
                 onClick={() => {
                   if (typeof window !== "undefined") {
-                    navigator.clipboard
-                      .writeText(window.location.href)
-                      .catch(() => undefined);
+                    void copyToClipboard(window.location.href);
                   }
                 }}
               >
@@ -301,10 +300,13 @@ const ImageModal = ({ imageData, onClose }: ImageModalProps) => {
                 onClick={() => {
                   if (typeof window === "undefined") return;
                   const url = `${window.location.origin}/p/${imageData.id}`;
-                  navigator.clipboard
-                    .writeText(url)
-                    .then(() => toast.success("Link copied"))
-                    .catch(() => toast.error("Couldn't copy link"));
+                  void copyToClipboard(url).then((copied) => {
+                    if (copied) {
+                      toast.success("Link copied");
+                    } else {
+                      toast.error("Couldn't copy link");
+                    }
+                  });
                 }}
               />
             </div>

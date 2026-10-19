@@ -60,11 +60,11 @@ async function mockUserImagesAPI(page: Page) {
 }
 
 test.describe("Create Video Page - Authentication", () => {
-  test("create-video page redirects to login when unauthenticated", async ({
-    page,
-  }) => {
+  // The page is public so search traffic lands on the generator; the action
+  // behind it still requires a signed-in user.
+  test("create-video page renders when unauthenticated", async ({ page }) => {
     await page.goto("/create-video");
-    await expect(page).toHaveURL(/login/);
+    await expect(page).not.toHaveURL(/login/);
   });
 });
 

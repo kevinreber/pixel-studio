@@ -12,10 +12,11 @@ import {
   Check,
   Compass,
   AlertTriangle,
+  LogIn,
 } from "lucide-react";
 import { PageHeader, Button, Badge, Select, Segmented } from "~/components/ps";
 import { GenerationQueue } from "~/components/GenerationQueue";
-import { useLoggedInUser } from "~/hooks";
+import { useOptionalUser } from "~/hooks";
 import type { CreatePageLoader, ActionData } from "~/routes/create";
 import type { ModelOption, StyleOption } from "~/config/models";
 import { cn } from "@/lib/utils";
@@ -61,9 +62,12 @@ const isFluxProModel = (v: string) => v === "flux-pro-1.1";
 export default function CreatePageRedesigned() {
   const { modelOptions, styleOptions } = useLoaderData<CreatePageLoader>();
   const fetcher = useFetcher<ActionData>();
-  const user = useLoggedInUser();
+  const user = useOptionalUser();
   const navigate = useNavigate();
 
+  // The page is public, so an anonymous visitor configures a generation and is
+  // sent to sign in at the point of submitting.
+  const isAnonymous = !user;
   const balance = (user as { credits?: number } | null)?.credits ?? 0;
 
   const [prompt, setPrompt] = React.useState("");
@@ -111,7 +115,7 @@ export default function CreatePageRedesigned() {
     return (model?.creditCost ?? 0) * count;
   }, [compareMode, compareSet, modelOptions, model, count]);
 
-  const overBudget = totalCost > balance;
+  const overBudget = !isAnonymous && totalCost > balance;
   const submitting = fetcher.state !== "idle";
   const generating = submitting && !fetcher.data;
   const done = fetcher.data?.success && !!fetcher.data?.requestId;
@@ -132,6 +136,10 @@ export default function CreatePageRedesigned() {
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isAnonymous) {
+      navigate("/login?redirectTo=/create");
+      return;
+    }
     if (overBudget) return;
 
     const fd = new FormData();
@@ -193,8 +201,12 @@ export default function CreatePageRedesigned() {
         }
       />
 
-      {/* Active generation jobs — inline card preserves the pre-redesign UX. */}
-      <GenerationQueue showCompleted={false} maxJobs={5} className="mb-6" />
+      {/* Active generation jobs — inline card preserves the pre-redesign UX.
+          Skipped for anonymous visitors: it polls /api/queue/status, which is
+          gated, so it would only ever render a spurious error for them. */}
+      {!isAnonymous && (
+        <GenerationQueue showCompleted={false} maxJobs={5} className="mb-6" />
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[388px_1fr]">
         {/* Left composer */}
@@ -488,6 +500,17 @@ export default function CreatePageRedesigned() {
             </div>
           )}
 
+          {/* Anonymous visitors can configure a generation, then sign in */}
+          {isAnonymous && (
+            <div className="flex items-start gap-2 rounded-sm border border-accent/40 bg-accent-soft p-3 text-[12.5px] text-accent-text">
+              <LogIn className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              <span>
+                Set up your generation here. You&rsquo;ll be asked to sign in
+                before it runs, and new accounts start with free credits.
+              </span>
+            </div>
+          )}
+
           {/* Insufficient credits banner */}
           {overBudget && (
             <div className="flex items-start gap-2 rounded-sm border border-danger/40 bg-danger-soft p-3 text-[12.5px] text-danger">
@@ -520,13 +543,16 @@ export default function CreatePageRedesigned() {
               size="md"
               disabled={
                 submitting ||
-                !prompt.trim() ||
-                overBudget ||
-                (compareMode && compareSet.length < 2)
+                (!isAnonymous &&
+                  (!prompt.trim() ||
+                    overBudget ||
+                    (compareMode && compareSet.length < 2)))
               }
               icon={
                 generating ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
+                ) : isAnonymous ? (
+                  <LogIn className="h-4 w-4" />
                 ) : (
                   <Sparkles className="h-4 w-4" />
                 )
@@ -534,9 +560,11 @@ export default function CreatePageRedesigned() {
             >
               {generating
                 ? "Generating…"
-                : overBudget
-                  ? "Insufficient credits"
-                  : "Generate"}
+                : isAnonymous
+                  ? "Sign in to generate"
+                  : overBudget
+                    ? "Insufficient credits"
+                    : "Generate"}
             </Button>
           </div>
         </form>

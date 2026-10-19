@@ -9,10 +9,11 @@ import {
   AlertTriangle,
   Compass,
   Play,
+  LogIn,
 } from "lucide-react";
 import { PageHeader, Button, Badge, Segmented, Select } from "~/components/ps";
 import { ImagePicker } from "~/components/ImagePicker";
-import { useLoggedInUser } from "~/hooks";
+import { useOptionalUser } from "~/hooks";
 import type { CreateVideoPageLoader } from "~/routes/create-video";
 import {
   calculateVideoCreditCost,
@@ -36,8 +37,12 @@ export default function CreateVideoPageRedesigned() {
   const { modelOptions, aspectRatioOptions, durationOptions } =
     useLoaderData<CreateVideoPageLoader>();
   const fetcher = useFetcher<ActionResponse>();
-  const user = useLoggedInUser();
+  const user = useOptionalUser();
   const navigate = useNavigate();
+
+  // The page is public, so an anonymous visitor configures a generation and is
+  // sent to sign in at the point of submitting.
+  const isAnonymous = !user;
   const balance = (user as { credits?: number } | null)?.credits ?? 0;
 
   const [prompt, setPrompt] = React.useState("");
@@ -81,7 +86,7 @@ export default function CreateVideoPageRedesigned() {
   const totalCost = model
     ? calculateVideoCreditCost(model as VideoModelOption, duration)
     : 0;
-  const overBudget = totalCost > balance;
+  const overBudget = !isAnonymous && totalCost > balance;
   const submitting = fetcher.state !== "idle";
   const generating = submitting && !fetcher.data;
   const done = fetcher.data?.success && !!fetcher.data?.requestId;
@@ -99,6 +104,10 @@ export default function CreateVideoPageRedesigned() {
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isAnonymous) {
+      navigate("/login?redirectTo=/create-video");
+      return;
+    }
     if (overBudget || missingSourceImage) return;
     const fd = new FormData();
     fd.set("prompt", prompt);
@@ -193,21 +202,31 @@ export default function CreateVideoPageRedesigned() {
           {needsSourceImage && (
             <div>
               <div className="u-label mb-2">Source image</div>
-              <ImagePicker
-                onSelect={(img) => {
-                  if (img) {
-                    setSourceImageUrl(img.url);
-                    setSourceImageId(img.id);
-                  } else {
-                    setSourceImageUrl("");
-                    setSourceImageId("");
-                  }
-                }}
-                selectedImageUrl={sourceImageUrl}
-                disabled={submitting}
-              />
+              {/* The picker loads /api/user/images, which is correctly gated --
+                  rendering it for an anonymous visitor would redirect the whole
+                  page to /login and discard their prompt. The URL field below
+                  works without an account, so offer that instead. */}
+              {isAnonymous ? (
+                <div className="rounded-sm border border-[var(--border)] bg-surface-1 p-3 text-[12.5px] text-fg-subtle">
+                  Sign in to pick from your own generations.
+                </div>
+              ) : (
+                <ImagePicker
+                  onSelect={(img) => {
+                    if (img) {
+                      setSourceImageUrl(img.url);
+                      setSourceImageId(img.id);
+                    } else {
+                      setSourceImageUrl("");
+                      setSourceImageId("");
+                    }
+                  }}
+                  selectedImageUrl={sourceImageUrl}
+                  disabled={submitting}
+                />
+              )}
               <div className="mt-2 text-[11.5px] text-fg-subtle">
-                Or paste a URL:
+                {isAnonymous ? "Paste a URL:" : "Or paste a URL:"}
               </div>
               <input
                 type="url"
@@ -294,6 +313,17 @@ export default function CreateVideoPageRedesigned() {
             </div>
           </div>
 
+          {/* Anonymous visitors can configure a generation, then sign in */}
+          {isAnonymous && (
+            <div className="flex items-start gap-2 rounded-sm border border-accent/40 bg-accent-soft p-3 text-[12.5px] text-accent-text">
+              <LogIn className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              <span>
+                Set up your video here. You&rsquo;ll be asked to sign in before
+                it runs, and new accounts start with free credits.
+              </span>
+            </div>
+          )}
+
           {/* OOC banner */}
           {overBudget && (
             <div className="flex items-start gap-2 rounded-sm border border-danger/40 bg-danger-soft p-3 text-[12.5px] text-danger">
@@ -325,11 +355,15 @@ export default function CreateVideoPageRedesigned() {
               variant="primary"
               size="md"
               disabled={
-                submitting || !prompt.trim() || overBudget || missingSourceImage
+                submitting ||
+                (!isAnonymous &&
+                  (!prompt.trim() || overBudget || missingSourceImage))
               }
               icon={
                 generating ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
+                ) : isAnonymous ? (
+                  <LogIn className="h-4 w-4" />
                 ) : (
                   <Sparkles className="h-4 w-4" />
                 )
@@ -337,11 +371,13 @@ export default function CreateVideoPageRedesigned() {
             >
               {generating
                 ? "Generating…"
-                : overBudget
-                  ? "Insufficient credits"
-                  : missingSourceImage
-                    ? "Pick a source image"
-                    : "Generate video"}
+                : isAnonymous
+                  ? "Sign in to generate"
+                  : overBudget
+                    ? "Insufficient credits"
+                    : missingSourceImage
+                      ? "Pick a source image"
+                      : "Generate video"}
             </Button>
           </div>
         </form>

@@ -361,15 +361,15 @@ test.describe("Generation Progress Toaster - Route Handling", () => {
   test("create page exists and can be accessed", async ({ page }) => {
     await page.goto("/create");
 
-    // Should redirect to login for unauthenticated users
-    await expect(page).toHaveURL(/login/);
+    // Public page: the generator renders and gates on submit, not on load.
+    await expect(page).not.toHaveURL(/login/);
   });
 
   test("create-video page exists and can be accessed", async ({ page }) => {
     await page.goto("/create-video");
 
-    // Should redirect to login for unauthenticated users
-    await expect(page).toHaveURL(/login/);
+    // Public page: the generator renders and gates on submit, not on load.
+    await expect(page).not.toHaveURL(/login/);
   });
 
   test("processing page exists and handles requests", async ({ page }) => {

@@ -104,9 +104,11 @@ test.describe("Login Streaks API - Routes Exist", () => {
 });
 
 test.describe("Retention Features - Protected Routes Redirect", () => {
-  test("Trending page redirects to login when unauthenticated", async ({ page }) => {
+  // /trending is listed in sitemap.xml and its cached payload is identical for
+  // every visitor, so the page itself needs no session. The API still does.
+  test("Trending page renders when unauthenticated", async ({ page }) => {
     await page.goto("/trending");
-    await expect(page).toHaveURL(/login/);
+    await expect(page).not.toHaveURL(/login/);
   });
 
   test("Achievements page redirects to login when unauthenticated", async ({ page }) => {
@@ -114,9 +116,11 @@ test.describe("Retention Features - Protected Routes Redirect", () => {
     await expect(page).toHaveURL(/login/);
   });
 
-  test("Trending API redirects to login when unauthenticated", async ({ page }) => {
+  // Public, matching the /trending page: TrendingSection re-loads this endpoint
+  // on each period switch, so gating it would bounce anonymous visitors.
+  test("Trending API responds without login", async ({ page }) => {
     await page.goto("/api/trending");
-    await expect(page).toHaveURL(/login/);
+    await expect(page).not.toHaveURL(/login/);
   });
 
   test("Achievements API redirects to login when unauthenticated", async ({ page }) => {

@@ -30,7 +30,12 @@ import { getLoggedInUserData } from "./server";
 import { GeneralErrorBoundary } from "./components/GeneralErrorBoundary";
 import { claimDailyBonus } from "~/services/loginStreak.server";
 import { checkAndUnlockAchievements } from "~/services/achievements.server";
-import { cacheGet, cacheSet, getCachedDataWithRevalidate } from "~/utils/cache.server";
+import {
+  cacheGet,
+  cacheSet,
+  cacheDelete,
+  getCachedDataWithRevalidate,
+} from "~/utils/cache.server";
 import {
   // sessionStorage,
   // getSessionCookie,
@@ -53,6 +58,11 @@ export const shouldRevalidate = ({
   }
   return defaultShouldRevalidate;
 };
+
+// Short lock held only while the daily-bonus transaction is in flight.
+const STREAK_LOCK_TTL = 60;
+// Longer flag written once the bonus is actually claimed.
+const STREAK_CLAIMED_TTL = 3600;
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const [csrfToken, csrfCookieHeader] = await csrf.commitToken(request);
@@ -84,17 +94,45 @@ export async function loader({ request }: LoaderFunctionArgs) {
     if (userData?.id) {
       const streakCacheKey = `streak-claimed-today:${userData.id}`;
       cacheGet<string>(streakCacheKey)
-        .then((cached) => {
+        .then(async (cached) => {
           if (cached) return; // Already claimed today, skip
-          return claimDailyBonus(userData!.id).then((result) => {
-            // Cache for 1 hour to avoid repeated DB calls
-            cacheSet(streakCacheKey, "true", 3600).catch(() => {});
+
+          // Claim the flag *before* the transaction. Parallel route loaders and
+          // single-fetch requests otherwise all clear the check above and pile
+          // into the same serializable transaction, which then times out with
+          // "Transaction already closed".
+          //
+          // The in-flight lock is deliberately short: this runs detached from
+          // the response, so a frozen or recycled function instance can kill it
+          // between here and the claim. A short TTL caps that invisible failure
+          // at a minute instead of suppressing the bonus for a whole hour.
+          await cacheSet(streakCacheKey, "true", STREAK_LOCK_TTL).catch(
+            () => {}
+          );
+
+          try {
+            const result = await claimDailyBonus(userData!.id);
+
+            // Only now extend the lock to cover the rest of the day's visits.
+            await cacheSet(streakCacheKey, "true", STREAK_CLAIMED_TTL).catch(
+              () => {}
+            );
+
             if (result.success && result.streakMilestone) {
               checkAndUnlockAchievements(userData!.id, "streak").catch(() => {});
             }
-          });
+          } catch (error) {
+            // Release the flag so the next request retries rather than silently
+            // skipping the bonus.
+            await cacheDelete(streakCacheKey).catch(() => {});
+            throw error;
+          }
         })
-        .catch(() => {});
+        .catch((error) => {
+          // Swallowed so a bonus failure never breaks page load, but logged:
+          // a silent skip here means a user's streak went unrecorded.
+          console.error("Daily login bonus failed", error);
+        });
     }
   }
 

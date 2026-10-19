@@ -6,7 +6,7 @@
 
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { z } from "zod";
-import { requireUserLogin } from "~/services";
+import { getOptionalUser } from "~/services";
 import {
   checkRateLimit,
   readLimiter,
@@ -50,12 +50,16 @@ const TrendingQuerySchema = z.object({
  *   - type: "all" | "images" | "videos" | "creators" (default: "all")
  *   - limit: number (default: 20 for images, 10 for videos/creators)
  */
+// Public, matching the /trending page that loads this: the payload is the same
+// private=false cached content for every visitor. TrendingSection re-loads this
+// endpoint on each period switch, so gating it would bounce an anonymous
+// visitor to /login mid-browse. Anonymous callers rate-limit by IP.
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const user = await requireUserLogin(request);
+  const user = await getOptionalUser(request);
 
   const rl = await checkRateLimit(
     readLimiter,
-    getRateLimitIdentifier(request, user.id)
+    getRateLimitIdentifier(request, user?.id)
   );
   if (!rl.success) return rateLimitResponse(rl.reset);
 
@@ -124,7 +128,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     Logger.error({
       message: "Error fetching trending content",
       error: error instanceof Error ? error : new Error(String(error)),
-      metadata: { userId: user.id, period, type: typeParam },
+      metadata: { userId: user?.id ?? null, period, type: typeParam },
     });
 
     return json(

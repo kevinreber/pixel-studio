@@ -8,6 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { copyToClipboard } from "~/utils/clipboard";
 
 interface CopyToClipboardButtonProps {
   stringToCopy: string;
@@ -20,25 +21,27 @@ const CopyToClipboardButton = ({
   const [copied, setCopied] = useState(false);
 
   const handleCopyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(stringToCopy);
-      setCopied(true);
+    const didCopy = await copyToClipboard(stringToCopy);
 
-      toast({
-        title: "Copied to clipboard",
-        description: stringToCopy,
-        duration: 2000,
-      });
-
-      // Reset copied state after 2 seconds
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
+    if (!didCopy) {
       toast({
         title: "Failed to copy",
         description: "Please try again",
         variant: "destructive",
       });
+      return;
     }
+
+    setCopied(true);
+
+    toast({
+      title: "Copied to clipboard",
+      description: stringToCopy,
+      duration: 2000,
+    });
+
+    // Reset copied state after 2 seconds
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (

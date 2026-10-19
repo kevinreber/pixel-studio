@@ -25,17 +25,21 @@ test.describe("Public Pages", () => {
   });
 });
 
-test.describe("Protected Pages - Redirect to Login", () => {
-  test("Explore page redirects to login", async ({ page }) => {
+test.describe("Public Pages - Render Without Login", () => {
+  // These are listed in sitemap.xml, so they must render for anonymous
+  // visitors (and for Googlebot) rather than bouncing to /login.
+  test("Explore page renders without login", async ({ page }) => {
     await page.goto("/explore");
-    await expect(page).toHaveURL(/login/);
+    await expect(page).not.toHaveURL(/login/);
   });
 
-  test("Create page redirects to login", async ({ page }) => {
+  test("Create page renders without login", async ({ page }) => {
     await page.goto("/create");
-    await expect(page).toHaveURL(/login/);
+    await expect(page).not.toHaveURL(/login/);
   });
+});
 
+test.describe("Protected Pages - Redirect to Login", () => {
   test("Collections page redirects to login", async ({ page }) => {
     await page.goto("/collections");
     await expect(page).toHaveURL(/login/);

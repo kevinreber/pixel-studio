@@ -1,5 +1,5 @@
 import React from "react";
-import { useLoggedInUser } from "~/hooks";
+import { useOptionalUser } from "~/hooks";
 import { Link, useLoaderData } from "@remix-run/react";
 import type { ExplorePageVideoLoader } from "~/routes/explore.video.$videoId";
 import { convertUtcDateToLocalDateString } from "~/client";
@@ -50,7 +50,8 @@ const ExploreVideoDetailsPageContent = ({
   const loaderData = useLoaderData<ExplorePageVideoLoader>();
   const videoData = loaderData.data as AsyncVideoData;
   const videoUserData = videoData?.user as VideoUserData;
-  const userData = useLoggedInUser();
+  // Shared video links are public, so an absent user is expected here.
+  const userData = useOptionalUser();
   const isUserLoggedIn = Boolean(userData);
 
   if (!videoData) return null;

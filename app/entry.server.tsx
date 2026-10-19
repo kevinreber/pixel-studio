@@ -13,19 +13,24 @@ import { isbot } from "isbot";
 import { renderToPipeableStream } from "react-dom/server";
 import * as Sentry from "@sentry/remix";
 
-export const handleError = Sentry.wrapHandleErrorWithSentry(
-  (error, { request }) => {
-    // Custom handleError implementation
-    console.log("Error from handleError", error);
-    console.log("Request from handleError", request);
-    return new Response("Error from handleError", {
-      status: 500,
-      headers: {
-        "Content-Type": "text/html",
-      },
-    });
-  }
-);
+// `instrumentation.server.mjs` only runs under the Express server in
+// `server.js`, which Vercel's build never loads, so the server SDK has to be
+// initialized here too. The client check keeps the Express path single-init.
+if (process.env.NODE_ENV === "production" && !Sentry.getClient()) {
+  Sentry.init({
+    dsn:
+      process.env.SENTRY_DSN ||
+      "https://cd7847ec1fa0966145399ddcd6a5a6f4@o4506551058759680.ingest.us.sentry.io/4507813698666496",
+    tracesSampleRate: 1,
+    autoInstrumentRemix: true,
+  });
+}
+
+// The Sentry wrapper carries the request context into the report; the log line
+// is only so the failure is visible in the platform logs as well.
+export const handleError = Sentry.wrapHandleErrorWithSentry((error) => {
+  console.error("Unhandled error", error);
+});
 
 const ABORT_DELAY = 5_000;
 
