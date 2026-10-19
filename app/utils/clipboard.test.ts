@@ -8,16 +8,14 @@ import { copyToClipboard } from "./clipboard";
  * actually broke in production.
  */
 function setClipboard(value: unknown) {
-  Object.defineProperty(globalThis.navigator, "clipboard", {
-    value,
-    configurable: true,
-    writable: true,
-  });
+  // Stub the whole navigator: Node < 21 (CI runs Node 20) has no global
+  // `navigator`, so defining a property on it would throw.
+  vi.stubGlobal("navigator", { clipboard: value });
 }
 
 describe("copyToClipboard", () => {
   afterEach(() => {
-    setClipboard(undefined);
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
