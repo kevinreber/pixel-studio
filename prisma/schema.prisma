@@ -462,6 +462,10 @@ model CreditTransaction {
 
   // References
   stripeSessionId String? // Link to Stripe checkout session
+  // Stripe event id. Unique so a replayed webhook delivery fails the insert
+  // instead of granting credits twice. Nullable: rows written by any other
+  // path (spend, refund, admin) leave it NULL, and Postgres permits many NULLs.
+  stripeEventId   String? @unique
   generationLogId String? // Link to generation that spent credits
 
   // Tracking
