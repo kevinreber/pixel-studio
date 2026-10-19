@@ -1,7 +1,7 @@
 # Idempotency & Duplicate-Write Audit
 
 **As of:** 2026-10-04
-**Status:** P0 items fixed in [PR #163](https://github.com/kevinreber/pixel-studio/pull/163); the Stripe migration is applied in production as of 2026-10-18. P1 and P2 items are open and need decisions.
+**Status:** P0 items fixed in [PR #163](https://github.com/kevinreber/pixel-studio/pull/163); the Stripe migration is applied in production as of 2026-10-18. P1 and P2 items are open and need decisions. A separate critical finding — Row Level Security disabled in production — was fixed on 2026-10-18 and is recorded in the appendix.
 **Live doc:** https://claude.ai/code/artifact/c492547a-34b2-4692-8f9e-a1df4a198406
 
 > This file is the in-repo snapshot so the audit can be referenced from any session without opening the live doc. The live doc is the version that gets edited and commented on; if the two disagree, the live doc is newer.
@@ -139,3 +139,46 @@ The three P0 items sit together in the upper band because each one costs a user 
 Two decisions are open. First, the username collision strategy for P1-4: an upsert on `id` still throws when two people derive the same username from different emails, and choosing between a numeric suffix, a retry, and a user-facing picker changes the signup flow. Second, whether the generation claim in P1-5 should fail closed: failing closed stops duplicate spend during a Redis outage but blocks all generation for the duration, which is an availability call.
 
 P2 items are listed for completeness. The client idempotency key is the only one that changes user-visible behaviour, and it is worth revisiting after the P0 work lands and the real duplicate rate is visible in the generation log.
+
+## Appendix: Row Level Security was disabled in production (fixed 2026-10-18)
+
+Surfaced by the Supabase advisor while applying the Stripe migration. It is not an idempotency issue, but it was the most severe problem found during this work and it bears directly on the credit system, so it is recorded here.
+
+### What was wrong
+
+Row Level Security was disabled on 46 of the 48 tables in `public`, while the `anon` and `authenticated` roles held `SELECT`, `INSERT`, `UPDATE`, `DELETE` and `TRUNCATE` on all 48. The anon key is shipped to the browser by `createBrowserClient` in `app/hooks/useSupabaseClient.ts:25`.
+
+Anyone who opened devtools on the site could therefore read all 2,252 user records, modify any user's credit balance directly, or truncate tables outright. The duplicate-webhook hardening in P0-2 guards one path into the credit balance; this was an open second path that bypassed Stripe entirely.
+
+### Why enabling RLS was safe
+
+Four checks, each of which would have blocked the change:
+
+1. All 48 public tables are owned by `postgres`, and `postgres` has `rolbypassrls = true`. Prisma connects as that role, so RLS does not apply to application queries. `anon` and `authenticated` both have `rolbypassrls = false`.
+2. Every Supabase API call in the codebase is `supabase.auth` — 13 call sites, with zero `.from()`, `.rpc()`, `.storage` or `.channel()`. Nothing reads these tables through PostgREST.
+3. Supabase Auth operates on the `auth` schema, which was not touched.
+4. `Image` and `Comment` already ran with RLS enabled and policies attached, and Prisma read them normally. That was a working precedent in the same database.
+
+`FORCE ROW LEVEL SECURITY` was deliberately not used. It subjects the table owner to policies and would have broken Prisma immediately.
+
+### What was applied
+
+RLS was enabled on every `public` table lacking it, with no policies attached, which denies `anon` and `authenticated` while leaving Prisma unaffected. Applied through the Supabase SQL editor.
+
+### Verification
+
+| Check | Result |
+| --- | --- |
+| Tables with RLS on | 48 of 48 |
+| Tables with RLS off | 0 |
+| Tables with `FORCE` set | 0 (would have broken Prisma) |
+| Supabase advisor | `rls_disabled_in_public` CRITICAL cleared; replaced by `rls_enabled_no_policy` at INFO, which is the intended end state |
+| Production site | `/health`, `/`, `/users`, `/login` all 200; `/explore` 302 to login as designed; `/users` rendered real profile data with no error text |
+
+### Rollback
+
+`ALTER TABLE public."<name>" DISABLE ROW LEVEL SECURITY;` restores the prior state instantly and losslessly. Exclude `Image` and `Comment`, whose RLS predates this change.
+
+### Still open
+
+The Supabase advisor reports three unrelated WARN-level items that were not addressed: OTP expiry exceeds one hour, leaked-password protection against HaveIBeenPwned is disabled, and the Postgres version (`supabase-postgres-15.1.0.153`) has outstanding security patches.
