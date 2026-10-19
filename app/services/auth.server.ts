@@ -99,74 +99,64 @@ interface GoogleUserJson {
 
 /**
  * @description
+ * Resolves the Supabase user for a request, or null when nobody is signed in.
+ * Use this on routes that render for anonymous visitors, so an absent session
+ * stays an ordinary outcome instead of a logged error.
+ */
+export const getOptionalUser = async (
+  request: Request
+): Promise<SupabaseUser | null> => {
+  const { supabase } = getSupabaseWithHeaders({
+    request,
+    useBase: true,
+  });
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  return session?.user ?? null;
+};
+
+/**
+ * Clears the Supabase session and our own cookie session before sending the
+ * visitor to the login page.
+ */
+const redirectToLogin = async (request: Request) => {
+  await signOutOfSupabase({ request, useBase: true });
+  const cookieSession = await getSessionCookie(request);
+  cookieSession.unset(USER_ID_KEY);
+  cookieSession.unset(AUTH_KEY);
+
+  return redirect("/login", {
+    headers: {
+      "Set-Cookie": await commitSession(cookieSession),
+    },
+  });
+};
+
+/**
+ * @description
  * This function validates if a user is logged in and redirects the user to our
  * Login Page if they are not logged in
  */
 export const requireUserLogin = async (
   request: Request
 ): Promise<UserProfile | SupabaseUser> => {
+  let user: SupabaseUser | null = null;
+
   try {
-    // First check supabase auth
-    const { supabase } = getSupabaseWithHeaders({
-      request,
-      useBase: true,
-    });
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (session) {
-      return session.user;
-    }
-    throw new Error("No supabase session found");
-    // console.log("No supabase session found, checking auth state...");
-    //   await signOutOfSupabase({ request, useBase: true });
-    //   const cookieSession = await getSessionCookie(request);
-    //   cookieSession.unset(USER_ID_KEY);
-    //   cookieSession.unset(AUTH_KEY);
-
-    //   throw redirect("/login", {
-    //     headers: {
-    //       "Set-Cookie": await commitSession(cookieSession),
-    //     },
-    //   });
-    // }
-
-    // const authUser = (await authenticator.isAuthenticated(
-    //   request
-    // )) as UserProfile;
-
-    // if (!authUser) {
-    //   const requestUrl = new URL(request.url);
-    //   redirectTo =
-    //     redirectTo === null
-    //       ? null
-    //       : redirectTo ?? `${requestUrl.pathname}${requestUrl.search}`;
-    //   const loginParams = redirectTo
-    //     ? new URLSearchParams({ redirectTo })
-    //     : null;
-    //   const loginRedirect = ["/login", loginParams?.toString()]
-    //     .filter(Boolean)
-    //     .join("?");
-    //   throw redirect(loginRedirect);
-    // }
-
-    // return authUser;
+    user = await getOptionalUser(request);
   } catch (error) {
+    // Only a genuine Supabase failure reaches here. A missing session resolves
+    // to null above, which is the normal anonymous case and not worth logging.
     console.error("Authentication error:", error);
-    await signOutOfSupabase({ request, useBase: true });
-    const cookieSession = await getSessionCookie(request);
-    cookieSession.unset(USER_ID_KEY);
-    cookieSession.unset(AUTH_KEY);
-
-    throw redirect("/login", {
-      headers: {
-        "Set-Cookie": await commitSession(cookieSession),
-      },
-    });
-    // }
-    throw redirect("/login");
   }
+
+  if (user) {
+    return user;
+  }
+
+  throw await redirectToLogin(request);
 };
 
 /**
