@@ -15,6 +15,7 @@ import {
 import { z } from "zod";
 import { PageContainer, GeneralErrorBoundary } from "~/components";
 import { cacheDelete } from "~/utils/cache.server";
+import { Logger } from "~/utils/logger.server";
 import { getVideoModelCreditCost } from "~/config/pricing";
 import {
   VIDEO_MODEL_OPTIONS,
@@ -161,7 +162,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     await checkUserCredits(user.id, totalCreditCost);
   } catch (error: unknown) {
-    console.error(error);
+    // Expected user-facing validation, not a fault — log at warn so it does
+    // not surface as an application error.
+    Logger.warn({
+      message: "Video generation blocked by credit check",
+      metadata: {
+        userId: user.id,
+        totalCreditCost,
+        reason: error instanceof Error ? error.message : String(error),
+      },
+    });
 
     return json(
       {

@@ -295,7 +295,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     await checkUserCredits(user.id, totalCreditCost);
   } catch (error: unknown) {
-    console.error(error);
+    // Expected user-facing validation, not a fault — log at warn so it does
+    // not surface as an application error.
+    Logger.warn({
+      message: "Image generation blocked by credit check",
+      metadata: {
+        userId: user.id,
+        totalCreditCost,
+        reason: error instanceof Error ? error.message : String(error),
+      },
+    });
 
     return json(
       {
