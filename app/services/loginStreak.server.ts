@@ -255,6 +255,10 @@ export async function claimDailyBonus(userId: string): Promise<DailyBonusResult>
     };
   }, {
     isolationLevel: "Serializable", // Prevent race conditions
+    // Serializable transactions on a pooled connection can wait behind a peer
+    // for longer than Prisma's 2s/5s defaults allow.
+    maxWait: 5_000,
+    timeout: 10_000,
   });
 
   // Log the bonus credit transaction outside the main transaction

@@ -30,7 +30,12 @@ import { getLoggedInUserData } from "./server";
 import { GeneralErrorBoundary } from "./components/GeneralErrorBoundary";
 import { claimDailyBonus } from "~/services/loginStreak.server";
 import { checkAndUnlockAchievements } from "~/services/achievements.server";
-import { cacheGet, cacheSet, getCachedDataWithRevalidate } from "~/utils/cache.server";
+import {
+  cacheGet,
+  cacheSet,
+  cacheDelete,
+  getCachedDataWithRevalidate,
+} from "~/utils/cache.server";
 import {
   // sessionStorage,
   // getSessionCookie,
@@ -84,15 +89,26 @@ export async function loader({ request }: LoaderFunctionArgs) {
     if (userData?.id) {
       const streakCacheKey = `streak-claimed-today:${userData.id}`;
       cacheGet<string>(streakCacheKey)
-        .then((cached) => {
+        .then(async (cached) => {
           if (cached) return; // Already claimed today, skip
-          return claimDailyBonus(userData!.id).then((result) => {
-            // Cache for 1 hour to avoid repeated DB calls
-            cacheSet(streakCacheKey, "true", 3600).catch(() => {});
+
+          // Claim the flag *before* the transaction. Parallel route loaders and
+          // single-fetch requests otherwise all clear the check above and pile
+          // into the same serializable transaction, which then times out with
+          // "Transaction already closed".
+          await cacheSet(streakCacheKey, "true", 3600).catch(() => {});
+
+          try {
+            const result = await claimDailyBonus(userData!.id);
             if (result.success && result.streakMilestone) {
               checkAndUnlockAchievements(userData!.id, "streak").catch(() => {});
             }
-          });
+          } catch (error) {
+            // Release the flag so the next request retries rather than silently
+            // skipping the bonus for the full hour.
+            await cacheDelete(streakCacheKey).catch(() => {});
+            throw error;
+          }
         })
         .catch(() => {});
     }
