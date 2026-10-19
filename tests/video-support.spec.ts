@@ -162,9 +162,11 @@ test.describe("Video Support - Page Routes", () => {
     await expect(page).toHaveURL(/login/);
   });
 
-  test("Explore page redirects to login when unauthenticated", async ({ page }) => {
+  // Public: /explore is listed in sitemap.xml and must serve anonymous
+  // visitors. /feed above stays gated.
+  test("Explore page renders when unauthenticated", async ({ page }) => {
     await page.goto("/explore");
-    await expect(page).toHaveURL(/login/);
+    await expect(page).not.toHaveURL(/login/);
   });
 
   test("Profile page can be accessed (may show user not found)", async ({ page }) => {
