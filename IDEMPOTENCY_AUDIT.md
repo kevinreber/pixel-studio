@@ -1,7 +1,7 @@
 # Idempotency & Duplicate-Write Audit
 
 **As of:** 2026-10-04
-**Status:** P0 items fixed in [PR #163](https://github.com/kevinreber/pixel-studio/pull/163). P1 and P2 items are open and need decisions.
+**Status:** P0 items fixed in [PR #163](https://github.com/kevinreber/pixel-studio/pull/163); the Stripe migration is applied in production as of 2026-10-18. P1 and P2 items are open and need decisions.
 **Live doc:** https://claude.ai/code/artifact/c492547a-34b2-4692-8f9e-a1df4a198406
 
 > This file is the in-repo snapshot so the audit can be referenced from any session without opening the live doc. The live doc is the version that gets edited and commented on; if the two disagree, the live doc is newer.
@@ -47,7 +47,9 @@ Stripe delivers webhooks at least once and retries on any non-2xx response, so d
 
 A nullable new column was deliberately chosen over making `stripeSessionId` unique: existing rows become NULL, Postgres permits many NULLs in a unique index, and the migration cannot fail on historical duplicates. Making `stripeSessionId` unique would require reconciling production data first.
 
-> **Deploy note.** This repo has no automated migration step. `prisma/migrations/` holds flat `.sql` files with no `migration_lock.toml`, so it is not a Prisma-managed migrations directory, and `postinstall` runs `prisma generate` only. `prisma/migrations/20261004_stripe_webhook_idempotency.sql` must be applied by hand, with `npx prisma db push` or by executing the SQL, before this code is deployed. Without it, every credit purchase fails on a missing column.
+> **Deploy note — applied 2026-10-18.** `CreditTransaction.stripeEventId` and its unique index now exist in production. Verified after applying: the column is nullable `text`, the index is `CreditTransaction_stripeEventId_key`, and all existing rows carry NULL.
+>
+> This repo has no automated migration step. `prisma/migrations/` holds flat `.sql` files with no `migration_lock.toml`, so it is not a Prisma-managed migrations directory, and `postinstall` runs `prisma generate` only. The migration was therefore applied by hand rather than by the deploy pipeline. One consequence to watch: running `npx prisma db push` from a branch that lacks this schema change will see the column as drift and offer to drop it.
 
 ## P0-3. The production image worker never logged or refunded
 
