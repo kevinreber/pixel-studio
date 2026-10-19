@@ -1,5 +1,4 @@
 import {
-  type LoaderFunctionArgs,
   ActionFunctionArgs,
   json,
   MetaFunction,
@@ -72,9 +71,9 @@ const CreateVideoFormSchema = z.object({
   sourceImageId: z.string().optional().or(z.literal("")),
 });
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await requireUserLogin(request);
-
+// The page itself is public so search traffic lands on the generator rather
+// than a login wall; the action below still requires a signed-in user.
+export const loader = async () => {
   return json({
     modelOptions: VIDEO_MODEL_OPTIONS,
     aspectRatioOptions: ASPECT_RATIO_OPTIONS,

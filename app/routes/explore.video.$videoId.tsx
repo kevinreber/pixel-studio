@@ -4,7 +4,7 @@ import { getVideo } from "~/server";
 import { invariantResponse } from "~/utils";
 import ExploreVideoDetailsPage from "~/pages/ExploreVideoDetailsPage";
 import { GeneralErrorBoundary, PageContainer } from "~/components";
-import { requireUserLogin } from "~/services";
+import { getOptionalUser } from "~/services";
 import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 import {
   generateVideoMetaTags,
@@ -34,13 +34,8 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const videoId = params.videoId || "";
   invariantResponse(videoId, "Video does not exist");
 
-  // Try to get user, but don't require login
-  let user: { id: string } | null = null;
-  try {
-    user = await requireUserLogin(request);
-  } catch {
-    // User is not logged in, which is fine
-  }
+  // Shared video links are public, so an anonymous visitor is expected here.
+  const user = await getOptionalUser(request);
 
   const videoDetailsCacheKey = `video-details:${videoId}`;
   const video = await getCachedDataWithRevalidate(videoDetailsCacheKey, () =>

@@ -2,7 +2,6 @@ import { type LoaderFunctionArgs, type MetaFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { PageContainer } from "~/components";
 import { TrendingSection } from "~/components/TrendingSection";
-import { requireUserLogin } from "~/services";
 import { getTrendingContent, type TrendingPeriod } from "~/services/trending.server";
 import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 
@@ -12,9 +11,9 @@ export const meta: MetaFunction = () => {
 
 const CACHE_TTL_5_MINUTES = 300;
 
+// Trending is public content listed in the sitemap, and the cached payload is
+// identical for every visitor, so no session lookup is needed here.
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await requireUserLogin(request);
-
   const url = new URL(request.url);
   const period = (url.searchParams.get("period") || "48h") as TrendingPeriod;
 

@@ -4,7 +4,7 @@ import { getImage } from "~/server";
 import { invariantResponse } from "~/utils";
 import ExploreImageDetailsPage from "~/pages/ExploreImageDetailsPage";
 import { GeneralErrorBoundary, PageContainer } from "~/components";
-import { requireUserLogin } from "~/services";
+import { getOptionalUser } from "~/services";
 import { getImageCollection } from "~/server/getImageCollection";
 import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 import {
@@ -35,21 +35,17 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const imageId = params.imageId || "";
   invariantResponse(imageId, "Image does not exist");
 
-  // Try to get user, but don't require login
-  let user: { id: string } | null = null;
-  try {
-    user = await requireUserLogin(request);
-  } catch {
-    // User is not logged in, which is fine
-  }
+  // Shared image links are public, so an anonymous visitor is expected here.
+  const user = await getOptionalUser(request);
 
   const imageDetailsCacheKey = `image-details:${imageId}`;
   const imagePromise = getCachedDataWithRevalidate(imageDetailsCacheKey, () =>
     getImage(imageId)
   );
 
-  // TODO: Verify if we need to cache this after we create Collections Page
-  const collectionsCacheKey = `user-collections:${user?.id}`;
+  // Keyed by image as well as user: the payload records whether *this* image is
+  // in each collection, so a user-only key serves one image's flags for another.
+  const collectionsCacheKey = `user-collections:${user?.id ?? "anonymous"}:${imageId}`;
   const collectionsPromise = getCachedDataWithRevalidate(
     collectionsCacheKey,
     () => getImageCollection(imageId, user)

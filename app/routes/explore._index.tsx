@@ -2,7 +2,7 @@ import { type LoaderFunctionArgs, MetaFunction, json } from "@remix-run/node";
 import ExplorePage from "pages/ExplorePage";
 import { getImages, type MediaTypeFilter } from "server/getImages";
 import { PageContainer, GeneralErrorBoundary } from "~/components";
-import { requireUserLogin } from "~/services";
+import { getOptionalUser } from "~/services";
 import { getCachedDataWithRevalidate } from "~/utils/cache.server";
 import { trackSearch } from "~/services/analytics.server";
 
@@ -43,7 +43,9 @@ export const TAG_FILTER_OPTIONS = [
 ] as const;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const user = await requireUserLogin(request);
+  // Explore is a public discovery surface and is listed in the sitemap, so it
+  // renders for anonymous visitors too.
+  const user = await getOptionalUser(request);
   const searchParams = new URL(request.url).searchParams;
   const searchTerm = searchParams.get("q") || "";
   const currentPage = Math.max(Number(searchParams.get("page") || 1), 1);
@@ -52,8 +54,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const model = searchParams.get("model") || "";
   const tag = searchParams.get("tag") || "";
 
-  // Track search if user is searching or filtering
-  if (searchTerm || mediaType !== "all" || model || tag) {
+  // Track search if a signed-in user is searching or filtering
+  if (user && (searchTerm || mediaType !== "all" || model || tag)) {
     trackSearch(user.id, {
       searchTerm: searchTerm || undefined,
       mediaType,

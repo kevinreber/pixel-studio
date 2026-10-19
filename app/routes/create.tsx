@@ -1,5 +1,4 @@
 import {
-  type LoaderFunctionArgs,
   ActionFunctionArgs,
   json,
   MetaFunction,
@@ -151,9 +150,9 @@ const CreateImagesFormSchema = z.object({
   }
 );
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await requireUserLogin(request);
-
+// The page itself is public so search traffic lands on the generator rather
+// than a login wall; the action below still requires a signed-in user.
+export const loader = async () => {
   return json({ modelOptions: MODEL_OPTIONS, styleOptions: STYLE_OPTIONS });
 };
 
