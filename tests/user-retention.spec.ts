@@ -116,9 +116,11 @@ test.describe("Retention Features - Protected Routes Redirect", () => {
     await expect(page).toHaveURL(/login/);
   });
 
-  test("Trending API redirects to login when unauthenticated", async ({ page }) => {
+  // Public, matching the /trending page: TrendingSection re-loads this endpoint
+  // on each period switch, so gating it would bounce anonymous visitors.
+  test("Trending API responds without login", async ({ page }) => {
     await page.goto("/api/trending");
-    await expect(page).toHaveURL(/login/);
+    await expect(page).not.toHaveURL(/login/);
   });
 
   test("Achievements API redirects to login when unauthenticated", async ({ page }) => {

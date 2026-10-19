@@ -202,21 +202,31 @@ export default function CreateVideoPageRedesigned() {
           {needsSourceImage && (
             <div>
               <div className="u-label mb-2">Source image</div>
-              <ImagePicker
-                onSelect={(img) => {
-                  if (img) {
-                    setSourceImageUrl(img.url);
-                    setSourceImageId(img.id);
-                  } else {
-                    setSourceImageUrl("");
-                    setSourceImageId("");
-                  }
-                }}
-                selectedImageUrl={sourceImageUrl}
-                disabled={submitting}
-              />
+              {/* The picker loads /api/user/images, which is correctly gated --
+                  rendering it for an anonymous visitor would redirect the whole
+                  page to /login and discard their prompt. The URL field below
+                  works without an account, so offer that instead. */}
+              {isAnonymous ? (
+                <div className="rounded-sm border border-[var(--border)] bg-surface-1 p-3 text-[12.5px] text-fg-subtle">
+                  Sign in to pick from your own generations.
+                </div>
+              ) : (
+                <ImagePicker
+                  onSelect={(img) => {
+                    if (img) {
+                      setSourceImageUrl(img.url);
+                      setSourceImageId(img.id);
+                    } else {
+                      setSourceImageUrl("");
+                      setSourceImageId("");
+                    }
+                  }}
+                  selectedImageUrl={sourceImageUrl}
+                  disabled={submitting}
+                />
+              )}
               <div className="mt-2 text-[11.5px] text-fg-subtle">
-                Or paste a URL:
+                {isAnonymous ? "Paste a URL:" : "Or paste a URL:"}
               </div>
               <input
                 type="url"

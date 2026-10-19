@@ -201,8 +201,12 @@ export default function CreatePageRedesigned() {
         }
       />
 
-      {/* Active generation jobs — inline card preserves the pre-redesign UX. */}
-      <GenerationQueue showCompleted={false} maxJobs={5} className="mb-6" />
+      {/* Active generation jobs — inline card preserves the pre-redesign UX.
+          Skipped for anonymous visitors: it polls /api/queue/status, which is
+          gated, so it would only ever render a spurious error for them. */}
+      {!isAnonymous && (
+        <GenerationQueue showCompleted={false} maxJobs={5} className="mb-6" />
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[388px_1fr]">
         {/* Left composer */}
