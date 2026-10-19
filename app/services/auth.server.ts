@@ -102,19 +102,29 @@ interface GoogleUserJson {
  * Resolves the Supabase user for a request, or null when nobody is signed in.
  * Use this on routes that render for anonymous visitors, so an absent session
  * stays an ordinary outcome instead of a logged error.
+ *
+ * Never throws. Public pages call this directly, and a Supabase outage must
+ * degrade them to the anonymous view rather than turning a shared link into a
+ * 500. A genuine failure is still logged — only the missing-session case is
+ * silent.
  */
 export const getOptionalUser = async (
   request: Request
 ): Promise<SupabaseUser | null> => {
-  const { supabase } = getSupabaseWithHeaders({
-    request,
-    useBase: true,
-  });
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  try {
+    const { supabase } = getSupabaseWithHeaders({
+      request,
+      useBase: true,
+    });
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-  return session?.user ?? null;
+    return session?.user ?? null;
+  } catch (error) {
+    console.error("Authentication error:", error);
+    return null;
+  }
 };
 
 /**
@@ -142,20 +152,14 @@ const redirectToLogin = async (request: Request) => {
 export const requireUserLogin = async (
   request: Request
 ): Promise<UserProfile | SupabaseUser> => {
-  let user: SupabaseUser | null = null;
-
-  try {
-    user = await getOptionalUser(request);
-  } catch (error) {
-    // Only a genuine Supabase failure reaches here. A missing session resolves
-    // to null above, which is the normal anonymous case and not worth logging.
-    console.error("Authentication error:", error);
-  }
+  const user = await getOptionalUser(request);
 
   if (user) {
     return user;
   }
 
+  // Covers both "signed out" and "Supabase is failing": either way this
+  // request has no usable identity, and /login is where it has to go.
   throw await redirectToLogin(request);
 };
 

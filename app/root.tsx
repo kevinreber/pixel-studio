@@ -59,6 +59,11 @@ export const shouldRevalidate = ({
   return defaultShouldRevalidate;
 };
 
+// Short lock held only while the daily-bonus transaction is in flight.
+const STREAK_LOCK_TTL = 60;
+// Longer flag written once the bonus is actually claimed.
+const STREAK_CLAIMED_TTL = 3600;
+
 export async function loader({ request }: LoaderFunctionArgs) {
   const [csrfToken, csrfCookieHeader] = await csrf.commitToken(request);
   const honeyProps = honeypot.getInputProps();
@@ -96,21 +101,38 @@ export async function loader({ request }: LoaderFunctionArgs) {
           // single-fetch requests otherwise all clear the check above and pile
           // into the same serializable transaction, which then times out with
           // "Transaction already closed".
-          await cacheSet(streakCacheKey, "true", 3600).catch(() => {});
+          //
+          // The in-flight lock is deliberately short: this runs detached from
+          // the response, so a frozen or recycled function instance can kill it
+          // between here and the claim. A short TTL caps that invisible failure
+          // at a minute instead of suppressing the bonus for a whole hour.
+          await cacheSet(streakCacheKey, "true", STREAK_LOCK_TTL).catch(
+            () => {}
+          );
 
           try {
             const result = await claimDailyBonus(userData!.id);
+
+            // Only now extend the lock to cover the rest of the day's visits.
+            await cacheSet(streakCacheKey, "true", STREAK_CLAIMED_TTL).catch(
+              () => {}
+            );
+
             if (result.success && result.streakMilestone) {
               checkAndUnlockAchievements(userData!.id, "streak").catch(() => {});
             }
           } catch (error) {
             // Release the flag so the next request retries rather than silently
-            // skipping the bonus for the full hour.
+            // skipping the bonus.
             await cacheDelete(streakCacheKey).catch(() => {});
             throw error;
           }
         })
-        .catch(() => {});
+        .catch((error) => {
+          // Swallowed so a bonus failure never breaks page load, but logged:
+          // a silent skip here means a user's streak went unrecorded.
+          console.error("Daily login bonus failed", error);
+        });
     }
   }
 

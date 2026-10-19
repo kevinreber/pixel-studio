@@ -87,10 +87,7 @@ test.describe("Landing (redesign)", () => {
 test.describe("Shell-mounted routes — redirect when unauthenticated", () => {
   // These also implicitly verify the new AppShell wrap doesn't break loaders.
   const protectedRoutes = [
-    "/explore",
     "/feed",
-    "/create",
-    "/create-video",
     "/likes",
     "/whats-new",
     "/sets",
@@ -101,6 +98,19 @@ test.describe("Shell-mounted routes — redirect when unauthenticated", () => {
     test(`${path} redirects to /login`, async ({ page }) => {
       await page.goto(path);
       await expect(page).toHaveURL(/login/);
+    });
+  }
+});
+
+test.describe("Shell-mounted routes — render when unauthenticated", () => {
+  // Listed in sitemap.xml, so these must serve anonymous visitors. /create and
+  // /create-video render the generator and gate on submit, not on page load.
+  const publicRoutes = ["/explore", "/create", "/create-video", "/trending"];
+
+  for (const path of publicRoutes) {
+    test(`${path} renders without /login redirect`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page).not.toHaveURL(/login/);
     });
   }
 });
