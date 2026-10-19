@@ -30,6 +30,7 @@ import {
   SITE_CONFIG,
 } from "~/utils/seo";
 import { marked } from "marked";
+import { copyToClipboard } from "~/utils/clipboard";
 
 export const meta: MetaFunction<typeof loader> = ({ data }) => {
   if (!data?.post) {
@@ -176,7 +177,7 @@ export default function BlogPost() {
       }
     } else {
       // Fallback: copy to clipboard
-      navigator.clipboard.writeText(window.location.href);
+      void copyToClipboard(window.location.href);
     }
   };
 
