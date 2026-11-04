@@ -1,4 +1,4 @@
-import { json, LoaderFunctionArgs } from "@remix-run/node";
+import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { requireUserLogin } from "~/services";
 import { prisma } from "~/services/prisma.server";
 import {
@@ -7,6 +7,14 @@ import {
 } from "~/services/analytics.server";
 import { checkAndUnlockAchievements } from "~/services/achievements.server";
 import { Logger } from "~/utils/logger.server";
+import { cacheDelete } from "~/utils/cache.server";
+import { CollectionSchema } from "~/schemas/collection";
+import {
+  checkRateLimit,
+  writeLimiter,
+  getRateLimitIdentifier,
+  rateLimitResponse,
+} from "~/services/rateLimit.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const user = await requireUserLogin(request);
@@ -52,21 +60,39 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   });
 };
 
-export const action = async ({ request }: LoaderFunctionArgs) => {
-  const user = await requireUserLogin(request);
-  const formData = await request.formData();
-  const title = formData.get("title")?.toString();
+export const action = async ({ request }: ActionFunctionArgs) => {
+  if (request.method !== "POST") {
+    return json({ error: "Method not allowed" }, { status: 405 });
+  }
 
-  if (!title) {
-    return json({ error: "Title is required" }, { status: 400 });
+  const user = await requireUserLogin(request);
+  const rl = await checkRateLimit(
+    writeLimiter,
+    getRateLimitIdentifier(request, user.id)
+  );
+  if (!rl.success) return rateLimitResponse(rl.reset);
+
+  const formData = await request.formData();
+  const parsed = CollectionSchema.pick({ title: true }).safeParse({
+    title: formData.get("title")?.toString().trim(),
+  });
+
+  if (!parsed.success) {
+    return json(
+      { error: parsed.error.errors[0]?.message ?? "Invalid title" },
+      { status: 400 }
+    );
   }
 
   const collection = await prisma.collection.create({
     data: {
-      title,
+      title: parsed.data.title,
       userId: user.id,
     },
   });
+
+  // Invalidate user collections cache so the new collection appears immediately
+  await cacheDelete(`user-collections:${user.id}`);
 
   // Track collection creation
   trackCollection(user.id, AnalyticsEvents.COLLECTION_CREATED, {
