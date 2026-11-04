@@ -15,6 +15,10 @@ import {
 } from "~/services/rateLimit.server";
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
+  if (request.method !== "POST" && request.method !== "DELETE") {
+    return json({ success: false, error: "Method not allowed" }, { status: 405 });
+  }
+
   const user = await requireUserLogin(request);
   const rl = await checkRateLimit(
     writeLimiter,

@@ -15,6 +15,11 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       await createCommentLike({ commentId, userId: user.id });
     } else if (request.method === "DELETE") {
       await deleteCommentLike({ commentId, userId: user.id });
+    } else {
+      return json(
+        { success: false, error: "Method not allowed" },
+        { status: 405 }
+      );
     }
 
     // Invalidate the image details cache

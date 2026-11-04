@@ -3,6 +3,8 @@ import { getFollowing, getFollowingSet } from "~/server";
 import { getGoogleSessionAuth } from "~/services";
 import { Logger } from "~/utils/logger.server";
 
+const MAX_PAGE_SIZE = 100;
+
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const userId = params.userId;
 
@@ -11,8 +13,12 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   }
 
   const searchParams = new URL(request.url).searchParams;
-  const page = Number(searchParams.get("page")) || 1;
-  const pageSize = Number(searchParams.get("pageSize")) || 50;
+  // Clamp pagination so callers can't request negative offsets or huge pages
+  const page = Math.max(1, Math.floor(Number(searchParams.get("page")) || 1));
+  const pageSize = Math.min(
+    MAX_PAGE_SIZE,
+    Math.max(1, Math.floor(Number(searchParams.get("pageSize")) || 50))
+  );
 
   try {
     const result = await getFollowing(userId, page, pageSize);
