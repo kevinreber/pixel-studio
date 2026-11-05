@@ -11,6 +11,24 @@ jobs:
     runs-on: ubuntu-latest
     env:
       USE_MOCK_DALLE: "true"
+      # Throwaway database owned by this job (see `services.postgres`), so E2E
+      # never depends on, or writes to, a hosted database.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pixel_studio_test
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/pixel_studio_test
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: pixel_studio_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -39,12 +57,16 @@ jobs:
 
       - name: Create .env file
         run: |
-          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
-          echo "SESSION_SECRET=${{ secrets.SESSION_SECRET }}" >> .env
+          echo "DATABASE_URL=$DATABASE_URL" > .env
+          echo "DIRECT_URL=$DIRECT_URL" >> .env
+          echo "SESSION_SECRET=e2e-test-session-secret" >> .env
           echo "USE_MOCK_DALLE=true" >> .env
 
       - name: Generate Prisma Client
         run: npx prisma generate
+
+      - name: Apply database schema
+        run: npx prisma db push --skip-generate
 
       - name: Start Server
         run: npm run dev & npx wait-on http://localhost:5173
