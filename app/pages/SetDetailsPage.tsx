@@ -9,7 +9,7 @@ import {
 import { PageContainer, ErrorList, ImageCard, ModelBadge } from "~/components";
 import type { SetPageLoader } from "~/routes/sets.$setId";
 import { Skeleton } from "@/components/ui/skeleton";
-import { convertUtcDateToLocalDateString } from "~/client";
+import { LocalDateTime } from "~/components/LocalDateTime";
 import {
   Loader2,
   Cpu,
@@ -93,18 +93,6 @@ const SetDetailsAccessor = () => {
     return total + getVideoModelCreditCost(video.model, videoDuration);
   }, 0) || 0;
   const totalCost = imageCost + videoCost;
-  const [formattedDate, setFormattedDate] = React.useState(
-    typeof setCreatedAt === "string"
-      ? setCreatedAt
-      : convertUtcDateToLocalDateString(setCreatedAt)
-  );
-
-  React.useEffect(() => {
-    if (setCreatedAt) {
-      setFormattedDate(convertUtcDateToLocalDateString(setCreatedAt));
-    }
-  }, [setCreatedAt]);
-
   if (isError) {
     return <ErrorList errors={["Set not found"]} />;
   }
@@ -144,7 +132,7 @@ const SetDetailsAccessor = () => {
             Created On
           </div>
           <div className="text-sm text-zinc-300">
-            {formattedDate} by{" "}
+            <LocalDateTime value={setCreatedAt} /> by{" "}
             <Link
               to={`/profile/${setUser.id}`}
               className="font-semibold text-blue-500"

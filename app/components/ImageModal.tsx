@@ -24,7 +24,8 @@ import { RemixImageButton } from "~/components/RemixImageButton";
 import { AddImageToCollectionButton } from "~/components/AddImageToCollectionButton";
 import { toast } from "sonner";
 import { useLoggedInUser } from "~/hooks";
-import { convertUtcDateToLocalDateString, fallbackImageSource } from "~/client";
+import { fallbackImageSource } from "~/client";
+import { LocalDateTime } from "~/components/LocalDateTime";
 import { isUserAdmin, type UserWithRoles } from "~/utils/isAdmin";
 import { copyToClipboard } from "~/utils/clipboard";
 import type { ImageUserData } from "~/pages/ExploreImageDetailsPage";
@@ -85,7 +86,7 @@ const ImageModal = ({ imageData, onClose }: ImageModalProps) => {
               {imageUserData?.username}
             </Link>
             <div className="truncate text-[11.5px] text-fg-subtle">
-              {convertUtcDateToLocalDateString(imageData.createdAt!)}
+              <LocalDateTime value={imageData.createdAt} />
             </div>
           </div>
           {imageUserData?.id && imageUserData.id !== userData?.id && (
@@ -237,7 +238,7 @@ const ImageModal = ({ imageData, onClose }: ImageModalProps) => {
               />
               <MetaRow
                 label="Created"
-                value={convertUtcDateToLocalDateString(imageData.createdAt!)}
+                value={<LocalDateTime value={imageData.createdAt} />}
               />
               <MetaRow
                 label="Cost"

@@ -7,7 +7,7 @@ import type { CollectionDetailsLoader } from "~/routes/collections.$collectionId
 import { PageContainer, ImageCard } from "~/components";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Loader2 } from "lucide-react";
-import { convertUtcDateToLocalDateString } from "~/client";
+import { LocalDateTime } from "~/components/LocalDateTime";
 import type { ImageDetail } from "~/server/getImage";
 
 type ResolvedCollection = NonNullable<CollectionDetailsLoader["collection"]>;
@@ -68,7 +68,7 @@ const CollectionDetailsAccessor = ({
               <span>•</span>
               <span>
                 Created{" "}
-                {convertUtcDateToLocalDateString(resolvedCollection.createdAt)}
+                <LocalDateTime value={resolvedCollection.createdAt} />
               </span>
             </div>
           </div>

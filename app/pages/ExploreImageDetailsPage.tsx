@@ -2,7 +2,7 @@ import React from "react";
 import { useOptionalUser } from "~/hooks";
 import { Link, useLoaderData, useNavigate } from "@remix-run/react";
 import type { ExplorePageImageLoader } from "~/routes/explore.$imageId";
-import { convertUtcDateToLocalDateString } from "~/client";
+import { LocalDateTime } from "~/components/LocalDateTime";
 import {
   Dialog,
   DialogContent,
@@ -112,7 +112,10 @@ const ExploreImageDetailsPageAccessor = ({
   onClose,
   imageData,
 }: ExploreImageDetailsPageProps & { imageData: AsyncImageData }) => {
-  const imageUserData = imageData.user as ImageUserData;
+  // Optional access because the `if (!imageData) return null` guard below sits
+  // after the hooks, so this line runs first. Dereferencing eagerly is what
+  // threw "Cannot read properties of undefined (reading 'user')" on /explore.
+  const imageUserData = imageData?.user as ImageUserData;
   // Shared image links are public, so an absent user is expected here.
   const userData = useOptionalUser();
   const navigate = useNavigate();
@@ -219,7 +222,7 @@ const ExploreImageDetailsPageAccessor = ({
               </div>
               <div className="flex items-center gap-2">
                 <p className="text-xs text-zinc-500">
-                  {convertUtcDateToLocalDateString(imageData.createdAt!)}
+                  <LocalDateTime value={imageData.createdAt} />
                 </p>
                 <HoverCard>
                   <HoverCardTrigger asChild>
@@ -647,7 +650,7 @@ const ExploreImageDetailsPageAccessor = ({
                 )}
               </div>
               <p className="text-xs text-zinc-500">
-                {convertUtcDateToLocalDateString(imageData.createdAt!)}
+                <LocalDateTime value={imageData.createdAt} />
               </p>
             </div>
           </div>
