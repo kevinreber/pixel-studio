@@ -28,8 +28,21 @@ import { hydrateRoot } from "react-dom/client";
 // bundler, so error reporting no longer depends on the build mode being right.
 const clientEnv = (window as unknown as { ENV?: Record<string, string> }).ENV;
 const sentryEnvironment = clientEnv?.SENTRY_ENVIRONMENT;
-const isDeployed =
-  sentryEnvironment === "production" || sentryEnvironment === "preview";
+
+// `window.ENV` is built from the root loader's data, so it serializes to `{}`
+// on an error page — the root loader never produced data, and `Layout` reads it
+// through `useRouteLoaderData`, which is undefined while the error boundary
+// renders. Verified on the preview: a 404 emits `window.ENV = {}`.
+//
+// Falling back to the hostname keeps reporting alive on exactly the pages most
+// worth reporting from. It is also runtime-only, so it survives the build mode
+// problem described above.
+const isLocalHost = /^(localhost|127\.0\.0\.1|\[::1\]|::1)$/.test(
+  window.location.hostname
+);
+const isDeployed = sentryEnvironment
+  ? sentryEnvironment === "production" || sentryEnvironment === "preview"
+  : !isLocalHost;
 
 if (isDeployed) {
   const sentryDsn =
@@ -38,7 +51,13 @@ if (isDeployed) {
 
   Sentry.init({
     dsn: sentryDsn,
-    environment: sentryEnvironment,
+    // Derived from the host only on the error-page path above, where the server
+    // could not tell us. Preview deployments are always *.vercel.app.
+    environment:
+      sentryEnvironment ||
+      (window.location.hostname.endsWith(".vercel.app")
+        ? "preview"
+        : "production"),
     tracesSampleRate: 1,
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1,
