@@ -10,26 +10,35 @@ import { RemixBrowser, useLocation, useMatches } from "@remix-run/react";
 import { startTransition, StrictMode, useEffect } from "react";
 import { hydrateRoot } from "react-dom/client";
 
-// Only initialize Sentry in production to avoid sending local dev errors.
+// Whether we report errors is decided at RUNTIME, deliberately not from a
+// build-time constant.
 //
-// This gate used to read `process.env.NODE_ENV`. Vite folds that to a literal
-// in the client bundle, and in the deployed production build it folded to
-// false: the shipped entry.client chunk contained no DSN at all, the whole
-// block having been dropped as dead code. That is why Sentry logged zero
-// production browser events while PostHog was recording hundreds of exceptions
-// on the same pages. `import.meta.env.PROD` is the constant Vite guarantees —
-// false under `vite dev`, true in a built client.
-const isProduction = import.meta.env.PROD;
+// The Vercel build runs with NODE_ENV=development. That was verified by
+// reproducing the deployed bundle byte-for-byte: `NODE_ENV=development npm run
+// build` emits entry.client-CQYCRvrO.js, the exact hash Vercel serves. In such
+// a build BOTH `process.env.NODE_ENV === "production"` and
+// `import.meta.env.PROD` fold to false, so any `if (...)` wrapper around
+// Sentry.init is dropped as dead code before it ever ships. That is why Sentry
+// recorded zero production browser events for 90+ days while PostHog recorded
+// hundreds of exceptions on the same pages.
+//
+// `window.ENV.SENTRY_ENVIRONMENT` is written by the server at request time and
+// resolves from VERCEL_ENV, so it is "production" or "preview" on a deployment
+// and "development" locally. A runtime read cannot be eliminated by the
+// bundler, so error reporting no longer depends on the build mode being right.
+const clientEnv = (window as unknown as { ENV?: Record<string, string> }).ENV;
+const sentryEnvironment = clientEnv?.SENTRY_ENVIRONMENT;
+const isDeployed =
+  sentryEnvironment === "production" || sentryEnvironment === "preview";
 
-if (isProduction) {
-  const clientEnv = (window as unknown as { ENV?: Record<string, string> }).ENV;
+if (isDeployed) {
   const sentryDsn =
     clientEnv?.SENTRY_DSN ||
     "https://cd7847ec1fa0966145399ddcd6a5a6f4@o4506551058759680.ingest.us.sentry.io/4507813698666496";
 
   Sentry.init({
     dsn: sentryDsn,
-    environment: clientEnv?.SENTRY_ENVIRONMENT || "production",
+    environment: sentryEnvironment,
     tracesSampleRate: 1,
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1,
@@ -82,7 +91,10 @@ function initPostHog() {
       capture_performance: { web_vitals: true },
       persistence: "localStorage+cookie",
       loaded: () => {
-        if (import.meta.env.DEV) {
+        // Runtime check for the same reason as the Sentry gate above:
+        // `import.meta.env.DEV` folds to *true* in the Vercel build, so this
+        // would otherwise log on every production page load.
+        if (!isDeployed) {
           console.log("[Analytics] PostHog initialized");
         }
       },
