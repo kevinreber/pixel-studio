@@ -52,6 +52,16 @@ export function getEnv() {
     MODE: process.env.NODE_ENV,
     POSTHOG_API_KEY: process.env.POSTHOG_API_KEY,
     POSTHOG_HOST: process.env.POSTHOG_HOST || "https://us.i.posthog.com",
+    // A Sentry DSN is a public credential — it ships in the client bundle by
+    // design. `entry.client.tsx` read `window.ENV.SENTRY_DSN` before it was
+    // exposed here, so it always fell through to its hardcoded default.
+    SENTRY_DSN: process.env.SENTRY_DSN,
+    // Labels browser events. Without it every event lands in one bucket and
+    // production is indistinguishable from a local or CI run.
+    SENTRY_ENVIRONMENT:
+      process.env.SENTRY_ENVIRONMENT ||
+      process.env.VERCEL_ENV ||
+      process.env.NODE_ENV,
   };
 }
 

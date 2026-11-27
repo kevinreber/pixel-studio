@@ -13,6 +13,7 @@ import {
 } from "@remix-run/react";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { Analytics } from "@vercel/analytics/react";
+import * as Sentry from "@sentry/remix";
 import posthog from "posthog-js";
 // import { Toaster, toast as showToast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
@@ -237,23 +238,15 @@ function Document({
         )}
         <Meta />
         <Links />
-        {/* Google Analytics Script */}
-        <script
-          async
-          src="https://www.googletagmanager.com/gtag/js?id=G-2TQ0PM7CJ4"
-        ></script>
-        <script
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{
-            __html: `
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-
-            gtag('config', 'G-2TQ0PM7CJ4');
-            `,
-          }}
-        />
+        {/*
+          Google Analytics is loaded from `entry.client.tsx` after hydration
+          commits, not from here. gtag.js appends its own nodes to <head>, and
+          because we hydrate the whole `document`, those insertions shift the
+          SSR children out from under React's in-progress hydration and raise
+          "Hydration failed because the initial UI does not match what was
+          rendered on the server". This is the same failure mode already
+          documented for PostHog autocapture in `entry.client.tsx`.
+        */}
       </head>
       <body suppressHydrationWarning>
         {children}
@@ -308,11 +301,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Identifies the current user in PostHog so client-side web events
- * are associated with the user's identity (email, name, etc.)
- * instead of showing as anonymous UUIDs.
+ * Identifies the current user in PostHog and Sentry so client-side events are
+ * associated with the user's identity (email, name, etc.) instead of showing
+ * as anonymous UUIDs.
+ *
+ * Sentry was never given a user at all, so it fell back to identifying people
+ * by IP. That makes "users affected" an approximation and leaves no way to pull
+ * one person's errors. Only the opaque id is sent; Sentry does not need the
+ * email to group by user.
  */
-function usePostHogIdentify(userData: {
+function useIdentifyUser(userData: {
   id: string;
   email: string | null;
   name: string | null;
@@ -327,6 +325,7 @@ function usePostHogIdentify(userData: {
     if (!userData?.id) {
       // User logged out - reset was already handled by LogOutButton
       previousUserId.current = null;
+      Sentry.setUser(null);
       return;
     }
 
@@ -344,13 +343,20 @@ function usePostHogIdentify(userData: {
     } catch (error) {
       console.error("[Analytics] Failed to identify user in PostHog:", error);
     }
+
+    // Separate try block so a PostHog failure cannot leave Sentry unidentified.
+    try {
+      Sentry.setUser({ id: userData.id });
+    } catch (error) {
+      console.error("[Analytics] Failed to identify user in Sentry:", error);
+    }
   }, [userData]);
 }
 
 export default function App() {
   const loaderData = useLoaderData<typeof loader>();
 
-  usePostHogIdentify(loaderData.userData);
+  useIdentifyUser(loaderData.userData);
 
   return (
     <HoneypotProvider {...loaderData.honeyProps}>

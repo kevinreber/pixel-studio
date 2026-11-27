@@ -39,7 +39,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { convertUtcDateToLocalDateString } from "~/client";
+import { LocalDateTime } from "~/components/LocalDateTime";
 import { Cpu, Clock, Images, NotepadText, Trash2, Video } from "lucide-react";
 import { getUserSets, type Set } from "~/server/getUserSets";
 import { getCachedDataWithRevalidate, cacheDeletePattern } from "~/utils/cache.server";
@@ -311,7 +311,7 @@ const SetRow = ({ set }: { set: Set }) => {
           <div className="text-sm flex items-center gap-1">
             <Clock className="w-4 h-4 opacity-90" />
             <span className="text-muted-foreground">
-              {convertUtcDateToLocalDateString(set.createdAt)}
+              <LocalDateTime value={set.createdAt} />
             </span>
           </div>
         </div>

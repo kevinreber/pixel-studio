@@ -8,7 +8,7 @@ import { PassThrough } from "node:stream";
 
 import type { AppLoadContext, EntryContext } from "@remix-run/node";
 import { createReadableStreamFromReadable } from "@remix-run/node";
-import { RemixServer } from "@remix-run/react";
+import { RemixServer, isRouteErrorResponse } from "@remix-run/react";
 import { isbot } from "isbot";
 import { renderToPipeableStream } from "react-dom/server";
 import * as Sentry from "@sentry/remix";
@@ -21,6 +21,12 @@ if (process.env.NODE_ENV === "production" && !Sentry.getClient()) {
     dsn:
       process.env.SENTRY_DSN ||
       "https://cd7847ec1fa0966145399ddcd6a5a6f4@o4506551058759680.ingest.us.sentry.io/4507813698666496",
+    // Without this, server events are unlabeled and preview deployments are
+    // indistinguishable from production in the issue stream.
+    environment:
+      process.env.SENTRY_ENVIRONMENT ||
+      process.env.VERCEL_ENV ||
+      process.env.NODE_ENV,
     tracesSampleRate: 1,
     autoInstrumentRemix: true,
   });
@@ -28,7 +34,19 @@ if (process.env.NODE_ENV === "production" && !Sentry.getClient()) {
 
 // The Sentry wrapper carries the request context into the report; the log line
 // is only so the failure is visible in the platform logs as well.
+//
+// Remix routes every unmatched URL through here, so bot and scanner traffic
+// (/Wp, /.well-known/*, /static../manage.py) was logging as "Unhandled error"
+// and became the single largest error group in Vercel's runtime view — 332
+// entries across 127 "users" in one week — burying the real server errors
+// underneath it. A 404 for a URL that was never a route is not an application
+// failure, so it does not belong in the error log.
+//
+// Only the log line is skipped. Sentry reporting is unaffected either way:
+// `sentryHandleError` already returns early on `isRouteErrorResponse`, so these
+// never reached Sentry in the first place.
 export const handleError = Sentry.wrapHandleErrorWithSentry((error) => {
+  if (isRouteErrorResponse(error) && error.status < 500) return;
   console.error("Unhandled error", error);
 });
 

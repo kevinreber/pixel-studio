@@ -34,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { convertUtcDateToLocalDateString } from "~/client";
+import { LocalDateTime } from "~/components/LocalDateTime";
 import { invariantResponse } from "~/utils/invariantResponse";
 import { prisma } from "~/services/prisma.server";
 
@@ -205,7 +205,7 @@ const SetRow = ({ set }: { set: Set }) => {
           <div className="text-sm flex items-center gap-1">
             <Clock className="w-4 h-4 opacity-90" />
             <span className="text-muted-foreground">
-              {convertUtcDateToLocalDateString(set.createdAt)}
+              <LocalDateTime value={set.createdAt} />
             </span>
           </div>
         </div>

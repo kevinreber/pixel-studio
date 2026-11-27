@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link, useLocation } from "@remix-run/react";
+import { Form, Link, useLocation } from "@remix-run/react";
 import {
   Compass,
   Rss,
@@ -149,25 +149,26 @@ export function MobileNav({ user, isAdmin }: MobileNavProps) {
             </div>
 
             {user && (
-              <Link
-                to="/checkout"
-                prefetch="intent"
-                onClick={() => setMenuOpen(false)}
-                className="mb-4 flex items-center gap-3 rounded-md border border-border-accent bg-accent-soft-2 p-3"
-              >
-                <div className="grid h-9 w-9 place-items-center rounded-sm bg-accent-soft text-[var(--accent-text)]">
-                  <Coins className="h-[18px] w-[18px]" strokeWidth={2} />
-                </div>
-                <div className="flex-1">
-                  <div className="mono text-[15px] font-semibold text-fg">
-                    {user.credits.toLocaleString()}
+              <Form method="post" action="/checkout">
+                <button
+                  type="submit"
+                  onClick={() => setMenuOpen(false)}
+                  className="mb-4 flex w-full items-center gap-3 rounded-md border border-border-accent bg-accent-soft-2 p-3 text-left"
+                >
+                  <div className="grid h-9 w-9 place-items-center rounded-sm bg-accent-soft text-[var(--accent-text)]">
+                    <Coins className="h-[18px] w-[18px]" strokeWidth={2} />
                   </div>
-                  <div className="text-[11px] text-fg-subtle">credits</div>
-                </div>
-                <span className="rounded-sm bg-[var(--accent)] px-3 py-1.5 text-[12px] font-semibold text-[var(--accent-fg)]">
-                  Buy
-                </span>
-              </Link>
+                  <div className="flex-1">
+                    <div className="mono text-[15px] font-semibold text-fg">
+                      {user.credits.toLocaleString()}
+                    </div>
+                    <div className="text-[11px] text-fg-subtle">credits</div>
+                  </div>
+                  <span className="rounded-sm bg-[var(--accent)] px-3 py-1.5 text-[12px] font-semibold text-[var(--accent-fg)]">
+                    Buy
+                  </span>
+                </button>
+              </Form>
             )}
 
             <div className="u-label mb-2">Secondary</div>

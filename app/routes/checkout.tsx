@@ -1,11 +1,10 @@
 import {
   redirect,
+  type ActionFunctionArgs,
   type LoaderFunctionArgs,
-  type MetaFunction,
 } from "@remix-run/node";
 import { requireUserLogin } from "~/services/auth.server";
 import { stripeCheckout } from "~/services/stripe.server";
-import { loader as UserLoaderData } from "../root";
 import { Logger } from "~/utils/logger.server";
 import {
   trackPayment,
@@ -18,20 +17,21 @@ import {
   rateLimitResponse,
 } from "~/services/rateLimit.server";
 
-export const meta: MetaFunction<
-  typeof loader,
-  { root: typeof UserLoaderData }
-> = ({ matches }) => {
-  const userMatch = matches.find((match) => match.id === "root");
-  const username =
-    userMatch?.data?.userData?.username ||
-    userMatch?.data?.userData?.name ||
-    "Checkout";
+/**
+ * Creating a Stripe Checkout session is a side effect, so it must never run on
+ * a GET. It used to live in this route's loader, which `<Link prefetch>` and
+ * any crawler would trigger on hover — minting live sessions nobody asked for
+ * and inflating `checkout_started`. Those sessions then expired unpaid.
+ *
+ * GET now bounces to the pricing section, so stray navigations and prefetches
+ * are inert. The purchase itself goes through the action below.
+ */
+export async function loader({ request }: LoaderFunctionArgs) {
+  await requireUserLogin(request);
+  return redirect("/#lp-pricing");
+}
 
-  return [{ title: `Checkout | ${username}` }];
-};
-
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export async function action({ request }: ActionFunctionArgs) {
   const user = await requireUserLogin(request);
 
   const rl = await checkRateLimit(
@@ -60,4 +60,4 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   });
 
   return redirect(url);
-};
+}

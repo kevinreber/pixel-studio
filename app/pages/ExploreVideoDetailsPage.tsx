@@ -2,7 +2,7 @@ import React from "react";
 import { useOptionalUser } from "~/hooks";
 import { Link, useLoaderData } from "@remix-run/react";
 import type { ExplorePageVideoLoader } from "~/routes/explore.video.$videoId";
-import { convertUtcDateToLocalDateString } from "~/client";
+import { LocalDateTime } from "~/components/LocalDateTime";
 import {
   Dialog,
   DialogContent,
@@ -150,7 +150,7 @@ const ExploreVideoDetailsPageContent = ({
               </div>
               <div className="flex items-center gap-2">
                 <p className="text-xs text-zinc-500">
-                  {convertUtcDateToLocalDateString(videoData.createdAt!)}
+                  <LocalDateTime value={videoData.createdAt} />
                 </p>
                 <HoverCard>
                   <HoverCardTrigger asChild>
@@ -444,7 +444,7 @@ const ExploreVideoDetailsPageContent = ({
             <div className="flex items-center justify-between">
               <LikeVideoButton videoData={videoData} />
               <p className="text-xs text-zinc-500">
-                {convertUtcDateToLocalDateString(videoData.createdAt!)}
+                <LocalDateTime value={videoData.createdAt} />
               </p>
             </div>
           </div>
