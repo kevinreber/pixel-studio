@@ -18,3 +18,6 @@ node_modules
 # Local auth state from ad-hoc Playwright capture runs — never commit.
 /tests/.auth.json
 /tests/.auth-chunks/
+
+# Local cache written by the impeccable design hook — not project state.
+/.impeccable/
