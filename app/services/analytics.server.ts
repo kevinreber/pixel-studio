@@ -31,6 +31,7 @@ export const AnalyticsEvents = {
   USER_SIGNED_UP: "user_signed_up",
   USER_LOGGED_IN: "user_logged_in",
   USER_LOGGED_OUT: "user_logged_out",
+  USER_LOGIN_FAILED: "user_login_failed",
 
   // Image Generation
   IMAGE_GENERATION_STARTED: "image_generation_started",
@@ -110,6 +111,13 @@ export interface BaseEventProperties {
 export interface AuthEventProperties extends BaseEventProperties {
   provider?: string;
   isNewUser?: boolean;
+}
+
+export interface AuthFailureEventProperties extends BaseEventProperties {
+  /** Which step of the OAuth round trip broke. */
+  stage: "provider_error" | "code_exchange" | "no_session";
+  provider?: string;
+  reason?: string;
 }
 
 export interface ImageGenerationEventProperties extends BaseEventProperties {
@@ -220,6 +228,7 @@ export interface ErrorEventProperties extends BaseEventProperties {
 // Union type for all event properties
 export type EventProperties =
   | AuthEventProperties
+  | AuthFailureEventProperties
   | ImageGenerationEventProperties
   | VideoGenerationEventProperties
   | EngagementEventProperties
@@ -337,6 +346,33 @@ export function trackUserLogin(
  */
 export function trackUserLogout(userId: string): void {
   trackEvent(userId, AnalyticsEvents.USER_LOGGED_OUT, {});
+}
+
+/**
+ * Distinct ID for events that happen before (or instead of) a user being
+ * identified. Failed logins have no user, and minting a fresh ID per failure
+ * would fill the person graph with single-event ghosts.
+ */
+const ANONYMOUS_DISTINCT_ID = "anonymous";
+
+/**
+ * Track a failed login attempt.
+ *
+ * Successful logins are too sparse to monitor directly: at 0–4 per day, "zero
+ * logins today" cannot tell an outage apart from a quiet Tuesday, which is why
+ * the auth tripwire alert fired on ordinary days. Failures are the dense
+ * signal — during the June–July 2026 Supabase Site URL misconfiguration every
+ * attempt failed, so a non-zero count here would have alerted immediately
+ * instead of going unnoticed for four weeks.
+ */
+export function trackUserLoginFailed(
+  properties: AuthFailureEventProperties
+): void {
+  trackEvent(
+    ANONYMOUS_DISTINCT_ID,
+    AnalyticsEvents.USER_LOGIN_FAILED,
+    properties
+  );
 }
 
 /**

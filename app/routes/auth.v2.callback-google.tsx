@@ -17,6 +17,7 @@ import { AUTH_KEY, USER_ID_KEY } from "~/services/auth.server";
 import {
   trackUserSignUp,
   trackUserLogin,
+  trackUserLoginFailed,
   identifyUser,
 } from "~/services/analytics.server";
 
@@ -40,6 +41,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   if (error) {
     console.error("Auth error:", error, errorDescription);
+    trackUserLoginFailed({
+      stage: "provider_error",
+      provider: "google",
+      reason: errorDescription || error,
+    });
     throw new Error(`Authentication error: ${errorDescription || error}`);
   }
 
@@ -60,6 +66,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
       });
     } catch (error: unknown) {
       console.error("Exchange error:", error);
+      trackUserLoginFailed({
+        stage: "code_exchange",
+        provider: "google",
+        reason: error instanceof Error ? error.message : String(error),
+      });
       if (error instanceof Error) {
         throw new Error(`Error exchanging code for session: ${error.message}`);
       }
@@ -123,7 +134,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
   }
 
-  // Not authenticated and no code, redirect to login
+  // Not authenticated and no code. This is the silent failure mode: the
+  // June–July 2026 Site URL misconfiguration landed every user here, bouncing
+  // them back to /login with nothing recorded anywhere. Emit the failure so the
+  // outage is visible the first time it happens.
+  trackUserLoginFailed({
+    stage: "no_session",
+    provider: "google",
+    reason: "callback reached with no code and no session",
+  });
   return redirect("/login", { headers });
 }
 
