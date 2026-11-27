@@ -13,6 +13,7 @@ import {
 } from "@remix-run/react";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { Analytics } from "@vercel/analytics/react";
+import * as Sentry from "@sentry/remix";
 import posthog from "posthog-js";
 // import { Toaster, toast as showToast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
@@ -300,11 +301,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Identifies the current user in PostHog so client-side web events
- * are associated with the user's identity (email, name, etc.)
- * instead of showing as anonymous UUIDs.
+ * Identifies the current user in PostHog and Sentry so client-side events are
+ * associated with the user's identity (email, name, etc.) instead of showing
+ * as anonymous UUIDs.
+ *
+ * Sentry was never given a user at all, so it fell back to identifying people
+ * by IP. That makes "users affected" an approximation and leaves no way to pull
+ * one person's errors. Only the opaque id is sent; Sentry does not need the
+ * email to group by user.
  */
-function usePostHogIdentify(userData: {
+function useIdentifyUser(userData: {
   id: string;
   email: string | null;
   name: string | null;
@@ -319,6 +325,7 @@ function usePostHogIdentify(userData: {
     if (!userData?.id) {
       // User logged out - reset was already handled by LogOutButton
       previousUserId.current = null;
+      Sentry.setUser(null);
       return;
     }
 
@@ -336,13 +343,20 @@ function usePostHogIdentify(userData: {
     } catch (error) {
       console.error("[Analytics] Failed to identify user in PostHog:", error);
     }
+
+    // Separate try block so a PostHog failure cannot leave Sentry unidentified.
+    try {
+      Sentry.setUser({ id: userData.id });
+    } catch (error) {
+      console.error("[Analytics] Failed to identify user in Sentry:", error);
+    }
   }, [userData]);
 }
 
 export default function App() {
   const loaderData = useLoaderData<typeof loader>();
 
-  usePostHogIdentify(loaderData.userData);
+  useIdentifyUser(loaderData.userData);
 
   return (
     <HoneypotProvider {...loaderData.honeyProps}>
