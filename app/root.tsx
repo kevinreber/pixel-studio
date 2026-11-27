@@ -237,23 +237,15 @@ function Document({
         )}
         <Meta />
         <Links />
-        {/* Google Analytics Script */}
-        <script
-          async
-          src="https://www.googletagmanager.com/gtag/js?id=G-2TQ0PM7CJ4"
-        ></script>
-        <script
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{
-            __html: `
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-
-            gtag('config', 'G-2TQ0PM7CJ4');
-            `,
-          }}
-        />
+        {/*
+          Google Analytics is loaded from `entry.client.tsx` after hydration
+          commits, not from here. gtag.js appends its own nodes to <head>, and
+          because we hydrate the whole `document`, those insertions shift the
+          SSR children out from under React's in-progress hydration and raise
+          "Hydration failed because the initial UI does not match what was
+          rendered on the server". This is the same failure mode already
+          documented for PostHog autocapture in `entry.client.tsx`.
+        */}
       </head>
       <body suppressHydrationWarning>
         {children}

@@ -21,6 +21,12 @@ if (process.env.NODE_ENV === "production" && !Sentry.getClient()) {
     dsn:
       process.env.SENTRY_DSN ||
       "https://cd7847ec1fa0966145399ddcd6a5a6f4@o4506551058759680.ingest.us.sentry.io/4507813698666496",
+    // Without this, server events are unlabeled and preview deployments are
+    // indistinguishable from production in the issue stream.
+    environment:
+      process.env.SENTRY_ENVIRONMENT ||
+      process.env.VERCEL_ENV ||
+      process.env.NODE_ENV,
     tracesSampleRate: 1,
     autoInstrumentRemix: true,
   });
