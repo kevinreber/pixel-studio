@@ -1,4 +1,4 @@
-import { Link } from "@remix-run/react";
+import { Form, Link, useSubmit } from "@remix-run/react";
 import {
   CreditCard,
   Settings,
@@ -22,6 +22,7 @@ import { isUserAdmin, type UserWithRoles } from "~/utils/isAdmin";
 import { Avatar, Badge } from "./ps";
 
 const UserAvatarButton = () => {
+  const submit = useSubmit();
   const userData = useLoggedInUser();
   const isAdmin = isUserAdmin(userData as UserWithRoles | null);
 
@@ -78,13 +79,14 @@ const UserAvatarButton = () => {
               </span>{" "}
               {creditsTextPlural}
             </span>
-            <Link
-              to="/checkout"
-              prefetch="intent"
-              className="font-semibold text-[var(--accent-text)] hover:underline"
-            >
-              Buy
-            </Link>
+            <Form method="post" action="/checkout" className="inline">
+              <button
+                type="submit"
+                className="font-semibold text-[var(--accent-text)] hover:underline"
+              >
+                Buy
+              </button>
+            </Form>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="my-1 bg-[var(--border)]" />
@@ -101,15 +103,14 @@ const UserAvatarButton = () => {
               </Link>
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem asChild className="cursor-pointer">
-            <Link
-              to="/checkout"
-              prefetch="intent"
-              className="flex w-full items-center gap-2.5 rounded-sm px-2.5 py-2 text-[13.5px] font-medium text-fg hover:bg-surface-hover"
-            >
-              <CreditCard className="h-[16px] w-[16px] text-fg-subtle" />
-              Buy credits
-            </Link>
+          <DropdownMenuItem
+            className="flex w-full cursor-pointer items-center gap-2.5 rounded-sm px-2.5 py-2 text-[13.5px] font-medium text-fg hover:bg-surface-hover"
+            onSelect={() =>
+              submit(null, { method: "post", action: "/checkout" })
+            }
+          >
+            <CreditCard className="h-[16px] w-[16px] text-fg-subtle" />
+            Buy credits
           </DropdownMenuItem>
           <DropdownMenuItem asChild className="cursor-pointer">
             <Link

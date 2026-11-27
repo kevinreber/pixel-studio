@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link } from "@remix-run/react";
+import { Form, Link } from "@remix-run/react";
 import {
   ArrowRight,
   Sparkles,
@@ -564,15 +564,16 @@ export default function LandingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link to="/checkout" className="mt-auto">
+                <Form method="post" action="/checkout" className="mt-auto">
                   <Button
+                    type="submit"
                     variant={tier.featured ? "primary" : "outline"}
                     size="md"
                     className="w-full"
                   >
                     {tier.cta}
                   </Button>
-                </Link>
+                </Form>
               </div>
             ))}
           </div>
@@ -625,7 +626,7 @@ export default function LandingPage() {
           <div className="flex flex-wrap gap-5 text-[13px] text-fg-muted">
             <Link to="/explore">Explore</Link>
             <Link to="/whats-new">What&apos;s new</Link>
-            <Link to="/checkout">Pricing</Link>
+            <a href="#lp-pricing">Pricing</a>
             <a href="https://github.com" className="hover:text-fg">
               GitHub
             </a>

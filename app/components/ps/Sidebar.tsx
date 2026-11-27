@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link, useLocation } from "@remix-run/react";
+import { Form, Link, useLocation } from "@remix-run/react";
 import {
   Compass,
   Rss,
@@ -209,24 +209,25 @@ export function Sidebar({ user, isAdmin, whatsNewCount = 0 }: SidebarProps) {
 
       {/* Credits card */}
       {user && (
-        <Link
-          to="/checkout"
-          prefetch="intent"
-          className="mt-3 flex items-center gap-2 rounded-md border border-border-accent bg-accent-soft-2 p-3 transition-colors hover:bg-accent-soft"
-        >
-          <div className="grid h-9 w-9 place-items-center rounded-sm bg-accent-soft text-[var(--accent-text)]">
-            <Coins className="h-[18px] w-[18px]" strokeWidth={2} />
-          </div>
-          <div className="flex-1">
-            <div className="mono text-[15px] font-semibold text-fg">
-              {user.credits.toLocaleString()}
+        <Form method="post" action="/checkout">
+          <button
+            type="submit"
+            className="mt-3 flex w-full items-center gap-2 rounded-md border border-border-accent bg-accent-soft-2 p-3 text-left transition-colors hover:bg-accent-soft"
+          >
+            <div className="grid h-9 w-9 place-items-center rounded-sm bg-accent-soft text-[var(--accent-text)]">
+              <Coins className="h-[18px] w-[18px]" strokeWidth={2} />
             </div>
-            <div className="text-[11px] text-fg-subtle">credits</div>
-          </div>
-          <span className="rounded-sm bg-[var(--accent)] px-2 py-1 text-[11px] font-semibold text-[var(--accent-fg)]">
-            Buy
-          </span>
-        </Link>
+            <div className="flex-1">
+              <div className="mono text-[15px] font-semibold text-fg">
+                {user.credits.toLocaleString()}
+              </div>
+              <div className="text-[11px] text-fg-subtle">credits</div>
+            </div>
+            <span className="rounded-sm bg-[var(--accent)] px-2 py-1 text-[11px] font-semibold text-[var(--accent-fg)]">
+              Buy
+            </span>
+          </button>
+        </Form>
       )}
 
       {/* Account row */}
