@@ -79,7 +79,8 @@ export function isQueueEnabled(): boolean {
  */
 export async function queueImageGeneration(
   formData: CreateImagesFormData,
-  userId: string
+  userId: string,
+  callbackOrigin?: string
 ): Promise<QueueResult> {
   const backend = getQueueBackend();
 
@@ -91,7 +92,7 @@ export async function queueImageGeneration(
   }
 
   // Default: QStash
-  return queueImageGenerationQStash(formData, userId);
+  return queueImageGenerationQStash(formData, userId, callbackOrigin);
 }
 
 /**
@@ -101,7 +102,8 @@ export async function queueImageGeneration(
 export async function queueComparisonGeneration(
   formData: ComparisonFormData,
   userId: string,
-  totalCreditCost: number
+  totalCreditCost: number,
+  callbackOrigin?: string
 ): Promise<QueueResult> {
   const backend = getQueueBackend();
 
@@ -116,7 +118,12 @@ export async function queueComparisonGeneration(
   }
 
   // Use QStash for comparison (handles parallel requests well)
-  return queueComparisonGenerationQStash(formData, userId, totalCreditCost);
+  return queueComparisonGenerationQStash(
+    formData,
+    userId,
+    totalCreditCost,
+    callbackOrigin
+  );
 }
 
 /**

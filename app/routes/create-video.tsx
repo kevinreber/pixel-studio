@@ -215,7 +215,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       await cacheDelete(cacheKey);
 
       // Queue the video generation request (returns immediately!)
-      const response = await queueVideoGeneration(validateFormData.data, user.id);
+      const response = await queueVideoGeneration(
+        validateFormData.data,
+        user.id,
+        new URL(request.url).origin
+      );
 
       console.log(
         `Successfully queued video generation request: ${response.requestId} via ${queueHealth.backend}`
