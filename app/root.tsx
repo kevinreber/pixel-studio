@@ -212,8 +212,8 @@ function Document({
         />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Pixel Studio AI" />
-        <meta property="og:image" content="https://pixelstudio.ai/og-image.png" />
-        <meta property="og:url" content="https://pixelstudio.ai" />
+        <meta property="og:image" content="https://www.pixelstudioai.com/og-image.png" />
+        <meta property="og:url" content="https://www.pixelstudioai.com" />
         <meta property="og:locale" content="en_US" />
         {/* Twitter Card tags */}
         <meta name="twitter:card" content="summary_large_image" />
@@ -222,11 +222,11 @@ function Document({
           name="twitter:description"
           content="Generate beautiful AI images and videos with DALL-E, Stable Diffusion, Flux, Runway, and more."
         />
-        <meta name="twitter:image" content="https://pixelstudio.ai/og-image.png" />
+        <meta name="twitter:image" content="https://www.pixelstudioai.com/og-image.png" />
         {/* Additional SEO meta tags */}
         <meta name="theme-color" content="#000000" />
         <meta name="robots" content="index, follow" />
-        <link rel="canonical" href="https://pixelstudio.ai" />
+        <link rel="canonical" href="https://www.pixelstudioai.com" />
         {/* Handle "system" theme preference */}
         {themeClass === "" && (
           <script

@@ -11,9 +11,12 @@ export const SITE_CONFIG = {
   tagline: "AI-Powered Image & Video Generation",
   description:
     "Create stunning AI-generated images and videos with multiple models including DALL-E, Stable Diffusion, Flux, and more. Join our creative community today.",
-  url: "https://pixelstudio.ai",
+  // The app is served from www.pixelstudioai.com (pixelstudioai.com
+  // 308-redirects here). pixelstudio.ai is a separate product, so pointing
+  // canonicals there hands crawler authority to an unrelated site.
+  url: "https://www.pixelstudioai.com",
   twitterHandle: "@pixelstudioai",
-  defaultImage: "https://pixelstudio.ai/og-image.png",
+  defaultImage: "https://www.pixelstudioai.com/og-image.png",
   locale: "en_US",
 };
 

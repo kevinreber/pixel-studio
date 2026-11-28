@@ -9,6 +9,21 @@ import {
   PaginationPrevious,
   PaginationEllipsis,
 } from "@/components/ui/pagination";
+import { cn } from "@/lib/utils";
+
+// The shadcn primitives default to `outline`/`ghost` button variants, which
+// paint `border-input` and `bg-background` — pre-redesign tokens that read as a
+// pale box in the redesigned shell. Override them with the redesign surfaces.
+const linkClassName = (isActive: boolean) =>
+  cn(
+    "min-w-[40px] border-transparent transition-colors",
+    isActive
+      ? "bg-surface-2 text-fg"
+      : "bg-transparent text-fg-subtle hover:bg-surface-hover hover:text-fg"
+  );
+
+const stepClassName =
+  "border-transparent bg-transparent text-fg-subtle transition-colors hover:bg-surface-hover hover:text-fg";
 
 interface PaginationControlsProps {
   currentPage: number;
@@ -52,7 +67,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
             <PaginationLink
               href={createPageUrl(i)}
               isActive={currentPage === i}
-              className="min-w-[40px] hover:bg-accent hover:text-accent-foreground transition-colors"
+              className={linkClassName(currentPage === i)}
             >
               {i}
             </PaginationLink>
@@ -66,7 +81,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
           <PaginationLink
             href={createPageUrl(1)}
             isActive={currentPage === 1}
-            className="min-w-[40px] hover:bg-accent hover:text-accent-foreground transition-colors"
+            className={linkClassName(currentPage === 1)}
           >
             1
           </PaginationLink>
@@ -92,7 +107,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
             <PaginationLink
               href={createPageUrl(i)}
               isActive={currentPage === i}
-              className="min-w-[40px] hover:bg-accent hover:text-accent-foreground transition-colors"
+              className={linkClassName(currentPage === i)}
             >
               {i}
             </PaginationLink>
@@ -116,7 +131,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
             <PaginationLink
               href={createPageUrl(totalPages)}
               isActive={currentPage === totalPages}
-              className="min-w-[40px] hover:bg-accent hover:text-accent-foreground transition-colors"
+              className={linkClassName(currentPage === totalPages)}
             >
               {totalPages}
             </PaginationLink>
@@ -133,33 +148,34 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
     return null;
   }
 
+  // No card, border or shadow around the control: the redesigned pages place
+  // content directly on the page background, so a floating panel here read as
+  // a stray pale box.
   return (
-    <div className="w-full flex justify-center">
-      <div className="bg-card/50 backdrop-blur-sm rounded-lg border border-border/50 mt-2 mb-2 p-0 shadow-lg">
-        <Pagination className={className}>
-          <PaginationContent className="gap-1">
-            {hasPrevPage && (
-              <PaginationItem>
-                <PaginationPrevious
-                  href={createPageUrl(currentPage - 1)}
-                  className="hover:bg-accent hover:text-accent-foreground transition-colors"
-                />
-              </PaginationItem>
-            )}
+    <div className="flex w-full justify-center py-2">
+      <Pagination className={className}>
+        <PaginationContent className="gap-1">
+          {hasPrevPage && (
+            <PaginationItem>
+              <PaginationPrevious
+                href={createPageUrl(currentPage - 1)}
+                className={stepClassName}
+              />
+            </PaginationItem>
+          )}
 
-            {renderPageNumbers()}
+          {renderPageNumbers()}
 
-            {hasNextPage && (
-              <PaginationItem>
-                <PaginationNext
-                  href={createPageUrl(currentPage + 1)}
-                  className="hover:bg-accent hover:text-accent-foreground transition-colors"
-                />
-              </PaginationItem>
-            )}
-          </PaginationContent>
-        </Pagination>
-      </div>
+          {hasNextPage && (
+            <PaginationItem>
+              <PaginationNext
+                href={createPageUrl(currentPage + 1)}
+                className={stepClassName}
+              />
+            </PaginationItem>
+          )}
+        </PaginationContent>
+      </Pagination>
     </div>
   );
 };

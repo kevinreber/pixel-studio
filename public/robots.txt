@@ -1,5 +1,5 @@
 # Pixel Studio AI - Robots.txt
-# https://pixelstudio.ai
+# https://www.pixelstudioai.com
 
 User-agent: *
 Allow: /
@@ -21,4 +21,4 @@ Disallow: /checkout
 Disallow: /auth/
 
 # Sitemap location
-Sitemap: https://pixelstudio.ai/sitemap.xml
+Sitemap: https://www.pixelstudioai.com/sitemap.xml
