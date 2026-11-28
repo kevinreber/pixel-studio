@@ -88,12 +88,39 @@ export interface QueueResponse {
  * In local dev, QStash can't callback to localhost, so we process differently
  */
 function isLocalDevelopment(): boolean {
+  // Vercel production runs with NODE_ENV=development, so NODE_ENV alone would
+  // send production jobs down the in-process path, where Vercel freezes the
+  // instance after the response and the job dies part-way through.
+  if (process.env.VERCEL_ENV === "production") {
+    return false;
+  }
   const baseUrl = process.env.BASE_URL || "http://localhost:5173";
   return (
     baseUrl.includes("localhost") ||
     baseUrl.includes("127.0.0.1") ||
     process.env.NODE_ENV === "development"
   );
+}
+
+/**
+ * Whether the QStash webhooks must reject unsigned requests. Keyed off the
+ * deployment rather than NODE_ENV, which is "development" on Vercel too.
+ */
+export function requiresQStashSignature(): boolean {
+  return (
+    process.env.VERCEL_ENV === "production" ||
+    process.env.VERCEL_ENV === "preview" ||
+    process.env.NODE_ENV === "production"
+  );
+}
+
+/**
+ * The origin QStash calls back to. Prefer the origin of the request that
+ * queued the job, which is always this deployment's public host, over
+ * BASE_URL, which can drift from the domain actually being served.
+ */
+function getCallbackBaseUrl(callbackOrigin?: string): string {
+  return callbackOrigin || process.env.BASE_URL || "http://localhost:5173";
 }
 
 /**
@@ -105,7 +132,8 @@ function isLocalDevelopment(): boolean {
  */
 export async function queueImageGenerationQStash(
   formData: CreateImagesFormData,
-  userId: string
+  userId: string,
+  callbackOrigin?: string
 ): Promise<QueueResponse> {
   const requestId = createId();
 
@@ -146,8 +174,7 @@ export async function queueImageGenerationQStash(
     } else {
       // PRODUCTION: Queue to QStash for async processing
       const client = getQStashClient();
-      const baseUrl = process.env.BASE_URL || "http://localhost:5173";
-      const callbackUrl = `${baseUrl}/api/queue/process-image`;
+      const callbackUrl = `${getCallbackBaseUrl(callbackOrigin)}/api/queue/process-image`;
 
       await client.publishJSON({
         url: callbackUrl,
@@ -195,7 +222,8 @@ export async function queueImageGenerationQStash(
 export async function queueComparisonGenerationQStash(
   formData: ComparisonFormData,
   userId: string,
-  totalCreditCost: number
+  totalCreditCost: number,
+  callbackOrigin?: string
 ): Promise<QueueResponse> {
   const parentRequestId = createId();
   const models = formData.models;
@@ -258,8 +286,7 @@ export async function queueComparisonGenerationQStash(
       } else {
         // PRODUCTION: Queue to QStash
         const client = getQStashClient();
-        const baseUrl = process.env.BASE_URL || "http://localhost:5173";
-        const callbackUrl = `${baseUrl}/api/queue/process-image`;
+        const callbackUrl = `${getCallbackBaseUrl(callbackOrigin)}/api/queue/process-image`;
 
         await client.publishJSON({
           url: callbackUrl,
@@ -373,6 +400,15 @@ export async function checkQStashHealth(): Promise<boolean> {
     }
     // Just verify we can create a client (token is valid)
     getQStashClient();
+    // Without signing keys every callback fails verification and the job sits
+    // in "queued" with credits already charged. Reporting unhealthy makes the
+    // create routes fall back to synchronous generation instead.
+    if (
+      !process.env.QSTASH_CURRENT_SIGNING_KEY ||
+      !process.env.QSTASH_NEXT_SIGNING_KEY
+    ) {
+      throw new Error("QStash signing keys are not configured");
+    }
     return true;
   } catch (error) {
     console.error("[QStash] Health check failed:", error);
@@ -389,7 +425,8 @@ export async function checkQStashHealth(): Promise<boolean> {
  */
 export async function queueVideoGenerationQStash(
   formData: CreateVideoFormData,
-  userId: string
+  userId: string,
+  callbackOrigin?: string
 ): Promise<QueueResponse> {
   const requestId = createId();
 
@@ -432,8 +469,7 @@ export async function queueVideoGenerationQStash(
     } else {
       // PRODUCTION: Queue to QStash for async processing
       const client = getQStashClient();
-      const baseUrl = process.env.BASE_URL || "http://localhost:5173";
-      const callbackUrl = `${baseUrl}/api/queue/process-video`;
+      const callbackUrl = `${getCallbackBaseUrl(callbackOrigin)}/api/queue/process-video`;
 
       await client.publishJSON({
         url: callbackUrl,

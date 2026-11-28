@@ -18,6 +18,7 @@ import {
 } from "~/services/processingStatus.server";
 import {
   verifyQStashSignature,
+  requiresQStashSignature,
   type QStashVideoGenerationRequest,
 } from "~/services/qstash.server";
 import {
@@ -56,9 +57,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const body = await request.text();
   const signature = request.headers.get("upstash-signature");
 
-  // Verify QStash signature in production
-  const isProduction = process.env.NODE_ENV === "production";
-  if (isProduction) {
+  if (requiresQStashSignature()) {
     const isValid = await verifyQStashSignature(signature, body);
     if (!isValid) {
       console.error(

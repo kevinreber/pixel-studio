@@ -75,7 +75,8 @@ export function isVideoQueueEnabled(): boolean {
  */
 export async function queueVideoGeneration(
   formData: CreateVideoFormData,
-  userId: string
+  userId: string,
+  callbackOrigin?: string
 ): Promise<QueueResult> {
   const backend = getQueueBackend();
 
@@ -87,7 +88,7 @@ export async function queueVideoGeneration(
   }
 
   // Default: QStash
-  return queueVideoGenerationQStash(formData, userId);
+  return queueVideoGenerationQStash(formData, userId, callbackOrigin);
 }
 
 /**

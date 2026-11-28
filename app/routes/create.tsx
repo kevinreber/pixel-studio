@@ -366,7 +366,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             height: validateFormData.data.height,
           },
           user.id,
-          totalCreditCost
+          totalCreditCost,
+          new URL(request.url).origin
         );
 
         // Track comparison generation started
@@ -399,7 +400,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           ...validateFormData.data,
           model: validateFormData.data.model!,
         };
-        response = await queueImageGeneration(standardFormData, user.id);
+        response = await queueImageGeneration(
+          standardFormData,
+          user.id,
+          new URL(request.url).origin
+        );
 
         console.log(
           `Successfully queued image generation request: ${response.requestId} via ${queueHealth.backend}`
